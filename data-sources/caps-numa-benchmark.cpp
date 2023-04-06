@@ -187,11 +187,6 @@ void run_caps_numa_benchmark() {
     unsigned long long mask_checked_component = 0; //each bit is one numa region/one HW thread
     for (unsigned int current_cpu = 0; current_cpu < cpu_count; current_cpu++)
     {
-        // switch (fork())
-        // {
-        //     case -1:            /* Error */
-        //         errExit("fork");
-        //     case 0:             /* Child */
         CPU_ZERO(&set);
         CPU_SET(current_cpu, &set);
         if (sched_setaffinity(getpid(), sizeof(set), &set) == -1)
@@ -212,12 +207,6 @@ void run_caps_numa_benchmark() {
             mask_checked_component += (1 << mask_bit); //je jen v child process
             run_measurement(this_cpu, this_numa, numa_nodes);
         }
-
-        //     exit(EXIT_SUCCESS);
-        // default:            /* Parent */
-        //     wait(NULL);     /* Wait for child to terminate */
-        //     break;
-        // }
     }
 }
 

@@ -3,7 +3,8 @@
 #include "xml_dump.hpp"
 #include <libxml/parser.h>
 
-std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL;
+std::function<int(string,void*,string*)> search_custom_attrib_key_fcn = NULL;
+std::function<int(string,void*,xmlNodePtr)> search_custom_complex_attrib_key_fcn = NULL;
 
 //for a specific key, return the value as a string to be printed in the xml
 int search_default_attrib_key(string key, void* value, string* ret_value_str)
@@ -28,12 +29,45 @@ int search_default_attrib_key(string key, void* value, string* ret_value_str)
         *ret_value_str=std::to_string(*(double*)value);
         return 1;
     }
-    else if(!key.compare("GPU_Clock_Rate"))
+
+    return 0;
+}
+
+int search_default_complex_attrib_key(string key, void* value, xmlNodePtr n)
+{
+    //value: std::vector<std::tuple<long long,double>>*
+    if(!key.compare("freq_history"))
     {
-        auto [ freq, unit ] = *(std::tuple<double, std::string>*)value;
-        *ret_value_str = std::to_string(freq) + "; " + unit;
+        std::vector<std::tuple<long long,double>>* val = (std::vector<std::tuple<long long,double>>*)value;
+
+        xmlNodePtr attrib_node = xmlNewNode(NULL, (const unsigned char *)"Attribute");
+        xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
+        xmlAddChild(n, attrib_node);
+        for(auto [ ts,freq ] : *val)
+        {
+            xmlNodePtr attrib = xmlNewNode(NULL, (const unsigned char *)key.c_str());
+            xmlNewProp(attrib, (const unsigned char *)"timestamp", (const unsigned char *)std::to_string(ts).c_str());
+            xmlNewProp(attrib, (const unsigned char *)"frequency", (const unsigned char *)std::to_string(freq).c_str());
+            xmlNewProp(attrib, (const unsigned char *)"unit", (const unsigned char *)"MHz");
+            xmlAddChild(attrib_node, attrib);
+        }
         return 1;
     }
+    //value: std::tuple<double, std::string>
+    else if(!key.compare("GPU_Clock_Rate"))
+    {
+        xmlNodePtr attrib_node = xmlNewNode(NULL, (const unsigned char *)"Attribute");
+        xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
+        xmlAddChild(n, attrib_node);
+
+        auto [ freq, unit ] = *(std::tuple<double, std::string>*)value;
+        xmlNodePtr attrib = xmlNewNode(NULL, (const unsigned char *)key.c_str());
+        xmlNewProp(attrib, (const unsigned char *)"frequency", (const unsigned char *)std::to_string(freq).c_str());
+        xmlNewProp(attrib, (const unsigned char *)"unit", (const unsigned char *)unit.c_str());
+        xmlAddChild(attrib_node, attrib);
+        return 1;
+    }
+
     return 0;
 }
 
@@ -42,10 +76,10 @@ int print_attrib(map<string,void*> attrib, xmlNodePtr n)
     string attrib_value;
     for (auto const& [key, val] : attrib){
         int ret = 0;
-        if(custom_search_attrib_key_fcn != NULL)
-            ret=custom_search_attrib_key_fcn(key,val,&attrib_value);
+        if(search_custom_attrib_key_fcn != NULL)
+            ret=search_custom_attrib_key_fcn(key,val,&attrib_value);
         if(ret==0)
-            ret = search_default_attrib_key(key, val, &attrib_value);
+            ret = search_default_attrib_key(key,val,&attrib_value);
 
         if(ret==1)//attrib found
         {
@@ -53,11 +87,18 @@ int print_attrib(map<string,void*> attrib, xmlNodePtr n)
             xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
             xmlNewProp(attrib_node, (const unsigned char *)"value", (const unsigned char *)attrib_value.c_str());
             xmlAddChild(n, attrib_node);
+            continue;
         }
+
+        if(ret == 0 && search_custom_complex_attrib_key_fcn != NULL) //try looking in search_custom_complex_attrib_key
+            ret=search_custom_complex_attrib_key_fcn(key,val,n);
+        if(ret==0)
+            ret = search_default_complex_attrib_key(key,val,n);
     }
 
     return 1;
 }
+
 xmlNodePtr Memory::CreateXmlSubtree()
 {
     xmlNodePtr n = Component::CreateXmlSubtree();
@@ -159,9 +200,10 @@ xmlNodePtr Component::CreateXmlSubtree()
     return n;
 }
 
-int exportToXml(Component* root, string path, std::function<int(string,void*,string*)> _custom_search_attrib_key_fcn)
+int exportToXml(Component* root, string path, std::function<int(string,void*,string*)> _search_custom_attrib_key_fcn, std::function<int(string,void*,xmlNodePtr)> _search_custom_complex_attrib_key_fcn)
 {
-    custom_search_attrib_key_fcn=_custom_search_attrib_key_fcn;
+    search_custom_attrib_key_fcn=_search_custom_attrib_key_fcn;
+    search_custom_complex_attrib_key_fcn=_search_custom_complex_attrib_key_fcn;
 
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
 

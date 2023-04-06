@@ -1,5 +1,7 @@
 #include "Topology.hpp"
 
+#include <algorithm>
+
 void Component::PrintSubtree() { PrintSubtree(0); }
 void Component::PrintSubtree(int level)
 {
@@ -45,7 +47,10 @@ void Component::InsertChild(Component * child)
 }
 int Component::RemoveChild(Component * child)
 {
-    return std::erase(children, child);
+    int orig_size = children.size();
+    children.erase(std::remove(children.begin(), children.end(), child), children.end());
+    return orig_size - children.size();
+    //return std::erase(children, child); -- not supported in some compilers
 }
 Component* Component::GetChild(int _id)
 {
@@ -366,6 +371,8 @@ string Chip::GetVendor(){return vendor;}
 void Chip::SetVendor(string _vendor){vendor = _vendor;}
 string Chip::GetModel(){return model;}
 void Chip::SetModel(string _model){model = _model;}
+void Chip::SetChipType(int chipType){type = chipType;}
+int Chip::GetChipType(){return type;}
 
 void Subdivision::SetSubdivisionType(int subdivisionType) {type = subdivisionType;}
 int Subdivision::GetSubdivisionType() {return type;}
@@ -410,6 +417,7 @@ Node::Node(int _id = 0) : Component(_id, "Node", SYS_SAGE_COMPONENT_NODE) {}
 Node::Node(Component* parent = nullptr, int _id = 0) : Component(parent, _id, "Node", SYS_SAGE_COMPONENT_NODE) {}
 
 
+
 Chip::Chip():Chip(0){}
 Chip::Chip(int _id = 0, string _name = "Chip"): Component(_id, _name, SYS_SAGE_COMPONENT_CHIP){}
 Chip::Chip(Component* parent = nullptr, int _id = 0, string _name = "Chip"): Component(parent, _id, _name, SYS_SAGE_COMPONENT_CHIP) {}
@@ -421,6 +429,35 @@ Cache::Cache(int _id = 0, int _cache_level = 0, unsigned long long _cache_size =
 Cache::Cache(Component* parent, int _id = 0, string _cache_type = "", unsigned long long _cache_size = 0, int _associativity = -1, int _cache_line_size = -1){}
 Cache::Cache(Component* parent, int _id, int _cache_level, unsigned long long _cache_size, int _associativity = -1, int _cache_line_size = -1){}
 
+
+
+Chip::Chip(int _id, string _name, int _type):Component(_id, _name, SYS_SAGE_COMPONENT_CHIP), type(_type) {}
+Chip::Chip(int _id, string _name):Chip(_id, _name, SYS_SAGE_CHIP_TYPE_NONE){}
+Chip::Chip(int _id):Chip(_id, "Chip"){}
+Chip::Chip():Chip(0){}
+Chip::Chip(Component * parent, int _id, string _name, int _type):Component(parent, _id, _name, SYS_SAGE_COMPONENT_CHIP), type(_type){}
+Chip::Chip(Component * parent, int _id, string _name):Chip(parent, _id, _name, SYS_SAGE_CHIP_TYPE_NONE){}
+Chip::Chip(Component * parent, int _id):Chip(parent, _id, "Chip"){}
+Chip::Chip(Component * parent):Chip(parent, 0){}
+
+Cache::Cache(int _id, int  _cache_level, unsigned long long _cache_size, int _associativity, int _cache_line_size): Component(_id, "Cache", SYS_SAGE_COMPONENT_CACHE), cache_type(to_string(_cache_level)), cache_size(_cache_size), cache_associativity_ways(_associativity), cache_line_size(_cache_line_size){}
+Cache::Cache(int _id, int  _cache_level, unsigned long long _cache_size, int _associativity): Cache(_id, _cache_level, _cache_size, _associativity, -1){}
+Cache::Cache():Cache(0,0,-1,-1){}
+Cache::Cache(Component * parent, int _id, string _cache_type, unsigned long long _cache_size, int _associativity, int _cache_line_size): Component(parent, _id, "Cache", SYS_SAGE_COMPONENT_CACHE), cache_type(_cache_type), cache_size(_cache_size), cache_associativity_ways(_associativity), cache_line_size(_cache_line_size){}
+Cache::Cache(Component * parent, int _id, int _cache_level, unsigned long long _cache_size, int _associativity, int _cache_line_size): Cache(parent, _id, to_string(_cache_level), _cache_size, _associativity, -1){}
+Cache::Cache(Component * parent, int _id, int _cache_level, unsigned long long _cache_size, int _associativity): Cache(parent, _id, _cache_level, _cache_size, _associativity, -1){}
+Cache::Cache(Component * parent, int _id, string _cache_type):Cache(parent, _id, _cache_type, 0, -1, -1){}
+Cache::Cache(Component * parent):Cache(parent,0,0,-1,-1){}
+
+Subdivision::Subdivision(Component * parent, int _id, string _name, int _componentType): Component(parent, _id, _name, _componentType){}
+Subdivision::Subdivision(Component * parent, int _id, string _name): Subdivision(parent, _id, _name, SYS_SAGE_COMPONENT_SUBDIVISION){}
+Subdivision::Subdivision(Component * parent, int _id, int _componentType): Subdivision(parent, _id, "Subdivision", _componentType){}
+Subdivision::Subdivision(Component * parent, int _id): Subdivision(parent, _id, "Subdivision", SYS_SAGE_COMPONENT_SUBDIVISION){}
+Subdivision::Subdivision(Component * parent):Subdivision(parent,0){}
+Subdivision::Subdivision(int _id, string _name, int _componentType): Component(_id, _name, _componentType){}
+Subdivision::Subdivision(int _id, int _componentType): Subdivision(_id, "Subdivision", _componentType){}
+Subdivision::Subdivision(int _id, string _name): Subdivision(_id, _name, SYS_SAGE_COMPONENT_SUBDIVISION){}
+Subdivision::Subdivision(int _id): Subdivision(_id, "Subdivision", SYS_SAGE_COMPONENT_SUBDIVISION){}
 
 Subdivision::Subdivision():Subdivision(0){}
 Subdivision::Subdivision(int _id, const string& _name = "Subdivision", int _componentType = SYS_SAGE_COMPONENT_SUBDIVISION) : Component(_id, _name, _componentType) {}
@@ -440,4 +477,27 @@ Core::Core(Component* parent, int _id /*=0*/, string _name /*="Core"*/): Compone
 
 Thread::Thread(int _id /*=0*/, string _name /*="Thread"*/): Component(_id, _name, SYS_SAGE_COMPONENT_THREAD){}
 Thread::Thread(Component* parent, int _id /*=0*/, string _name /*="Thread"*/): Component(parent, _id, _name, SYS_SAGE_COMPONENT_THREAD){}
+
+
+Numa::Numa(int _id, int _size):Subdivision(_id, "Numa", SYS_SAGE_COMPONENT_NUMA), size(_size){}
+Numa::Numa(int _id):Numa(_id, 0){}
+Numa::Numa():Numa(0){}
+Numa::Numa(Component * parent, int _id, long long _size):Subdivision(parent, _id, "Numa", SYS_SAGE_COMPONENT_NUMA), size(_size){}
+Numa::Numa(Component * parent, int _id):Numa(parent, _id, -1){}
+Numa::Numa(Component * parent):Numa(parent, 0){}
+
+Core::Core(int _id, string _name):Component(_id, _name, SYS_SAGE_COMPONENT_CORE){}
+Core::Core(int _id):Core(_id, "Core"){}
+Core::Core():Core(0){}
+Core::Core(Component * parent, int _id, string _name):Component(parent, _id, _name, SYS_SAGE_COMPONENT_CORE){}
+Core::Core(Component * parent, int _id):Core(parent, _id, "Core"){}
+Core::Core(Component * parent):Core(parent, 0){}
+
+Thread::Thread(int _id, string _name):Component(_id, _name, SYS_SAGE_COMPONENT_THREAD){}
+Thread::Thread(int _id):Thread(_id, "Thread"){}
+Thread::Thread():Thread(0){}
+Thread::Thread(Component * parent, int _id, string _name):Component(parent, _id, _name, SYS_SAGE_COMPONENT_THREAD){}
+Thread::Thread(Component * parent, int _id):Thread(parent, _id, "Thread"){}
+Thread::Thread(Component * parent):Thread(parent, 0){}
+
 

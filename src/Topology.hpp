@@ -22,8 +22,13 @@
 #define SYS_SAGE_COMPONENT_NODE 512
 #define SYS_SAGE_COMPONENT_TOPOLOGY 1024
 
-#define SYS_SAGE_SUBDIVISION_TYPE_UNKNOWN 1
+#define SYS_SAGE_SUBDIVISION_TYPE_NONE 1
 #define SYS_SAGE_SUBDIVISION_TYPE_GPU_SM 2
+
+#define SYS_SAGE_CHIP_TYPE_NONE 1
+#define SYS_SAGE_CHIP_TYPE_CPU 2
+#define SYS_SAGE_CHIP_TYPE_CPU_SOCKET 4
+#define SYS_SAGE_CHIP_TYPE_GPU 8
 
 
 using namespace std;
@@ -340,9 +345,19 @@ public:
     \n name=>"sys-sage node"
     \n componentType=>SYS_SAGE_COMPONENT_NODE
     */
+
     Node(Component* parent = nullptr, int _id = 0) : Component(parent, _id, "Node", SYS_SAGE_COMPONENT_NODE); 
 
+
+    Node(int _id);
+    Node(Component* parent, int _id);
+#ifdef CPUINFO
+public:
+    int RefreshCpuCoreFrequency(bool keep_history = false);
+#endif
+
 #ifdef CAT_AWARE //defined in CAT_aware.cpp
+public:
     /**
     !!! Only if compiled with CAT_AWARE functionality, only for Intel CPUs !!!
     \n Creates/updates (bidirectional) data paths between all cores (class Thread) and their L3 cache segment (class Cache). The data paths of type SYS_SAGE_DATAPATH_TYPE_L3CAT contain the COS id (attrib with key "CATcos", value is of type uint64_t*) and the open L3 cache ways (attrib with key "CATL3mask", value is of type uint64_t*) to contain the current settings.
@@ -425,13 +440,25 @@ public:
     \n name=>"Chip"
     \n componentType=>SYS_SAGE_COMPONENT_CHIP
     */
+
     Chip(int _id = 0, string _name = "Chip"); 
     Chip(Component* parent = nullptr, int _id = 0, string _name = "Chip"); 
+
+    Chip(int _id);
+    Chip(int _id, string _name);
+    Chip(int _id, string _name, int _type);
+    Chip(Component * parent);
+    Chip(Component * parent, int _id);
+    Chip(Component * parent, int _id, string _name);
+    Chip(Component * parent, int _id, string _name, int _type);
+
 
     void SetVendor(string _vendor);
     string GetVendor();
     void SetModel(string _model);
     string GetModel();
+    void SetChipType(int chipType);
+    int GetChipType();
     /**
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
@@ -440,6 +467,7 @@ public:
 private:
     string vendor;
     string model;
+    int type;
 };
 
 /**
@@ -605,6 +633,15 @@ public:
 
 
 private:
+
+#ifdef CPUINFO
+public:
+    int RefreshFreq(bool keep_history = false);
+    void SetFreq(double _freq);
+    double GetFreq();
+private:
+    double freq;
+#endif
 };
 
 /**
@@ -619,6 +656,7 @@ public:
     \n name=>"Thread"
     \n componentType=>SYS_SAGE_COMPONENT_THREAD
     */
+
     ///**
     //Thread constructor. Sets
     //\n name=>"Thread"
@@ -628,6 +666,28 @@ public:
     Thread(int _id /*=0*/, string _name /*="Thread"*/); 
     Thread(Component* parent, int _id /*=0*/, string _name /*="Thread"*/); 
     #ifdef CAT_AWARE //defined in CAT_aware.cpp
+
+    Thread();
+    /**
+    Thread constructor. Sets
+    \n name=>"Thread"
+    \n componentType=>SYS_SAGE_COMPONENT_THREAD
+    @param _id - id of the component
+    */
+    Thread(int _id);
+    Thread(int _id, string _name);
+    Thread(Component * parent);
+    Thread(Component * parent, int _id);
+    Thread(Component * parent, int _id, string _name);
+
+#ifdef CPUINFO //defined in cpuinfo.cpp
+public:
+    int RefreshFreq(bool keep_history = false);
+    double GetFreq();
+#endif
+
+#ifdef CAT_AWARE //defined in CAT_aware.cpp
+public:
         /**
         !!! Only if compiled with CAT_AWARE functionality, only for Intel CPUs !!!
         \n Retrieves the L3 cache size available to this thread. This size is retrieved based on the last update with UpdateL3CATCoreCOS() -- i.e. you should call that method before.
@@ -635,7 +695,7 @@ public:
         @see int UpdateL3CATCoreCOS();
         */
         long long GetCATAwareL3Size();
-    #endif
+#endif
 private:
 };
 

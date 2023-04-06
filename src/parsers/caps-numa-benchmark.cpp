@@ -70,7 +70,7 @@ int parseCapsNumaBenchmark(Component* rootComponent, string benchmarkPath, strin
             bw = stoul(benchmarkData[i][bw_idx]);
             ldlat = stoul(benchmarkData[i][ldlat_idx]);
 
-            NewDataPath(src, target, SYS_SAGE_DATAPATH_ORIENTED, SYS_SAGE_DATAPATH_TYPE_PHYSICAL, (double)bw, (double)ldlat);
+            new DataPath(src, target, SYS_SAGE_DATAPATH_ORIENTED, SYS_SAGE_DATAPATH_TYPE_DATATRANSFER, (double)bw, (double)ldlat);
 
         }
     }
