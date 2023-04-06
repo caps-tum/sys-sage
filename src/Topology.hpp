@@ -332,8 +332,6 @@ public:
     \n name=>"sys-sage node"
     \n componentType=>SYS_SAGE_COMPONENT_NODE
     */
-    //Node();
-    //Node(int _id);
     Node(int _id = 0) : Component(_id, "Node", SYS_SAGE_COMPONENT_NODE);
    
     /**
@@ -342,8 +340,6 @@ public:
     \n name=>"sys-sage node"
     \n componentType=>SYS_SAGE_COMPONENT_NODE
     */
-    //Node(Component* parent);
-    //Node(Component* parent, int _id);
     Node(Component* parent = nullptr, int _id = 0) : Component(parent, _id, "Node", SYS_SAGE_COMPONENT_NODE); 
 
 #ifdef CAT_AWARE //defined in CAT_aware.cpp
@@ -371,9 +367,6 @@ public:
     \n componentType=>SYS_SAGE_COMPONENT_MEMORY
     */
     Memory();
-    //Memory(Component * parent);
-    //Memory(Component * parent, string _name);
-    //Memory(Component * parent, string _name, long long _size);
     Memory(Component* parent, string _name = "Memory", long long _size = -1); 
 
     long long GetSize();
@@ -432,13 +425,7 @@ public:
     \n name=>"Chip"
     \n componentType=>SYS_SAGE_COMPONENT_CHIP
     */
-    //Chip(int _id);
-    //Chip(int _id, string _name);
     Chip(int _id = 0, string _name = "Chip"); 
-       
-    //Chip(Component * parent);
-    //Chip(Component * parent, int _id);
-    //Chip(Component * parent, int _id, string _name);
     Chip(Component* parent = nullptr, int _id = 0, string _name = "Chip"); 
 
     void SetVendor(string _vendor);
@@ -467,7 +454,7 @@ public:
     \n name=>"cache"
     \n componentType=>SYS_SAGE_COMPONENT_CACHE
     */
-    //Cache();
+    Cache(int _id = 0, int _cache_level = 0, unsigned long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
     /**
     Cache component constructor. The name and componentType are set as in Cache() constructor
     @param _id - id of the Cache
@@ -476,18 +463,7 @@ public:
     @param _associativity - number of cache associativity ways
     @see Cache()
     */
-    //Cache(int _id, int  _cache_level, unsigned long long _cache_size, int _associativity);
-    //Cache(int _id, int  _cache_level, unsigned long long _cache_size, int _associativity, int _cache_line_size);
-    //Cache(int _id, string  _cache_type, unsigned long long _cache_size, int _associativity, int _cache_line_size);
 
-    Cache(int _id = 0, int _cache_level = 0, unsigned long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1); 
-
-
-    /*Cache(Component * parent);
-    Cache(Component * parent, int _id, string _cache_type);
-    Cache(Component * parent, int _id, int  _cache_level, unsigned long long _cache_size, int _associativity);
-    Cache(Component * parent, int _id, int  _cache_level, unsigned long long _cache_size, int _associativity, int _cache_line_size);
-    Cache(Component * parent, int _id, string _cache_type, unsigned long long _cache_size, int _associativity, int _cache_line_size);*/
     Cache(Component* parent, int _id = 0, string _cache_type = "", unsigned long long _cache_size = 0, int _associativity = -1, int _cache_line_size = -1);
     Cache(Component* parent, int _id, int _cache_level, unsigned long long _cache_size, int _associativity = -1, int _cache_line_size = -1); 
     /**
@@ -540,10 +516,6 @@ public:
     \n componentType=>SYS_SAGE_COMPONENT_SUBDIVISION
     @param _id - id of the component
     */
-    /*Subdivision(int _id);
-    Subdivision(int _id, string _name);
-    Subdivision(int _id, int _componentType);
-     Subdivision(int _id, string _name, int _componentType);*/
     Subdivision(int _id, const string& _name = "Subdivision", int _componentType = SYS_SAGE_COMPONENT_SUBDIVISION); 
 
     /**
@@ -552,14 +524,7 @@ public:
     @param _name - name
     @param _componentType - always use SYS_SAGE_COMPONENT_SUBDIVISION
     */
-   
-    /*Subdivision(Component * parent);
-    Subdivision(Component * parent, int _id);
-    Subdivision(Component * parent, int _id, string _name);
-    Subdivision(Component * parent, int _id, int _componentType);
-    Subdivision(Component * parent, int _id, string _name, int _componentType);*/
     Subdivision(Component* parent = nullptr, int _id = 0, const string& _name = "Subdivision", int _componentType = SYS_SAGE_COMPONENT_SUBDIVISION) : Component(parent, _id, _name, _componentType);
-
     Subdivision(Component* parent) :Subdivision(parent, 0); 
 
 
@@ -586,14 +551,13 @@ public:
     \n name=>"Numa"
     \n componentType=>SYS_SAGE_COMPONENT_NUMA
     */
-    //Numa();
     ///**
     //Numa constructor. Sets
     //\n name=>"Numa"
     //\n componentType=>SYS_SAGE_COMPONENT_NUMA
     //@param _id - id of the component
     //*/
-    //Numa(int _id);
+    Numa(int _id, int _size /*=0*/);
     ///**
     //Numa constructor. Sets
     //\n name=>"Numa"
@@ -601,15 +565,6 @@ public:
     //@param _id - id of the component
     //@param _size - size of the numa region of the memory (in case the memory segment is not represented by class Memory)
     //*/
-    //Numa(int _id, int _size);
-    Numa(int _id, int _size /*=0*/); 
-
-
-
-    //Numa(Component * parent);
-    //Numa(Component * parent, int _id);
-    //Numa(Component * parent, int _id, long long _size);
-
     Numa(Component* parent, int _id, long long _size /*=-1*/); 
 
     /**
@@ -639,21 +594,13 @@ public:
     \n name=>"Core"
     \n componentType=>SYS_SAGE_COMPONENT_CORE
     */
-    //Core();
     ///**
     //Core constructor. Sets
     //\n name=>"Core"
     //\n componentType=>SYS_SAGE_COMPONENT_CORE
     //@param _id - id of the component
     //*/
-    //Core(int _id);
-    //Core(int _id, string _name);
-    Core(int _id /*=0*/, string _name /*="Core"*/); 
-
-
-    //Core(Component * parent);
-    //Core(Component * parent, int _id);
-    //Core(Component * parent, int _id, string _name);
+    Core(int _id /*=0*/, string _name /*="Core"*/);
     Core(Component* parent, int _id /*=0*/, string _name /*="Core"*/); 
 
 
@@ -672,21 +619,13 @@ public:
     \n name=>"Thread"
     \n componentType=>SYS_SAGE_COMPONENT_THREAD
     */
-    //Thread();
     ///**
     //Thread constructor. Sets
     //\n name=>"Thread"
     //\n componentType=>SYS_SAGE_COMPONENT_THREAD
     //@param _id - id of the component
     //*/
-    //Thread(int _id);
-    //Thread(int _id, string _name);
     Thread(int _id /*=0*/, string _name /*="Thread"*/); 
-
-
-    //Thread(Component * parent);
-    //Thread(Component * parent, int _id);
-    //Thread(Component * parent, int _id, string _name);
     Thread(Component* parent, int _id /*=0*/, string _name /*="Thread"*/); 
     #ifdef CAT_AWARE //defined in CAT_aware.cpp
         /**

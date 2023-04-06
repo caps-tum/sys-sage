@@ -158,35 +158,34 @@ if(round == 0) cerr << "    numa" << n << ": mem_sz[mb] "<< numa[n].numa_mem_sz/
     return 0;
 }
 
-int main(int argc, char *argv[])
-{
-    cerr << "usage: ./caps-numa-benchmark > output_file.csv     (otherwise, stdout gets mixed with stderr debug ouput)" << endl;
-    cerr << "  params: MEASURE_EACH_CPU, REPEATS, LATENCY_REPEATS, MAIN_MEM_FRACTION, CACHE_LINE_SZ, TIMER_WARMUP, TIMER_REPEATS can be set only in the source code (will be improved)" << endl;
+void run_caps_numa_benchmark() {
+    std::cerr << "usage: ./caps-numa-benchmark > output_file.csv     (otherwise, stdout gets mixed with stderr debug ouput)" << std::endl;
+    std::cerr << "  params: MEASURE_EACH_CPU, REPEATS, LATENCY_REPEATS, MAIN_MEM_FRACTION, CACHE_LINE_SZ, TIMER_WARMUP, TIMER_REPEATS can be set only in the source code (will be improved)" << std::endl;
 
     cpu_set_t set;
     unsigned int this_cpu, this_numa;
 
-    if(numa_available() == -1)
-        return 1;
+    if (numa_available() == -1)
+        return;
 
     int measure_numa_only = 1;
     #ifdef MEASURE_EACH_CPU
-        measure_numa_only = 0;
+    measure_numa_only = 0;
     #endif
 
     int numa_nodes = numa_num_configured_nodes();
     const auto cpu_count = std::thread::hardware_concurrency();
-    cerr << "# hw threads: " << cpu_count << ", numa nodes: " << numa_nodes << endl;
-    cerr << "################################" << endl;
+    std::cerr << "# hw threads: " << cpu_count << ", numa nodes: " << numa_nodes << std::endl;
+    std::cerr << "################################" << std::endl;
     #ifdef MEASURE_EACH_CPU
-        cout << "src_cpu;";
+    std::cout << "src_cpu;";
     #else
-        cout << "src_numa;";
+    std::cout << "src_numa;";
     #endif
-    cout << "target_numa;mem_size;arrsz;timer_ovh;ldlat(ns);bw(MB/s);" << endl;
+    std::cout << "target_numa;mem_size;arrsz;timer_ovh;ldlat(ns);bw(MB/s);" << std::endl;
 
     unsigned long long mask_checked_component = 0; //each bit is one numa region/one HW thread
-    for(unsigned int current_cpu = 0; current_cpu < cpu_count; current_cpu ++)
+    for (unsigned int current_cpu = 0; current_cpu < cpu_count; current_cpu++)
     {
         // switch (fork())
         // {
@@ -196,30 +195,34 @@ int main(int argc, char *argv[])
         CPU_ZERO(&set);
         CPU_SET(current_cpu, &set);
         if (sched_setaffinity(getpid(), sizeof(set), &set) == -1)
-            errExit("sched_setaffinity");
+            return;
         getcpu(&this_cpu, &this_numa);
-        if(this_cpu != current_cpu)
-            errExit("this_cpu != current_cpu");
+        if (this_cpu != current_cpu)
+            return;
 
         #ifdef MEASURE_EACH_CPU
-            int mask_bit = this_cpu;
+        int mask_bit = this_cpu;
         #else
-            int mask_bit = this_numa;
+        int mask_bit = this_numa;
         #endif
 
-        cerr << "    cpu " << this_cpu << " - mask-checked " << std::bitset<24>(mask_checked_component) << "; bit " << mask_bit << endl;
-        if((mask_checked_component & (1 << mask_bit)) == 0)
+        std::cerr << "    cpu " << this_cpu << " - mask-checked " << std::bitset<24>(mask_checked_component) << "; bit " << mask_bit << std::endl;
+        if ((mask_checked_component & (1 << mask_bit)) == 0)
         {
             mask_checked_component += (1 << mask_bit); //je jen v child process
             run_measurement(this_cpu, this_numa, numa_nodes);
         }
 
-            //     exit(EXIT_SUCCESS);
-            // default:            /* Parent */
-            //     wait(NULL);     /* Wait for child to terminate */
-            //     break;
-            // }
+        //     exit(EXIT_SUCCESS);
+        // default:            /* Parent */
+        //     wait(NULL);     /* Wait for child to terminate */
+        //     break;
+        // }
     }
+}
 
+int main(int argc, char* argv[]) {
+    run_caps_numa_benchmark();
     return 0;
 }
+

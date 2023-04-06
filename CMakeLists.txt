@@ -35,6 +35,7 @@ install(FILES ${sys-sage_BINARY_DIR}/pkg/sys-sage-config.cmake
 
 ###Options:
 option(CAT_AWARE "Build and install functionality regarding Intel L3 CAT" OFF)
+option(CPUINFO "Build and install functionality regarding Linux cpuinfo" ON)
 option(DATA_SOURCES "Build and install all data sources" OFF)
 option(DS_HWLOC "Build and install data source hwloc (Retrieves hwloc topology information)" OFF)
 option(DS_MT4G "Build and install data source mt4g (Compute and memory topology of NVidia GPUs)" OFF)
@@ -49,6 +50,10 @@ if(DATA_SOURCES)
     set(DS_MT4G ON)
     set(DS_NUMA ON)
 endif()
+
+# Configure file based on options
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/topology.hpp.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/src/topology.hpp)
 
 # Top-level build just includes subdirectories.
 add_subdirectory(src)
