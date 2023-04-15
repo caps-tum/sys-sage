@@ -23,13 +23,27 @@ int print_my_attribs(string key, void* value, string* ret_value_str)
         *ret_value_str=std::to_string(*(int*)value);
         return 1;
     }
-    else if(!key.compare("my_core_info"))
+
+    return 0;
+}
+
+int print_my_custom_attribs(string key, void* value, xmlNodePtr n)
+{
+    if(!key.compare("my_core_info"))
     {
+        xmlNodePtr attrib_node = xmlNewNode(NULL, (const unsigned char *)"Attribute");
+        xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
+        xmlAddChild(n, attrib_node);
+
         My_core_attributes c = *(My_core_attributes*)value;
-        *ret_value_str="temperature='" + std::to_string(c.temperature) + " C' frequency='" + std::to_string(c.frequency) + " Hz'";
+        xmlNodePtr attrib = xmlNewNode(NULL, (const unsigned char *)key.c_str());
+        xmlNewProp(attrib, (const unsigned char *)"temperature", (const unsigned char *)std::to_string(c.temperature).c_str());
+        xmlNewProp(attrib, (const unsigned char *)"temp_unit", (const unsigned char *)"C");
+        xmlNewProp(attrib, (const unsigned char *)"frequency", (const unsigned char *)std::to_string(c.frequency).c_str());
+        xmlNewProp(attrib, (const unsigned char *)"freq_unit", (const unsigned char *)"Hz");
+        xmlAddChild(attrib_node, attrib);
         return 1;
     }
-
     return 0;
 }
 
@@ -61,8 +75,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //first, populate sys-sage with some data
-    Node* n = new Node(1);
+    //create root Topology and one node
+    Topology* topo = new Topology();
+    Node* n = new Node(topo, 1);
 
     cout << "-- Parsing Hwloc output from file " << topoPath << endl;
     if(parseHwlocOutput(n, topoPath) != 0) { //adds topo to a next node
@@ -108,8 +123,8 @@ int main(int argc, char *argv[])
 
     //export to xml
     string output_name = "sys-sage_custom_attributes.xml";
-    std::cout << "-------- Exporting as XML to " << output_name << std::endl;
-    exportToXml(n, output_name, print_my_attribs);
+    cout << "-- Export all information to xml " << output_name << endl;
+    exportToXml(topo, output_name, print_my_attribs, print_my_custom_attribs);
 
     return 0;
 }

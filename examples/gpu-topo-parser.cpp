@@ -40,15 +40,6 @@ int main(int argc, char *argv[])
 
     cout << "Total num GPU cores: " << topo->GetNumThreads() << endl;
 
-    // cout << "---------------- Printing whole tree ----------------" << endl;
-    // topo->PrintSubtree(2);
-    // cout << "----------------                     ----------------" << endl;
-
-
-    // cout << "---------------- Printing all DataPaths ----------------" << endl;
-    // n->PrintAllDataPathsInSubtree();
-    // cout << "----------------                        ----------------" << endl;
-
     string output_name = "sys-sage_gpu_sample_output.xml";
     cout << "-------- Exporting as XML to " << output_name << " --------" << endl;
     exportToXml(topo, output_name);

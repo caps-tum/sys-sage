@@ -54,7 +54,7 @@ Component* createChildC(string type, xmlNode* node)
     {
         s = xmlGetPropStr(node, "os_index");
         int id = stoi(s.empty()?"0":s);
-        c = (Component*)new Chip(id, "socket");
+        c = (Component*)new Chip(id, "socket", SYS_SAGE_CHIP_TYPE_CPU_SOCKET);
     }
     else if(!type.compare("Cache") || !type.compare("L3Cache") || !type.compare("L2Cache") || !type.compare("L1Cache"))
     {
@@ -68,7 +68,6 @@ Component* createChildC(string type, xmlNode* node)
         int associativity = stoi(s.empty()?"0":s);
         s = xmlGetPropStr(node, "cache_linesize");
         int cache_line_size = stoi(s.empty()?"0":s);
-
         c = (Component*)new Cache(id, cache_level, size, associativity, cache_line_size);
     }
     else if(!type.compare("NUMANode"))
@@ -90,7 +89,6 @@ Component* createChildC(string type, xmlNode* node)
     {
         s = xmlGetPropStr(node, "os_index");
         int id = stoi(s.empty()?"0":s);
-        //cout << "adding thread " << id << endl;
         c = (Component*)new Thread(id, "HW_thread");
     }
     else
