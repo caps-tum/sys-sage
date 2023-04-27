@@ -1,5 +1,7 @@
 #include "Topology.hpp"
 
+#include <algorithm>
+
 void Component::PrintSubtree() { PrintSubtree(0); }
 void Component::PrintSubtree(int level)
 {
@@ -45,7 +47,10 @@ void Component::InsertChild(Component * child)
 }
 int Component::RemoveChild(Component * child)
 {
-    return std::erase(children, child);
+    int orig_size = children.size();
+    children.erase(std::remove(children.begin(), children.end(), child), children.end());
+    return orig_size - children.size();
+    //return std::erase(children, child); -- not supported in some compilers
 }
 Component* Component::GetChild(int _id)
 {
@@ -366,6 +371,8 @@ string Chip::GetVendor(){return vendor;}
 void Chip::SetVendor(string _vendor){vendor = _vendor;}
 string Chip::GetModel(){return model;}
 void Chip::SetModel(string _model){model = _model;}
+void Chip::SetChipType(int chipType){type = chipType;}
+int Chip::GetChipType(){return type;}
 
 void Subdivision::SetSubdivisionType(int subdivisionType) {type = subdivisionType;}
 int Subdivision::GetSubdivisionType() {return type;}
@@ -412,10 +419,12 @@ Node::Node():Node(0){}
 Node::Node(Component * parent, int _id):Component(parent, _id, "Node", SYS_SAGE_COMPONENT_NODE){}
 Node::Node(Component * parent):Node(parent, 0){}
 
-Chip::Chip(int _id, string _name):Component(_id, _name, SYS_SAGE_COMPONENT_CHIP){}
+Chip::Chip(int _id, string _name, int _type):Component(_id, _name, SYS_SAGE_COMPONENT_CHIP), type(_type) {}
+Chip::Chip(int _id, string _name):Chip(_id, _name, SYS_SAGE_CHIP_TYPE_NONE){}
 Chip::Chip(int _id):Chip(_id, "Chip"){}
 Chip::Chip():Chip(0){}
-Chip::Chip(Component * parent, int _id, string _name):Component(parent, _id, _name, SYS_SAGE_COMPONENT_CHIP){}
+Chip::Chip(Component * parent, int _id, string _name, int _type):Component(parent, _id, _name, SYS_SAGE_COMPONENT_CHIP), type(_type){}
+Chip::Chip(Component * parent, int _id, string _name):Chip(parent, _id, _name, SYS_SAGE_CHIP_TYPE_NONE){}
 Chip::Chip(Component * parent, int _id):Chip(parent, _id, "Chip"){}
 Chip::Chip(Component * parent):Chip(parent, 0){}
 
@@ -459,3 +468,4 @@ Thread::Thread():Thread(0){}
 Thread::Thread(Component * parent, int _id, string _name):Component(parent, _id, _name, SYS_SAGE_COMPONENT_THREAD){}
 Thread::Thread(Component * parent, int _id):Thread(parent, _id, "Thread"){}
 Thread::Thread(Component * parent):Thread(parent, 0){}
+
