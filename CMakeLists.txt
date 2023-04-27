@@ -1,4 +1,4 @@
-cmake_policy(SET CMP0048 NEW)
+make_policy(SET CMP0048 NEW)
 project(sys-sage VERSION 0.3.0 LANGUAGES C CXX )
 
 cmake_minimum_required(VERSION 3.22)
@@ -34,11 +34,21 @@ install(FILES ${sys-sage_BINARY_DIR}/pkg/sys-sage-config.cmake
 
 
 ###Options:
+option(CPUINFO "Build and install functionality regarding Linux cpuinfo" ON)
 option(CAT_AWARE "Build and install functionality regarding Intel L3 CAT" OFF)
 option(DATA_SOURCES "Build and install all data sources" OFF)
 option(DS_HWLOC "Build and install data source hwloc (Retrieves hwloc topology information)" OFF)
 option(DS_MT4G "Build and install data source mt4g (Compute and memory topology of NVidia GPUs)" OFF)
 option(DS_NUMA "Build and install data source caps-numa-benchmark" OFF)
+
+if(CAT_AWARE)
+    add_compile_definitions(-DCAT_AWARE)
+endif()
+
+if(CPUINFO)
+    add_compile_definitions(-DCPUINFO)
+endif()
+
 
 if(CAT_AWARE)
     add_definitions(-DCAT_AWARE )
