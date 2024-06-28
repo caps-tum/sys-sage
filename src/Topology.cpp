@@ -22,7 +22,7 @@ void Component::PrintSubtree(int level)
 void Component::PrintAllDataPathsInSubtree()
 {
     vector<Component*> subtreeList;
-    GetSubtreeNodeList(&subtreeList);
+    GetComponentsInSubtree(&subtreeList);
     for(Component * c : subtreeList)
     {   
         vector<DataPath*>* dp_in = c->GetDataPaths(SYS_SAGE_DATAPATH_INCOMING);
@@ -120,6 +120,11 @@ int Component::RemoveChild(Component * child)
 }
 Component* Component::GetChild(int _id)
 {
+    return GetChildById(_id);
+}
+
+Component* Component::GetChildById(int _id)
+{
     for(Component* child: children)
     {
         if(child->id == _id)
@@ -140,12 +145,18 @@ Component* Component::GetChildByType(int _componentType)
 vector<Component*> Component::GetAllChildrenByType(int _componentType)
 {
     vector<Component*> ret;
+    GetAllChildrenByType(&ret, _componentType);
+    return ret;
+}
+
+void Component::GetAllChildrenByType(vector <Component *> *_outArray, int _componentType)
+{
     for(Component * child : children)
     {
         if(child->GetComponentType() == _componentType)
-            ret.push_back(child);
+            _outArray->push_back(child);
     }
-    return ret;
+    return;
 }
 
 int Component::GetNumThreads()
@@ -160,21 +171,44 @@ int Component::GetNumThreads()
     return numPu;
 }
 
-int Component::GetTopoTreeDepth()
+int Component::GetSubtreeDepth()
 {
     if(children.empty()) //is leaf
         return 0;
     int maxDepth = 0;
     for(Component* child: children)
     {
-        int subtreeDepth = child->GetTopoTreeDepth();
+        int subtreeDepth = child->GetSubtreeDepth();
         if(subtreeDepth > maxDepth)
             maxDepth = subtreeDepth;
     }
     return maxDepth + 1;
 }
 
-void Component::GetComponentsNLevelsDeeper(vector<Component*>* outArray, int depth)
+Component* Component::GetNthAncestor(int n)
+{
+    // For cases with incorrect inputs (0 and negative values)
+    if (n < 0)
+        return nullptr; // n can't be negative
+    else if(n == 0)
+        return this; // n = 0 means "this"
+    
+    Component* parent = GetParent();
+    
+    // No parent means no further ancestors, the search can be stopped here.
+    if(parent == nullptr)
+        return nullptr; 
+    
+    // base case
+    if(n == 1) 
+    {
+        return parent;
+    }
+    return parent->GetNthAncestor(n - 1);
+        
+}
+
+void Component::GetNthDescendents(vector<Component*>* outArray, int depth)
 {
     
     if(depth <= 0)
@@ -187,9 +221,16 @@ void Component::GetComponentsNLevelsDeeper(vector<Component*>* outArray, int dep
     {   
         cout << GetComponentTypeStr() << " (name " << name << ") id " << id << " - children: " << children.size();
         cout << " depth: " << depth<<"\n";
-        child->GetComponentsNLevelsDeeper(outArray, depth - 1);
+        child->GetNthDescendents(outArray, depth - 1);
     }
     return;
+}
+
+vector<Component*> Component::GetNthDescendents(int depth)
+{
+    vector<Component*> outArray;
+    GetNthDescendents(&outArray, depth);
+    return outArray;
 }
 
 void Component::GetSubcomponentsByType(vector<Component*>* outArray, int _componentType)
@@ -203,14 +244,28 @@ void Component::GetSubcomponentsByType(vector<Component*>* outArray, int _compon
     }
 }
 
-void Component::GetSubtreeNodeList(vector<Component*>* outArray)
+vector<Component*> Component::GetSubcomponentsByType(int _componentType)
+{
+    vector<Component*> outArray;
+    GetSubcomponentsByType(&outArray, _componentType);
+    return outArray;
+}
+
+void Component::GetComponentsInSubtree(vector<Component*>* outArray)
 {
     outArray->push_back(this);
     for(Component * child : children)
     {
-        child->GetSubtreeNodeList(outArray);
+        child->GetComponentsInSubtree(outArray);
     }
     return;
+}
+
+vector<Component*> Component::GetComponentsInSubtree()
+{
+    vector<Component*> outArray;
+    GetComponentsInSubtree(&outArray);
+    return outArray;
 }
 
 Component* Component::FindSubcomponentById(int _id, int _componentType)
@@ -280,12 +335,24 @@ int Component::CountAllSubcomponentsByType(int _componentType)
     return cnt;
 }
 
-Component* Component::FindParentByType(int _componentType)
+int Component::CountAllChildrenByType(int _componentType)
 {
-    return GetAncestorType(_componentType);
+    int cnt = 0;
+    for(Component * child : children)
+    {
+        if(child->GetComponentType() == _componentType)
+            cnt++;
+    }
+
+    return cnt;
 }
 
-Component* Component::GetAncestorType(int _componentType)
+Component* Component::FindParentByType(int _componentType)
+{
+    return GetAncestorByType(_componentType);
+}
+
+Component* Component::GetAncestorByType(int _componentType)
 {
     if(componentType == _componentType){
         return this;
@@ -304,37 +371,44 @@ void Component::AddDataPath(DataPath* p, int orientation)
         dp_incoming.push_back(p);
 }
 
-DataPath* Component::GetDpByType(int dp_type, int orientation)
+DataPath* Component::GetDataPathByType(int dp_type, int orientation)
 {
     if(orientation & SYS_SAGE_DATAPATH_OUTGOING){
         for(DataPath* dp : dp_outgoing){
-            if(dp->GetDpType() == dp_type)
+            if(dp->GetDataPathType() == dp_type)
                 return dp;
         }
     }
     if(orientation & SYS_SAGE_DATAPATH_INCOMING){
         for(DataPath* dp : dp_incoming){
-            if(dp->GetDpType() == dp_type)
+            if(dp->GetDataPathType() == dp_type)
                 return dp;
         }
     }
     return NULL;
 }
-void Component::GetAllDpByType(vector<DataPath*>* outDpArr, int dp_type, int orientation)
+void Component::GetAllDataPathsByType(vector<DataPath*>* outDpArr, int dp_type, int orientation)
 {
     if(orientation & SYS_SAGE_DATAPATH_OUTGOING){
         for(DataPath* dp : dp_outgoing){
-            if(dp->GetDpType() == dp_type)
+            if(dp->GetDataPathType() == dp_type)
                 outDpArr->push_back(dp);
         }
     }
     if(orientation & SYS_SAGE_DATAPATH_INCOMING){
         for(DataPath* dp : dp_incoming){
-            if(dp->GetDpType() == dp_type)
+            if(dp->GetDataPathType() == dp_type)
                 outDpArr->push_back(dp);
         }
     }
     return;
+}
+
+vector<DataPath*> Component::GetAllDataPathsByType(int dp_type, int orientation)
+{
+    vector<DataPath*> outDpArr;
+    GetAllDataPathsByType(&outDpArr, dp_type, orientation);
+    return outDpArr;
 }
 
 vector<DataPath*>* Component::GetDataPaths(int orientation)
@@ -473,6 +547,11 @@ int Component::GetTopologySize(unsigned * out_component_size, unsigned * out_dat
 }
 
 
+void Component::DeleteDataPath(DataPath * dp)
+{
+    dp->DeleteDataPath();
+}
+
 void Component::DeleteAllDataPaths()
 {
     while(!dp_outgoing.empty())
@@ -529,6 +608,7 @@ void Component::Delete(bool withSubtree)
     delete this;
 }
 
+void Component::SetName(string _name){ name = _name; }
 Component* Component::GetParent(){return parent;}
 void Component::SetParent(Component* _parent){parent = _parent;}
 vector<Component*>* Component::GetChildren(){return &children;}
@@ -550,11 +630,13 @@ void Subdivision::SetSubdivisionType(int subdivisionType){type = subdivisionType
 int Subdivision::GetSubdivisionType(){return type;}
 
 long long Numa::GetSize(){return size;}
+void Numa::SetSize(long long _size) { size = _size;}
 
 long long Memory::GetSize() {return size;}
 void Memory::SetSize(long long _size) {size = _size;}
 
 string Cache::GetCacheName(){return cache_type;}
+void Cache::SetCacheName(string _name) { cache_type = _name;}
 
 int Cache::GetCacheLevel(){
 
@@ -573,11 +655,14 @@ int Cache::GetCacheLevel(){
         return 0;
     
 }
+
+void Cache::SetCacheLevel(int _cache_level) { cache_type = to_string(_cache_level); }
 long long Cache::GetCacheSize(){return cache_size;}
 void Cache::SetCacheSize(long long _cache_size){cache_size = _cache_size;}
 int Cache::GetCacheLineSize(){return cache_line_size;}
 void Cache::SetCacheLineSize(int _cache_line_size){cache_line_size = _cache_line_size;}
 int Cache::GetCacheAssociativityWays(){return cache_associativity_ways;}
+void Cache::SetCacheAssociativityWays(int _associativity) { cache_associativity_ways = _associativity;}
 
 Component::Component(int _id, string _name, int _componentType) : id(_id), name(_name), componentType(_componentType)
 {

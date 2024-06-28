@@ -239,7 +239,7 @@ static suite<"topology"> _ = []
         c.InsertChild(&d);
 
         std::vector<Component *> array;
-        a.GetComponentsNLevelsDeeper(&array, 1);
+        a.GetNthDescendents(&array, 1);
         expect(that % 2_u == array.size());
     };
 
@@ -289,7 +289,7 @@ static suite<"topology"> _ = []
         a.InsertChild(&c);
 
         std::vector<Component *> array;
-        a.GetSubtreeNodeList(&array);
+        a.GetComponentsInSubtree(&array);
         expect(that % array == (std::vector<Component *>{&a, &b, &d, &c}));
     };
 
@@ -310,6 +310,6 @@ static suite<"topology"> _ = []
         e.InsertChild(&f);
         a.InsertChild(&g);
 
-        expect(that % 3 == a.GetTopoTreeDepth());
+        expect(that % 3 == a.GetSubtreeDepth());
     };
 };

@@ -57,17 +57,17 @@ void usage(char* argv0)
 
 int main(int argc, char *argv[])
 {
-    string topoPath;
+    string xmlPath;
     string bwPath;
     if(argc < 2){
         std::string path_prefix(argv[0]);
         std::size_t found = path_prefix.find_last_of("/\\");
         path_prefix=path_prefix.substr(0,found) + "/";
-        topoPath = path_prefix + "example_data/skylake_hwloc.xml";
+        xmlPath = path_prefix + "example_data/skylake_hwloc.xml";
         bwPath = path_prefix + "example_data/skylake_caps_numa_benchmark.csv";
     }
     else if(argc == 3){
-        topoPath = argv[1];
+        xmlPath = argv[1];
         bwPath = argv[2];
     }
     else{
@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
     Topology* topo = new Topology();
     Node* n = new Node(topo, 1);
 
-    cout << "-- Parsing Hwloc output from file " << topoPath << endl;
-    if(parseHwlocOutput(n, topoPath) != 0) { //adds topo to a next node
+    cout << "-- Parsing Hwloc output from file " << xmlPath << endl;
+    if(parseHwlocOutput(n, xmlPath) != 0) { //adds topo to a next node
         usage(argv[0]);
         return 1;
     }
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     int r = 15;
     n->attrib["codename"]=(void*)&codename;
     n->attrib["rack_no"]=(void*)&r;
-    n->attrib["unknown_will_not_be_printed"]=(void*)&topoPath;
+    n->attrib["unknown_will_not_be_printed"]=(void*)&xmlPath;
 
     My_core_attributes c1_attrib(38.222, 2000000000);
     Core* c1 = (Core*)n->FindSubcomponentById(1, SYS_SAGE_COMPONENT_CORE);

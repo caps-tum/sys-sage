@@ -7,7 +7,7 @@
 #include "Topology.hpp"
 
 //Component pointing to a DataPath 
-#define SYS_SAGE_DATAPATH_NONE 1 /**< TODO */
+#define SYS_SAGE_DATAPATH_NONE 1 /**< Reserved for development purposes. */
 #define SYS_SAGE_DATAPATH_OUTGOING 2 /**< This Component is the source DataPath. */
 #define SYS_SAGE_DATAPATH_INCOMING 4 /**< This Component is the taerget DataPath. */
 
@@ -29,19 +29,25 @@ class Component;
 class DataPath;
 
 /**
+ @private
 Obsolete; use DataPath() constructors directly instead
 @see DataPath()
 */
+[[deprecated("Use DataPath() constructors directly instead.")]]
 DataPath* NewDataPath(Component* _source, Component* _target, int _oriented, int _type = SYS_SAGE_DATAPATH_TYPE_NONE);
 /**
+ * @private
 Obsolete; use DataPath() constructors directly instead
 @see DataPath()
 */
+[[deprecated("Use DataPath() constructors directly instead.")]]
 DataPath* NewDataPath(Component* _source, Component* _target, int _oriented, double _bw, double _latency);
 /**
+ * @private
 Obsolete; use DataPath() constructors directly instead
 @see DataPath()
 */
+[[deprecated("Use DataPath() constructors directly instead.")]]
 DataPath* NewDataPath(Component* _source, Component* _target, int _oriented, int _type, double _bw, double _latency);
 
 /**
@@ -93,20 +99,37 @@ public:
     /**
     @returns Bandwidth from the source(provides the data) to the target(requests the data)
     */
-    double GetBw();
+    double GetBandwidth();
+    
+    /**
+     * Sets the bandwidth from the source to the target.
+    @param _bandwidth - value for bw
+    @see bw
+    */
+    void SetBandwidth(double _bandwidth);
     /**
     @returns Data load latency from the source(provides the data) to the target(requests the data)
     */
     double GetLatency();
+
+    /**
+     * Sets the data load latency from the source to the target.
+    @param _latency - value for latency
+    @see latency
+    */
+    void SetLatency(double _latency);
     /**
     @returns Type of the Data Path.
     @see dp_type
     */
-    int GetDpType();
+    int GetDataPathType();
     /**
-     * TODO
+     * Retrieves the orientation of the datapath (SYS_SAGE_DATAPATH_ORIENTED or SYS_SAGE_DATAPATH_BIDIRECTIONAL)
+     * @returns orientation 
+     * @see oriented
+     * 
     */
-    int GetOriented();
+    int GetOrientation();
 
     /**
     Prints basic information about the Data Path to stdout. Prints componentType and Id of the source and target Components, the bandwidth, load latency, and the attributes; for each attribute, the name and value are printed, however the value is only retyped to uint64_t (therefore will print nonsensical values for other data types).
@@ -114,25 +137,26 @@ public:
     void Print();
 
     /**
-    Deletes and de-allocated the DataPath pointer from the list(std::vector) of outgoing and incoming DataPaths of source and target Components.
+    Deletes and de-allocates the DataPath pointer from the list(std::vector) of outgoing and incoming DataPaths of source and target Components.
     @see dp_incoming
     @see dp_outgoing
     */
     void DeleteDataPath();
-
+    
     /**
-     * TODO
+    For storing arbitrary pieces of information or data. key denotes the name of the attribute,
+    and the value points to the data.
     */
     map<string,void*> attrib;
 private:
-    Component * source; /**< TODO */
-    Component * target; /**< TODO */
+    Component * source; /**< source component of the datapath */
+    Component * target; /**< taget component of the datapath */
 
-    const int oriented; /**< TODO */
-    const int dp_type; /**< TODO */
+    const int oriented; /**< orientation of the datapath (SYS_SAGE_DATAPATH_ORIENTED or SYS_SAGE_DATAPATH_BIDIRECTIONAL) */
+    const int dp_type; /**< type of the datapath */
 
-    double bw; /**< TODO */
-    double latency; /**< TODO */
+    double bw; /**< Bandwidth from the source(provides the data) to the target(requests the data) */
+    double latency; /**< Data load latency from the source(provides the data) to the target(requests the data) */
 
 };
 

@@ -12,10 +12,10 @@ void usage(char* argv0)
 
 int main(int argc, char *argv[])
 {
-    string topoPath;
+    string xmlPath;
     const char *cccPath;
     if(argc == 3){
-        topoPath = argv[1];
+        xmlPath = argv[1];
         cccPath = argv[2];
     }
     else{
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     Topology* topo = new Topology();
     Node* n = new Node(topo, 1);
 
-    if(parseHwlocOutput(n, topoPath) != 0) { //adds topo to a next node
+    if(parseHwlocOutput(n, xmlPath) != 0) { //adds topo to a next node
         usage(argv[0]);
         return 1;
     }

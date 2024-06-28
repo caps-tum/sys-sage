@@ -52,7 +52,7 @@ int Chip::UpdateMIGSettings(string uuid)
         DataPath * d = NULL;
         //iterate over dp_outgoing to check if DP already exists
         for(DataPath* dp : dp_outgoing){
-            if(dp->GetDpType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
+            if(dp->GetDataPathType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
                 d = dp;
                 break;
             }
@@ -143,7 +143,7 @@ int Chip::GetMIGNumSMs(string uuid)
     else
     {
         for(DataPath* dp: dp_outgoing){
-            if(dp->GetDpType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
+            if(dp->GetDataPathType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
                 Component* target = dp->GetTarget();
                 if(target->GetComponentType() == SYS_SAGE_COMPONENT_SUBDIVISION && ((Subdivision*)target)->GetSubdivisionType() == SYS_SAGE_SUBDIVISION_TYPE_GPU_SM ){
                     num_sm++;
@@ -178,7 +178,7 @@ int Chip::GetMIGNumCores(string uuid)
     else
     {
         for(DataPath* dp: dp_outgoing){
-            if(dp->GetDpType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
+            if(dp->GetDataPathType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
                 Component* target = dp->GetTarget();
                 if(target->GetComponentType() == SYS_SAGE_COMPONENT_SUBDIVISION && ((Subdivision*)target)->GetSubdivisionType() == SYS_SAGE_SUBDIVISION_TYPE_GPU_SM ){
                     sms.push_back((Subdivision*)target);
@@ -210,7 +210,7 @@ long long Memory::GetMIGSize(string uuid)
     } 
 
     for(DataPath* dp: dp_incoming){
-        if(dp->GetDpType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
+        if(dp->GetDataPathType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
             if (dp->attrib.count("mig_size")){
                 long long r = *(long long*)dp->attrib["mig_size"];
                 return r;
@@ -237,7 +237,7 @@ long long Cache::GetMIGSize(string uuid)
 
     if(GetCacheLevel() == 2){
         for(DataPath* dp: dp_incoming){
-            if(dp->GetDpType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
+            if(dp->GetDataPathType() == SYS_SAGE_DATAPATH_TYPE_MIG && *(string*)dp->attrib["mig_uuid"] == uuid){
                 if (dp->attrib.count("mig_size")){
                     long long r = *(long long*)dp->attrib["mig_size"];
                     return r;

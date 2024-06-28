@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     std::string path_prefix(argv[0]);
     std::size_t found = path_prefix.find_last_of("/\\");
     path_prefix=path_prefix.substr(0,found) + "/";
-    string topoPath = path_prefix + "example_data/skylake_hwloc.xml";
+    string xmlPath = path_prefix + "example_data/skylake_hwloc.xml";
     string bwPath = path_prefix + "example_data/skylake_caps_numa_benchmark.csv";
     string mt4gPath = path_prefix + "example_data/pascal_gpu_topo.csv";
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
     //time hwloc_parser
     t_start = high_resolution_clock::now();
-    int ret = parseHwlocOutput(n, topoPath);
+    int ret = parseHwlocOutput(n, xmlPath);
     t_end = high_resolution_clock::now();
     uint64_t time_parseHwlocOutput = t_end.time_since_epoch().count()-t_start.time_since_epoch().count()-timer_overhead;
     if(ret != 0) {//adds topo to a next node
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     //time get a vector with all Components (of hwloc parser)
     hwlocComponentList.clear();
     t_start = high_resolution_clock::now();
-    n->GetSubtreeNodeList(&hwlocComponentList);
+    n->GetComponentsInSubtree(&hwlocComponentList);
     t_end = high_resolution_clock::now();
     uint64_t time_GetHwlocSubtreeNodeList = t_end.time_since_epoch().count()-t_start.time_since_epoch().count()-timer_overhead;
 
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
     t_start = high_resolution_clock::now();
     vector<DataPath*>* dp = numa->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
     for(auto it = std::begin(*dp); it != std::end(*dp); ++it) {
-        if( (*it)->GetBw() > max_bw ){
-            max_bw = (*it)->GetBw();
+        if( (*it)->GetBandwidth() > max_bw ){
+            max_bw = (*it)->GetBandwidth();
             max_bw_component = (*it)->GetTarget();
         }
     }
@@ -112,14 +112,14 @@ int main(int argc, char *argv[])
     //time get a vector with all Components (of mt4g parser)
     mt4gComponentList.clear();
     t_start = high_resolution_clock::now();
-    gpu->GetSubtreeNodeList(&mt4gComponentList);
+    gpu->GetComponentsInSubtree(&mt4gComponentList);
     t_end = high_resolution_clock::now();
     uint64_t time_GetMt4gSubtreeNodeList = t_end.time_since_epoch().count()-t_start.time_since_epoch().count()-timer_overhead;
 
     //time get a vector with all Components
     allComponentList.clear();
     t_start = high_resolution_clock::now();
-    t->GetSubtreeNodeList(&allComponentList);
+    t->GetComponentsInSubtree(&allComponentList);
     t_end = high_resolution_clock::now();
     uint64_t time_GetAllComponentsList = t_end.time_since_epoch().count()-t_start.time_since_epoch().count()-timer_overhead;
 

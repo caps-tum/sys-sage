@@ -220,11 +220,11 @@ int removeUnknownCompoents(Component* c){
 }
 
 //parses a hwloc output and adds it to topology
-int parseHwlocOutput(Node* n, string topoPath)
+int parseHwlocOutput(Node* n, string xmlPath)
 {
-    xmlDoc *document = xmlReadFile(topoPath.c_str(), NULL, 0);
+    xmlDoc *document = xmlReadFile(xmlPath.c_str(), NULL, 0);
     if (document == NULL) {
-        cerr << "error: could not parse file " << topoPath.c_str() << endl;
+        cerr << "error: could not parse file " << xmlPath.c_str() << endl;
         xmlFreeDoc(document);
         return 1;
     }
@@ -232,12 +232,12 @@ int parseHwlocOutput(Node* n, string topoPath)
     xmlNode *root= xmlDocGetRootElement(document);
     int err = xmlProcessChildren(n, root, 0);
     if(err != 0){
-        std::cerr << "parseHwlocOutput on file " << topoPath << " failed on xmlProcessChildren" << std::endl;
+        std::cerr << "parseHwlocOutput on file " << xmlPath << " failed on xmlProcessChildren" << std::endl;
         return err;
     }
     err = removeUnknownCompoents(n);
     if(err != 0){
-        std::cerr << "parseHwlocOutput on file " << topoPath << " failed on removeUnknownCompoents BUT WILL CONTINUE" << std::endl;
+        std::cerr << "parseHwlocOutput on file " << xmlPath << " failed on removeUnknownCompoents BUT WILL CONTINUE" << std::endl;
         //return ret;
     }
     xmlFreeDoc(document);

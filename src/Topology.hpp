@@ -57,7 +57,8 @@ public:
     */
     Component(Component * parent, int _id = 0, string _name = "unknown", int _componentType = SYS_SAGE_COMPONENT_NONE);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     virtual ~Component() = default;
     /**
@@ -68,18 +69,38 @@ public:
     @see GetChild(int _id)
     */
     void InsertChild(Component * child);
+    
     /**
-     * TODO
+     * Inserts this component between a parent and one of its children. The parent component remains the parent, this Component becomes a new child of the parent, and the specified child becomes this component's child.
+     * @param parent The parent component to which this component will be inserted as a child.
+     * @param child The child component that will become the child of this component and will remain a descendant of the original parent.
+     * @param alreadyParentsChild A boolean flag indicating whether this component is already a child of the parent. 
+     *        \n If true, the function assumes that this component is already present as a child of the parent and only needs to reassign the specified child.
+     *        \n If false, the function will add this component as a new child of the parent after reassigning the specified child.
+     * @return 0 on success; 
+     *         1 if the child and parent are not child and parent in the component tree; 
+     *         2 if the component tree is corrupt (parent is a parent of child but child is not in the parent's children list); 
+     *         3 if the component tree is corrupt (parent is not a parent of child but child is in the parent's children list).
     */
     int InsertBetweenParentAndChild(Component* parent, Component* child, bool alreadyParentsChild);
+    
     /**
      * Inserts this component between a parent and a (subset of) his children. The parent component remains parent, this Component becomes a new child, and the children become parent's grandchildren.
-     * @param TODO
-     * @return 0 on success, 1 on incompatible parent-children components (one or more children are not parent's children); 2 on corrupt component tree (parent is a parent of child but child is NOT in children list of parent); 3 on corrupt component tree (parent is NOT a parent of child but child is in children list of parent)
+     * @param parent The parent component to which this component will be inserted as a child.
+     * @param children A vector of child components that will become the children of this component and the grandchildren of the original parent.
+     * @param alreadyParentsChild A boolean flag indicating whether this component is already a child of the parent. 
+     *        \n If true, the function assumes that this component is already present as a child of the parent and only needs to reassign the specified children.
+     *        \n If false, the function will add this component as a new child of the parent after reassigning the specified children.
+     * @return 0 on success
+     *        \n 1 on incompatible parent-children components (one or more children are not parent's children); 
+     *        \n 2 on corrupt component tree (parent is a parent of child but child is NOT in children list of parent); 
+     *        \n 3 on corrupt component tree (parent is NOT a parent of child but child is in children list of parent)
     */
     int InsertBetweenParentAndChildren(Component* parent, vector<Component*> children, bool alreadyParentsChild);
+    
     /**
-    //TODO
+    Removes the passed component from the list of children, without completely deleting (and deallocating) the child itself
+    @param child - child to remove
     @return how many elements were deleted (normally, 0 or 1 should be possible)
     */
     int RemoveChild(Component * child);
@@ -94,7 +115,9 @@ public:
     For each component in the subtree, the following is printed: "<string component type> (name <name>) id <id> - children: <num children>
     */
     void PrintSubtree();
+
     /**
+    @private
     Helper function of PrintSubtree();, which ensures the proper indentation. Using PrintSubtree(); is recommended, however this method can be used as well.
     @param level - number of "  " to print out in front of the first component.
     @see PrintSubtree();
@@ -111,6 +134,12 @@ public:
     @see name
     */
     string GetName();
+    /**
+    Sets name of the component.
+    @param _name - name of the component
+    @see name
+    */
+    void SetName(string _name);
     /**
     Returns id of the component.
     @return id
@@ -161,25 +190,52 @@ public:
     */
     Component* GetParent();
     /**
-    Retrieve a Componet* to a child with child.id=_id.
+    Identical to GetChildById
+    Retrieve a Component* to a child with child.id=_id.
     \n Should there be more children with the same id, the first match will be retrieved (i.e. the one with lower index in the children array.)
+    @see GetChildById
     */
     Component* GetChild(int _id);
+
     /**
-     * TODO
+    Retrieve a Component* to a child with child.id=_id.
+    \n Should there be more children with the same id, the first match will be retrieved (i.e. the one with lower index in the children array.)
+    */
+    Component* GetChildById(int _id);
+
+    /**
+    Retrieve a Component* to a child matching the given component type.
+    \n Should there be more children with the same type, the first match will be retrieved (i.e. the one with lower index in the children array.)
     */
     Component* GetChildByType(int _componentType);
+
     /**
-     * TODO
+     * Searches for all the children matching the given component type.
+     * 
+     * @param _componentType - Required type of components
+     * @returns A vector of all the children matching the _componentType
     */
     vector<Component*> GetAllChildrenByType(int _componentType);
+
+    /**
+     * Searches for all the children matching the given component type.
+     * 
+     * @param _componentType - Required type of components
+     * @param outArray - output parameter (vector with results)
+        \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+        \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
+    */
+    void GetAllChildrenByType(vector <Component *> *_outArray, int _componentType);
     /**
     OBSOLETE. Use GetSubcomponentById instead. This function will be removed in the future.
     */
+    [[deprecated("Use GetSubcomponentById instead. This function will be removed in the future.")]]
     Component* FindSubcomponentById(int _id, int _componentType);
     /**
+    @private
     OBSOLETE. Use GetAllSubcomponentsByType instead. This function will be removed in the future.
     */
+   [[deprecated("Use GetAllSubcomponentsByType instead. This function will be removed in the future.")]]
     void FindAllSubcomponentsByType(vector<Component*>* outArray, int _componentType);
     /**
     Searches the subtree to find a component with a matching id and componentType, i.e. looks for a certain component with a matching ID. The search is a DFS. The search starts with the calling component.
@@ -189,44 +245,81 @@ public:
     @return Component * matching the criteria. Returns the first match. NULL if no match found
     */
     Component* GetSubcomponentById(int _id, int _componentType);
+    
     /**
-     * TODO
+     * Searches for all the subcomponents (children, their children and so on) matching the given component type.
+     * 
+     * @param _componentType - Required type of components
+     * @param outArray - output parameter (vector with results)
+        \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+        \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
     */
     void GetAllSubcomponentsByType(vector<Component*>* outArray, int _componentType);
+    
     /**
-     * TODO -- make this non-public?
+     * Searches for all the subcomponents (children, their children and so on) matching the given component type.
+     * 
+     * @param _componentType - Required type of components.
+     * @returns A vector of all the subcomponents matching the _componentType.
     */
     vector<Component*> GetAllSubcomponentsByType(int _componentType);
+    
     /**
-     * TODO
+    Counts number of subcomponents (children, their children and so on).
+    @return Returns number of subcomponents.
     */
     int CountAllSubcomponents();
+    
     /**
-     * TODO
+    Counts number of subcomponents (children, their children and so on) matching the requested component type.
+    @param _componentType - Component type to look for.
+    @return Returns number of subcomponents matching the requested component type.
     */
     int CountAllSubcomponentsByType(int _componentType);
+
+    /**
+    Counts number of children matching the requested component type.
+
+    @param _componentType - Component type to look for.
+    @return Returns number of children matching the requested component type.
+    */
+    int CountAllChildrenByType(int _componentType);
+    
     /**
     Moves up the tree until a parent of given type.
     @param _componentType - the desired component type
     @return Component * matching the criteria. NULL if no match found
     */
-    Component* GetAncestorType(int _componentType);
+    Component* GetAncestorByType(int _componentType);
     /**
-    OBSOLETE. Use GetAncestorType instead. This function will be removed in the future.
+    @private 
+    OBSOLETE. Use GetAncestorByType instead. This function will be removed in the future.
     */
+   [[deprecated("Use GetAncestorByType instead. This function will be removed in the future.")]]
     Component* FindParentByType(int _componentType);
 
     /**
     OBSOLETE. Use int CountAllSubcomponentsByType(SYS_SAGE_COMPONENT_THREAD) instead.
     Returns the number of Components of type SYS_SAGE_COMPONENT_THREAD in the subtree.
     */
+   [[deprecated("Use int CountAllSubcomponentsByType(SYS_SAGE_COMPONENT_THREAD) instead.")]]
     int GetNumThreads();
+    
     /**
     Retrieves maximal distance to a leaf (i.e. the depth of the subtree).
     \n 0=leaf, 1=children are leaves, 2=at most children's children are leaves .....
     @return maximal distance to a leaf
     */
-    int GetTopoTreeDepth();//0=empty, 1=1element,...
+    int GetSubtreeDepth();//0=empty, 1=1element,...
+    
+    /**
+    Retrieves Nth ancestor, which resides N levels above. 
+    \n E.g. if n=1, the parent is retrieved; if n=2, the grandparent is retrieved and so on.
+    @param n - how many levels above the tree should be looked.
+    @returns The ancestor residing N levels above.
+    */
+    Component* GetNthAncestor(int n);
+
     /**
     Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. The tree is traversed in order as the children are stored in std::vector children.
     \n E.g. if depth=1, only children of the current are retrieved; if depth=2, only children of the children are retrieved..
@@ -235,17 +328,16 @@ public:
         \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
         \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
     */
-    void GetComponentsNLevelsDeeper(vector<Component*>* outArray, int depth);
+    void GetNthDescendents(vector<Component*>* outArray, int depth);
+
     /**
-    Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. The tree is traversed in order as the children are stored in each std::vector children.
+    Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. The tree is traversed in order as the children are stored in the std::vector.
     \n E.g. if depth=1, only children of the current are retrieved; if depth=2, only children of the children are retrieved..
     @param depth - how many levels down the tree should be looked
-    @param outArray - output parameter (vector with results)
-        \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
-        \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
-
+    @return A std::vector<Component*> with the results.
     */
-    void GetSubcomponentsByType(vector<Component*>* outArray, int componentType);
+    vector<Component*> GetNthDescendents(int depth);
+
     /**
     Retrieves a std::vector of Component pointers, which reside in the subtree and have a matching type. The tree is traversed DFS in order as the children are stored in each std::vector children.
     @param componentType - componentType
@@ -253,7 +345,28 @@ public:
         \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
         \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
     */
-    void GetSubtreeNodeList(vector<Component*>* outArray);
+    void GetSubcomponentsByType(vector<Component*>* outArray, int componentType);
+
+    /**
+    Retrieves a std::vector of Component pointers, which reside in the subtree and have a matching type. The tree is traversed DFS in order as the children are stored in the std::vector.
+    @param componentType - componentType
+    @return A std::vector<Component*> with the results.
+    */
+    vector<Component*> GetSubcomponentsByType(int _componentType);
+    
+    /** 
+    Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
+    @param outArray - output parameter (vector with results)
+        \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+        \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
+    */
+    void GetComponentsInSubtree(vector<Component*>* outArray);
+
+    /**  
+    Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
+    @return A std::vector<Component*> with the results.
+    */
+    vector<Component*> GetComponentsInSubtree();
 
     /**
     Returns the DataPaths of this component according to their orientation.
@@ -264,6 +377,7 @@ public:
     */
     vector<DataPath*>* GetDataPaths(int orientation);
     /**
+    @private
     !!Normally should not be called; Use NewDataPath() instead!!
     Stores (pushes back) a DataPath pointer to the list(std::vector) of DataPaths of this component. According to the orientation param, the proper list is chosen.
     @param p - the pointer to store
@@ -278,7 +392,7 @@ public:
     @param orientation - orientation of the DataPath (SYS_SAGE_DATAPATH_OUTGOING or SYS_SAGE_DATAPATH_INCOMING or a logical or of these)
     @return DataPath pointer to the found data path; NULL if nothing found.
     */
-    DataPath* GetDpByType(int dp_type, int orientation);
+    DataPath* GetDataPathByType(int dp_type, int orientation);
     /**
     Retrieves all DataPath * from the list of this component's data paths with matching type and orientation.
     Results are returned in vector<DataPath*>* outDpArr, where first the matching data paths in dp_outgoing are pushed back, then the ones in dp_incoming.
@@ -288,9 +402,27 @@ public:
         \n An input is pointer to a std::vector<DataPath *>, in which the data paths will be pushed. It must be allocated before the call (but does not have to be empty).
         \n The method pushes back the found data paths -- i.e. the data paths(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
     */
-    void GetAllDpByType(vector<DataPath*>* outDpArr, int dp_type, int orientation);
+    void GetAllDataPathsByType(vector<DataPath*>* outDpArr, int dp_type, int orientation);
+
     /**
-     * TODO
+    Retrieves all DataPath * from the list of this component's data paths with matching type and orientation.
+    Results are returned in a vector<DataPath*>*, where first the matching data paths in dp_outgoing are pushed back, then the ones in dp_incoming.
+    @param dp_type - DataPath type (dp_type) to search for.
+    @param orientation - orientation of the DataPath (SYS_SAGE_DATAPATH_OUTGOING or SYS_SAGE_DATAPATH_INCOMING or a logical or of these)
+    @return A std::vector<DataPath*> with the results.
+    */
+    vector<DataPath*> GetAllDataPathsByType(int dp_type, int orientation);
+
+    /**
+    @brief Checks the consistency of the component tree starting from this component.
+
+    This function verifies that each child component has this component set as its parent.
+    It logs an error message for each child that has an incorrect parent and increments the error count.
+    The function then recursively checks the consistency of the entire subtree rooted at each child component.
+
+    @return The total number of inconsistencies found in the component tree.
+    
+    The function returns the total number of errors found in the component tree, including errors in the direct children and any nested descendants.
     */
     int CheckComponentTreeConsistency();
     /**
@@ -301,6 +433,7 @@ public:
     */
     int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize);
     /**
+    @private
     Helper function of int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize); -- normally you would call this one.
     \n Calculates approximate memory footprint of the subtree of this element (including the relevant data paths). Does not count DataPaths stored in counted_dataPaths.
     @param out_component_size - output parameter (contains the footprint of the component tree elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
@@ -312,11 +445,18 @@ public:
     int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize, std::set<DataPath*>* counted_dataPaths);
 
     /**
+    @private
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
     xmlNodePtr CreateXmlSubtree();
     
+    /**
+    Deletes and de-allocates the DataPath pointer from the list(std::vector) of outgoing and incoming DataPaths of the Components.
+    @param dp - DataPath to Delete
+    */
+    void DeleteDataPath(DataPath * dp);
+
     /**
     Deletes all DataPaths of this component.
     */
@@ -333,7 +473,8 @@ public:
     void Delete(bool withSubtree = true);
 
     /**
-    TODO this part
+    For storing arbitrary pieces of information or data. key denotes the name of the attribute,
+    and the value points to the data.
     */
     map<string,void*> attrib;
 protected:
@@ -380,7 +521,8 @@ public:
     */
     Topology();
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Topology() override = default;
 private:
@@ -408,7 +550,8 @@ public:
     */
     Node(Component * parent, int _id = 0, string _name = "Node");
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Node() override = default;
 #ifdef CPUINFO
@@ -450,18 +593,23 @@ public:
     */
     Memory(Component * parent, int id = 0, string _name = "Memory", long long _size = -1);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Memory() override = default;
     /**
-     * TODO
+     * Retrieves size/capacity of the memory element
+     * @return size
+     * @see size
     */
     long long GetSize();
     /**
-     * TODO
+     * Sets size/capacity of the memory element
+     * @param _size = size
     */
     void SetSize(long long _size);
     /**
+    @private
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
@@ -498,18 +646,23 @@ public:
     */
     Storage(Component * parent);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Storage() override = default;
     /**
-     * TODO
+     * Retrieves size/capacity of the storage device
+     * @return size
+     * @see size
     */
     long long GetSize();
     /**
-     * TODO
+     * Sets size/capacity of the storage device
+     * @param _size = size
     */
     void SetSize(long long _size);
     /**
+    @private
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
@@ -542,46 +695,79 @@ public:
     */
     Chip(Component * parent, int _id = 0, string _name = "Chip", int _type = SYS_SAGE_CHIP_TYPE_NONE);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Chip() override = default;
     /**
-     * TODO
+    Sets the vendor of the chip.
+    @param _vendor - The name of the vendor to set.
     */
     void SetVendor(string _vendor);
     /**
-     * TODO
+    Gets the vendor of the chip.
+    @return The name of the vendor.
+    @see vendor
     */
     string GetVendor();
+    
     /**
-     * TODO
+    Sets the model of the chip.
+    @param _model - The model name to set.
     */
     void SetModel(string _model);
+    
     /**
-     * TODO
+    Gets the model of the chip.
+    @return The model name.
+    @see model
     */
     string GetModel();
+    
     /**
-     * TODO
+    Sets the type of the chip.
+    @param chipType - The chip type to set.
     */
     void SetChipType(int chipType);
+    
     /**
-     * TODO
+    Gets the type of the chip.
+    @return The chip type.
+    @see type
     */
     int GetChipType();
+    
     /**
+    @private
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
     xmlNodePtr CreateXmlSubtree();
 private:
-    string vendor; /**< TODO  */
-    string model; /**< TODO  */
-    int type; /**< TODO  */
+    string vendor; /**< Vendor of the chip */
+    string model; /**< Model of the chip */
+    int type; /**< Type of the chip, e.g., CPU, GPU */
 #ifdef NVIDIA_MIG
 public:
+    /**
+    Updates the MIG settings for the chip.
+    @param uuid - The UUID of the chip, default is an empty string.
+    @return Status of the update operation.
+    */
     int UpdateMIGSettings(string uuid = "");
+
+    /**
+    Gets the number of SMs for the MIG.
+    @param uuid - The UUID of the chip, default is an empty string.
+    @return The number of SMs.
+    */
     int GetMIGNumSMs(string uuid = "");
+
+    /**
+    Gets the number of cores for the MIG.
+    @param uuid - The UUID of the chip, default is an empty string.
+    @return The number of cores.
+    */
     int GetMIGNumCores(string uuid = "");
 #endif
 };
@@ -625,7 +811,8 @@ public:
     */
     Cache(Component * parent, int _id = 0, int _cache_level = 0, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Cache() override = default;
 
@@ -633,31 +820,58 @@ public:
     @returns cache level of this cache, assuming there's only 1 or no digit in the "cache_type" (e.g. "L1", "texture")
     */
     int GetCacheLevel();
+    
     /**
-     * TODO
+    Sets cache level of this cache using integer value (For e.g. "1" for "L1", etc.)
+    @param _cache_level - value for cache_type
+    */
+    void SetCacheLevel(int _cache_level);
+    
+    /**
+    Retrieves cache name of this cache (e.g. "L1", "texture")
+    @returns cache name 
+    @see cache_name
     */
     string GetCacheName();
+    
     /**
-    @returns cache size of this cache
+    Sets cache name of this cache (e.g. "L1", "texture")
+    @param _cache_name - value for cache_type
+    */
+    void SetCacheName(string _name);
+
+    /**
+     * Retrieves size/capacity of the cache
+     * @return size
+     * @see size
     */
     long long GetCacheSize();
     /**
-     * TODO
+     * Sets size/capacity of the cache
+     * @param _size = size
     */
     void SetCacheSize(long long _cache_size);
     /**
     @returns the number of the cache associativity ways of this cache
     */
     int GetCacheAssociativityWays();
+
+    /**
+    Sets cache associativity ways of this cache
+    @param _associativity - value for cache_associativity_ways
+    */
+    void SetCacheAssociativityWays(int _associativity);
     /**
     @returns the size of a cache line of this cache
     */
     int GetCacheLineSize();
     /**
-     * TODO
+     * Sets the size of a cache line of this cache
+    @param _cache_line_size = cache_line_size
     */
     void SetCacheLineSize(int _cache_line_size);
     /**
+    @private
     !!Should normally not be caller from the outside!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
@@ -696,18 +910,22 @@ public:
     */
     Subdivision(Component * parent, int _id = 0, string _name = "Subdivision", int _componentType = SYS_SAGE_COMPONENT_SUBDIVISION);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Subdivision() override = default;
     /**
-     * TODO
+     * Sets the type of the subdivision
+    @param subdivisionType = type 
     */
     void SetSubdivisionType(int subdivisionType);
     /**
-     * TODO
+    @returns the type of subdivision
+    @see type
     */
     int GetSubdivisionType();
     /**
+    @private
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
@@ -740,7 +958,8 @@ public:
     */
     Numa(Component * parent, int _id = 0, long long _size = -1);
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Numa() override = default;
     /**
@@ -750,6 +969,13 @@ public:
     long long GetSize();
 
     /**
+    Set size of the Numa memory segment.
+    @param _size - size of the Numa memory segment.
+    */
+    void SetSize(long long _size);
+
+    /**
+    @private 
     !!Should normally not be used!! Helper function of XML dump generation.
     @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
     */
@@ -780,7 +1006,8 @@ public:
     */
     Core(Component * parent, int _id = 0, string _name = "Core");
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Core() override = default;
 private:
@@ -817,7 +1044,8 @@ public:
     */    
     Thread(Component * parent, int _id = 0, string _name = "Thread");
     /**
-     * TODO
+    * @private
+    * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
     */
     ~Thread() override = default;
 

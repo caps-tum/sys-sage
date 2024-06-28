@@ -17,10 +17,12 @@ DataPath* NewDataPath(Component* _source, Component* _target, int _oriented, int
 
 Component * DataPath::GetSource() {return source;}
 Component * DataPath::GetTarget() {return target;}
-double DataPath::GetBw() {return bw;}
+double DataPath::GetBandwidth() {return bw;}
+void DataPath::SetBandwidth(double _bandwidth) { bw = _bandwidth;}
 double DataPath::GetLatency() {return latency;}
-int DataPath::GetDpType() {return dp_type;}
-int DataPath::GetOriented() {return oriented;}
+void DataPath::SetLatency(double _latency) { latency = _latency; }
+int DataPath::GetDataPathType() {return dp_type;}
+int DataPath::GetOrientation() {return oriented;}
 
 DataPath::DataPath(Component* _source, Component* _target, int _oriented, int _type): DataPath(_source, _target, _oriented, _type, -1, -1) {}
 DataPath::DataPath(Component* _source, Component* _target, int _oriented, double _bw, double _latency): DataPath(_source, _target, _oriented, SYS_SAGE_DATAPATH_TYPE_NONE, _bw, _latency) {}

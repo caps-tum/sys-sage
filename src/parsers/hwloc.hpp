@@ -15,9 +15,9 @@
 Parser function for importing hwloc XML output to sys-sage.
 \n The parser looks for the XML object names defined in xmlRelevantNames, and considers (i.e. parses) the XML object types as defined in xmlRelevantObjectTypes.
 @param n - Pointer to an already existing Node where the hwloc topology will get parsed.
-@param topoPath - Path to the XML output of hwloc that should be parsed and uploaded to sys-sage.
+@param xmlPath - Path to the XML output of hwloc that should be parsed and uploaded to sys-sage.
 */
-int parseHwlocOutput(Node* n, std::string topoPath);
+int parseHwlocOutput(Node* n, std::string xmlPath);
 /// @private
 int xmlProcessChildren(Component* c, xmlNode* parent, int level);
 /// @private
