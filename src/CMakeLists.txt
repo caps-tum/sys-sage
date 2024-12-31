@@ -10,6 +10,7 @@ set(SOURCES
     Component.cpp
     DataPath.cpp
     xml_dump.cpp
+    xml_load.cpp
     ${EXT_INTF}/intel_pqos.cpp
     ${EXT_INTF}/proc_cpuinfo.cpp
     ${EXT_INTF}/nvidia_mig.cpp
@@ -25,6 +26,7 @@ set(HEADERS
     Component.hpp
     DataPath.hpp
     xml_dump.hpp
+    xml_load.hpp
     parsers/hwloc.hpp
     parsers/caps-numa-benchmark.hpp
     parsers/mt4g.hpp
