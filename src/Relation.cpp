@@ -59,7 +59,7 @@ void sys_sage::Relation::_PrintRelationAttrib() const
     {
         cout << " -- attrib: ";
         for (const auto& n : attrib) {
-            uint64_t* val = (uint64_t*)n.second;
+            uint64_t* val = reinterpret_cast<uint64_t*>(n.second);
             std::cout << n.first << " = " << *val << "; ";
         }
     }

@@ -99,8 +99,8 @@ if(round == 0) cerr << "    numa" << n << ": mem_sz[mb] "<< numa[n].numa_mem_sz/
             if(numa[n].numa_mem_sz == 0)
                 continue;
             int sum;
-            mock_arr = (uint64_t*)numa_alloc_onnode(numa[n].arrsz, n);
-            arr = (uint64_t*)numa_alloc_onnode(numa[n].arrsz, n);
+            mock_arr = reinterpret_cast<uint64_t*>(numa_alloc_onnode(numa[n].arrsz, n));
+            arr = reinterpret_cast<uint64_t*>(numa_alloc_onnode(numa[n].arrsz, n));
 
             fill_arr(arr, numa[n].num_elems);
             fill_arr(mock_arr, numa[n].num_elems);

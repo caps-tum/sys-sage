@@ -50,7 +50,7 @@ int xmldumper_complex(std::string key, void* value, xmlNodePtr node) {
         return 0;
     //xmlBufferPtr buffer = xmlBufferCreate();
     std::string xml_str = res.cast<std::string>();
-    xmlDocPtr doc = xmlParseDoc((const xmlChar*)xml_str.c_str());
+    xmlDocPtr doc = xmlParseDoc(BAD_CAST xml_str.c_str());
     xmlNodePtr root = xmlDocGetRootElement(doc);
     xmlAddChild(node,root->children);
     return 1;
@@ -61,7 +61,7 @@ void* xmlloader(xmlNodePtr node) {
     xmlBufferPtr buffer = xmlBufferCreate();
     try{
         xmlNodeDump(buffer, node->doc, node, 0, 1);
-        std::string xml_str((const char*)xmlBufferContent(buffer));
+        std::string xml_str(reinterpret_cast<const char*>(xmlBufferContent(buffer)));
         xmlBufferFree(buffer);
         py::object value = read_attributes(py::cast(xml_str));
         //check for values content
@@ -81,7 +81,7 @@ int xmlloader_complex(xmlNodePtr node, sys_sage::Component *c) {
     xmlBufferPtr buffer = xmlBufferCreate();
     try{
         xmlNodeDump(buffer, node->doc, node, 0, 1);
-        std::string xml_str((const char*)xmlBufferContent(buffer));
+        std::string xml_str(reinterpret_cast<const char*>(xmlBufferContent(buffer)));
         xmlBufferFree(buffer);
         py::object comp = py::cast(c);
         py::object value = read_complex_attributes(py::cast(xml_str),comp);
@@ -174,12 +174,12 @@ py::object get_attribute(T &self, const std::string &key) {
     auto val = self.attrib.find(key);
     if (val != self.attrib.end()) {
         if(!key.compare("CATcos") || !key.compare("CATL3mask")){
-            uint64_t retval = *((uint64_t*)val->second); 
+            uint64_t retval = *(reinterpret_cast<uint64_t*>(val->second)); 
             return py::cast(retval);
         }
         else if(!key.compare("mig_size") )
         {
-            return py::cast(*(long long*)val->second);
+            return py::cast(*reinterpret_cast<long long*>(val->second));
         }
         //val->secondue: int
         else if(!key.compare("Number_of_streaming_multiprocessors") || 
@@ -187,28 +187,28 @@ py::object get_attribute(T &self, const std::string &key) {
         !key.compare("Number_of_cores_per_SM")  || 
         !key.compare("Bus_Width_bit") )
         {
-            return py::cast(*(int*)val->second);
+            return py::cast(*reinterpret_cast<int*>(val->second));
         }
         //value: double
         else if(!key.compare("Clock_Frequency") || !key.compare("GPU_Clock_Rate"))
         {
-            return py::cast(*(double*)val->second);
+            return py::cast(*reinterpret_cast<double*>(val->second));
         }
         //value: float
         else if(!key.compare("latency") ||
         !key.compare("latency_min") ||
         !key.compare("latency_max") )
         {
-            return py::cast(*(float*)val->second);
+            return py::cast(*reinterpret_cast<float*>(val->second));
         }   
         //value: string
         else if(!key.compare("CUDA_compute_capability") || 
         !key.compare("mig_uuid") )
         {
-            return py::cast(*(std::string*)val->second);
+            return py::cast(*reinterpret_cast<std::string*>(val->second));
         }
         else if(!key.compare("freq_history") ){
-            std::vector<std::tuple<long long,double>>* value = (std::vector<std::tuple<long long,double>>*)(val->second);
+            std::vector<std::tuple<long long,double>>* value = reinterpret_cast<std::vector<std::tuple<long long,double>>*>(val->second);
             py::dict freq_dict;
              for(auto [ ts,freq ] : *value){
                  freq_dict[py::cast(ts)] = py::cast(freq);
