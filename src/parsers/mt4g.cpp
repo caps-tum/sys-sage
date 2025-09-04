@@ -706,7 +706,6 @@ int sys_sage::Mt4gParser::parseCaches(std::string header_name, std::string cache
                     if(cache_line_size != -1)
                         cache->SetCacheLineSize(cache_line_size);
 
-                    //int cores_per_cache = (*(int*)root->attrib["Number_of_cores_per_SM"])/caches_per_sm;
                     int cores_per_cache = (*reinterpret_cast<int*>(root->attrib["Number_of_cores_per_SM"]))/caches_per_sm;
 
                     for(Component * thread : threads)
