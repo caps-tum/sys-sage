@@ -35,9 +35,13 @@ namespace sys_sage {
         */
         ~Thread() override = default;
 
-        std::optional<long long> GetPAPICounter(std::string_view event);
+    #ifdef PAPI_METRICS
+
+        std::optional<long long> GetPAPICounter(const std::string &event);
 
         void PrintPAPICounters();
+
+    #endif
 
     #ifdef PROC_CPUINFO //defined in proc_cpuinfo.cpp
     public:

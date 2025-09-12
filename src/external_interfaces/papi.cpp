@@ -1,12 +1,12 @@
 #include "sys-sage.hpp"
 #include <papi.h>
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <stddef.h>
 #include <sched.h>
 #include <string>
-#include <string_view>
 #include <sstream>
 #include <sys/syscall.h>
 #include <utility>
@@ -14,7 +14,7 @@
 
 using namespace sys_sage;
 
-static const std::string_view metricsKey ( "PAPI_Metrics" );
+static const std::string metricsKey ( "PAPI_Metrics" );
 
 struct PAPIMetrics {
   std::unordered_map<std::string, long long> values;
@@ -109,8 +109,8 @@ static int GetCpuNum(int eventSet, unsigned int *cpuNum)
   if (rval < 0) {
     return rval;
   } else if (static_cast<bool>(rval) == true) {
-    if ( std::optional<unsigned int> opt = GetCpuNumFromTid(opt.attach.tid) ) {
-      *cpuNum = *opt;
+    if ( std::optional<unsigned int> optCpuNum = GetCpuNumFromTid(opt.attach.tid) ) {
+      *cpuNum = *optCpuNum;
       return PAPI_OK;
     }
     return PAPI_EINVAL;
@@ -177,9 +177,9 @@ static int StoreCounters(const long long *counters, const int *events,
       metrics->values[buf] = counters[i];
     } else {
       if constexpr (accumulate)
-        metricsIt->second += counters[i];
+        it->second += counters[i];
       else
-        metricsIt->second = counters[i];
+        it->second = counters[i];
     }
   }
 
@@ -197,7 +197,7 @@ int sys_sage::PAPI_read(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   long long counters[numEvents];
-  rval = PAPI_read(eventSet, counters);
+  rval = ::PAPI_read(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -230,7 +230,7 @@ int sys_sage::PAPI_accum(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   long long counters[numEvents] = { 0 };
-  rval = PAPI_accum(eventSet, counters);
+  rval = ::PAPI_accum(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -263,7 +263,7 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   long long counters[numEvents];
-  rval = PAPI_stop(eventSet, counters);
+  rval = ::PAPI_stop(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -307,7 +307,7 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters, int numCounter
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
   *outThread = thread;
-  rval = StoreCounters<false>(counters, events.array, numEvents, thread);
+  rval = StoreCounters<false>(counters, events.array, std::min(numEvents, numCounters), thread);
   if (rval != PAPI_OK)
     return rval;
 
@@ -315,7 +315,7 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters, int numCounter
 }
 
 // TODO: better error handling. Maybe log errors?
-std::optional<long long> Thread::GetPAPICounter(std::string_view event)
+std::optional<long long> Thread::GetPAPICounter(const std::string &event)
 {
   auto metricsIt = attrib.find(metricsKey);
   if (metricsIt == attrib.end())

@@ -28,4 +28,7 @@
 #include "parsers/cccbench.hpp"
 #include "parsers/qdmi-parser.hpp"
 #include "parsers/iqm-parser.hpp"
+#ifdef PAPI_METRICS
+#include "external_interfaces/papi.hpp"
+#endif
 #endif //SYS_SAGE

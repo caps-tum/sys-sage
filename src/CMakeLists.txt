@@ -73,6 +73,11 @@ set(HEADERS
     parsers/iqm-parser.hpp
     )
 
+if(PAPI_METRICS)
+	list(APPEND SOURCES ${EXT_INTF}/papi.cpp)
+	list(APPEND HEADERS ${EXT_INTF}/papi.hpp)
+endif()
+
 # add_library(sys-sage SHARED ${SOURCES} ${HEADERS})
 
 if(PY_SYS_SAGE)
@@ -166,4 +171,3 @@ endif()
         FILES_MATCHING PATTERN "*.hpp")
 
 #endif()
-
