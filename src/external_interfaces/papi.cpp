@@ -8,9 +8,7 @@
 #include <sched.h>
 #include <string>
 #include <sstream>
-#include <sys/syscall.h>
 #include <utility>
-#include <unistd.h>
 
 using namespace sys_sage;
 
@@ -54,17 +52,6 @@ static std::optional<unsigned int> GetCpuNumFromTid(unsigned long tid)
 {
   static constexpr int hwThreadIdField = 39;
 
-  long lrval = syscall(SYS_gettid);
-  if (lrval < 0)
-    return std::nullopt;
-
-  if (static_cast<unsigned long>(lrval) == tid) {
-    int rval = sched_getcpu();
-    if (rval < 0)
-      return std::nullopt;
-    return rval;
-  }
-
   std::ifstream procStat ("/proc/" + std::to_string(tid) + "/stat");
   if (!procStat.is_open())
     return std::nullopt;
@@ -103,30 +90,40 @@ static int GetCpuNum(int eventSet, unsigned int *cpuNum)
   int rval;
   PAPI_option_t opt;
 
-  opt.attach.eventset = eventSet;
-  opt.attach.tid = PAPI_NULL;
-  rval = PAPI_get_opt(PAPI_ATTACH, &opt);
-  if (rval < 0) {
+  int state;
+  rval = PAPI_state(eventSet, &state);
+  if (rval != PAPI_OK)
     return rval;
-  } else if (static_cast<bool>(rval) == true) {
-    if ( std::optional<unsigned int> optCpuNum = GetCpuNumFromTid(opt.attach.tid) ) {
-      *cpuNum = *optCpuNum;
-      return PAPI_OK;
-    }
-    return PAPI_EINVAL;
-  }
 
-  opt.cpu.eventset = eventSet;
-  opt.cpu.cpu_num = PAPI_NULL;
-  rval = PAPI_get_opt(PAPI_CPU_ATTACH, &opt);
-  if (rval < 0) {
-    return rval;
-  } else if (static_cast<bool>(rval) == true) {
+  if (state & PAPI_CPU_ATTACHED) {
+    opt.cpu.eventset = eventSet;
+    opt.cpu.cpu_num = PAPI_NULL;
+    rval = PAPI_get_opt(PAPI_CPU_ATTACH, &opt);
+    if (rval < 0)
+      return rval;
+
     *cpuNum = opt.cpu.cpu_num;
-    return PAPI_OK;
+  } else if (state & PAPI_ATTACHED) {
+    opt.attach.eventset = eventSet;
+    opt.attach.tid = PAPI_NULL;
+    rval = PAPI_get_opt(PAPI_ATTACH, &opt);
+    if (rval < 0)
+      return rval;
+
+    std::optional<unsigned int> optCpuNum = GetCpuNumFromTid(opt.attach.tid);
+    if (!optCpuNum)
+      return PAPI_EINVAL;
+
+    *cpuNum = *optCpuNum;
+  } else {
+    rval = sched_getcpu();
+    if (rval < 0)
+      return PAPI_ESYS;
+
+    *cpuNum = rval;
   }
 
-  return PAPI_ECOMBO;
+  return PAPI_OK;
 }
 
 static int GetEvents(int eventSet, RaiiArray<int> &events, int *numEvents)
