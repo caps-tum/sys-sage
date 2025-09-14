@@ -28,7 +28,7 @@ if(PAPI_METRICS)
     add_executable(papi_basics papi_basics.cpp)
 endif()
 
-install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test papi_basics DESTINATION bin/examples)
+install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test DESTINATION bin/examples)
 install(DIRECTORY example_data DESTINATION bin/examples)
 
 if(INTEL_PQOS)
