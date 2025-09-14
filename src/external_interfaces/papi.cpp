@@ -12,7 +12,7 @@
 
 using namespace sys_sage;
 
-static const std::string metricsKey ( "PAPI_Metrics" );
+static const std::string metricsKey ( "PAPIMetrics" );
 
 struct PAPIMetrics {
   std::unordered_map<std::string, long long> values;
@@ -204,7 +204,9 @@ int sys_sage::PAPI_read(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
-  Thread *thread = static_cast<Thread *>( root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread) );
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
@@ -237,7 +239,9 @@ int sys_sage::PAPI_accum(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
-  Thread *thread = static_cast<Thread *>( root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread) );
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
@@ -270,7 +274,9 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread)
     return rval;
 
   // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
-  Thread *thread = static_cast<Thread *>( root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread) );
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
@@ -282,8 +288,8 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread)
   return PAPI_OK;
 }
 
-int sys_sage::PAPI_store(int eventSet, const long long *counters, int numCounters,
-                         Component *root, Thread **outThread)
+int sys_sage::PAPI_store(int eventSet, const long long *counters,
+                         int numCounters, Component *root, Thread **outThread)
 {
   int rval;
 
@@ -299,12 +305,15 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters, int numCounter
     return rval;
 
   // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
-  Thread *thread = static_cast<Thread *>( root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread) );
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
   *outThread = thread;
-  rval = StoreCounters<false>(counters, events.array, std::min(numEvents, numCounters), thread);
+  rval = StoreCounters<false>(counters, events.array,
+                              std::min(numEvents, numCounters), thread);
   if (rval != PAPI_OK)
     return rval;
 
@@ -333,6 +342,7 @@ void Thread::PrintPAPICounters()
     return;
   PAPIMetrics *metrics = reinterpret_cast<PAPIMetrics *>( metricsIt->second );
 
+  std::cout << "performance counters on thread " << id << ":\n";
   for (const auto &[metric, value] : metrics->values)
-    std::cout << metric << ": " << value << '\n';
+    std::cout << "  " << metric << ": " << value << '\n';
 }
