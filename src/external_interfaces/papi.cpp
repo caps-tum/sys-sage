@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <stddef.h>
 #include <sched.h>
@@ -16,36 +17,6 @@ static const std::string metricsKey ( "PAPIMetrics" );
 
 struct PAPIMetrics {
   std::unordered_map<std::string, long long> values;
-};
-
-template <typename T>
-struct RaiiArray {
-  RaiiArray()
-  {
-    array = nullptr;
-  }
-  
-  RaiiArray(size_t size)
-  {
-    array = new T[size];
-  }
-  
-  ~RaiiArray()
-  {
-    delete[] array;
-  }
-  
-  RaiiArray &operator=(RaiiArray &&movingObject) noexcept
-  {
-    if (this != &movingObject) {
-      delete[] array;
-      array = movingObject.array;
-      movingObject.array = nullptr;
-    }
-    return *this;
-  }
-
-  T *array;
 };
 
 static std::optional<unsigned int> GetCpuNumFromTid(unsigned long tid)
@@ -126,7 +97,8 @@ static int GetCpuNum(int eventSet, unsigned int *cpuNum)
   return PAPI_OK;
 }
 
-static int GetEvents(int eventSet, RaiiArray<int> &events, int *numEvents)
+static int GetEvents(int eventSet, std::unique_ptr<int[]> &events,
+                     int *numEvents)
 {
   int rval;
 
@@ -135,15 +107,13 @@ static int GetEvents(int eventSet, RaiiArray<int> &events, int *numEvents)
     return rval;
   else if (rval == 0)
     return PAPI_EINVAL;
-  int tmpNumEvents = rval;
+  *numEvents = rval;
 
-  RaiiArray<int> tmpEvents (tmpNumEvents);
-  rval = PAPI_list_events(eventSet, tmpEvents.array, &tmpNumEvents);
+  events = std::make_unique<int[]>(rval);
+  rval = PAPI_list_events(eventSet, events.get(), numEvents);
   if (rval != PAPI_OK)
     return rval;
 
-  events = std::move(tmpEvents);
-  *numEvents = tmpNumEvents;
   return PAPI_OK;
 }
 
@@ -187,7 +157,7 @@ int sys_sage::PAPI_read(int eventSet, Component *root, Thread **outThread)
 {
   int rval;
 
-  RaiiArray<int> events;
+  std::unique_ptr<int[]> events;
   int numEvents;
   rval = GetEvents(eventSet, events, &numEvents);
   if (rval != PAPI_OK)
@@ -210,8 +180,9 @@ int sys_sage::PAPI_read(int eventSet, Component *root, Thread **outThread)
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
-  *outThread = thread;
-  rval = StoreCounters<false>(counters, events.array, numEvents, thread);
+  if (outThread)
+    *outThread = thread;
+  rval = StoreCounters<false>(counters, events.get(), numEvents, thread);
   if (rval != PAPI_OK)
     return rval;
 
@@ -222,7 +193,7 @@ int sys_sage::PAPI_accum(int eventSet, Component *root, Thread **outThread)
 {
   int rval;
 
-  RaiiArray<int> events;
+  std::unique_ptr<int[]> events;
   int numEvents;
   rval = GetEvents(eventSet, events, &numEvents);
   if (rval != PAPI_OK)
@@ -245,8 +216,9 @@ int sys_sage::PAPI_accum(int eventSet, Component *root, Thread **outThread)
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
-  *outThread = thread;
-  rval = StoreCounters<true>(counters, events.array, numEvents, thread);
+  if (outThread)
+    *outThread = thread;
+  rval = StoreCounters<true>(counters, events.get(), numEvents, thread);
   if (rval != PAPI_OK)
     return rval;
 
@@ -257,7 +229,7 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread)
 {
   int rval;
 
-  RaiiArray<int> events;
+  std::unique_ptr<int[]> events;
   int numEvents;
   rval = GetEvents(eventSet, events, &numEvents);
   if (rval != PAPI_OK)
@@ -280,8 +252,9 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread)
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
-  *outThread = thread;
-  rval = StoreCounters<false>(counters, events.array, numEvents, thread);
+  if (outThread)
+    *outThread = thread;
+  rval = StoreCounters<false>(counters, events.get(), numEvents, thread);
   if (rval != PAPI_OK)
     return rval;
 
@@ -293,7 +266,7 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters,
 {
   int rval;
 
-  RaiiArray<int> events;
+  std::unique_ptr<int[]> events;
   int numEvents;
   rval = GetEvents(eventSet, events, &numEvents);
   if (rval != PAPI_OK)
@@ -311,8 +284,9 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters,
   if (thread == nullptr)
     // TODO: is there a better way to handle the error?
     return PAPI_EINVAL;
-  *outThread = thread;
-  rval = StoreCounters<false>(counters, events.array,
+  if (outThread)
+    *outThread = thread;
+  rval = StoreCounters<false>(counters, events.get(),
                               std::min(numEvents, numCounters), thread);
   if (rval != PAPI_OK)
     return rval;
