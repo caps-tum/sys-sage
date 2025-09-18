@@ -30,7 +30,7 @@ vector<string> sys_sage::xmlRelevantObjectTypes
 string sys_sage::xmlGetPropStr(xmlNode* node, string key)
 {
     string val;
-    xmlChar* valX = xmlGetProp(node, (xmlChar *)key.c_str());
+    xmlChar* valX = xmlGetProp(node, BAD_CAST key.c_str());
     if(valX == NULL)
         val = "";
     else
@@ -45,13 +45,13 @@ sys_sage::Component* sys_sage::createChildC(string type, xmlNode* node)
     string s;
     if(!type.compare("Machine"))
     {
-        c = (Component*)new Node();
+        c = new Node();
     }
     else if(!type.compare("Package"))
     {
         s = xmlGetPropStr(node, "os_index");
         int id = stoi(s.empty()?"0":s);
-        c = (Component*)new Chip(id, "socket", sys_sage::ChipType::CpuSocket);
+        c = new Chip(id, "socket", sys_sage::ChipType::CpuSocket);
     }
     else if(!type.compare("Cache") || !type.compare("L3Cache") || !type.compare("L2Cache") || !type.compare("L1Cache"))
     {
@@ -65,7 +65,7 @@ sys_sage::Component* sys_sage::createChildC(string type, xmlNode* node)
         int associativity = stoi(s.empty()?"0":s);
         s = xmlGetPropStr(node, "cache_linesize");
         int cache_line_size = stoi(s.empty()?"0":s);
-        c = (Component*)new Cache(id, cache_level, size, associativity, cache_line_size);
+        c = new Cache(id, cache_level, size, associativity, cache_line_size);
     }
     else if(!type.compare("NUMANode"))
     {
@@ -74,19 +74,19 @@ sys_sage::Component* sys_sage::createChildC(string type, xmlNode* node)
         s = xmlGetPropStr(node, "local_memory");
         long long size = stol(s.empty()?"0":s);
 
-        c = (Component*)new Numa(id, size);
+        c = new Numa(id, size);
     }
     else if(!type.compare("Core"))
     {
         s = xmlGetPropStr(node, "os_index");
         int id = stoi(s.empty()?"0":s);
-        c = (Component*)new Core(id);
+        c = new Core(id);
     }
     else if(!type.compare("PU"))
     {
         s = xmlGetPropStr(node, "os_index");
         int id = stoi(s.empty()?"0":s);
-        c = (Component*)new Thread(id, "HW_thread");
+        c = new Thread(id, "HW_thread");
     }
     else
     {
@@ -111,12 +111,12 @@ int sys_sage::xmlProcessChildren(Component* c, xmlNode* parent, int level)
                     if(!name.compare("CPUVendor")){
                         string value = xmlGetPropStr(child, "value");
                         if(c->GetComponentType() == sys_sage::ComponentType::Chip)
-                            ((Chip*)c)->SetVendor(value);
+                            static_cast<Chip*>(c)->SetVendor(value);
                     }
                     else if(!name.compare("CPUModel")){
                         string value = xmlGetPropStr(child, "value");
                         if(c->GetComponentType() == sys_sage::ComponentType::Chip)
-                            ((Chip*)c)->SetModel(value);
+                            static_cast<Chip*>(c)->SetModel(value);
                     }
                 }
                 else //name == object, topology

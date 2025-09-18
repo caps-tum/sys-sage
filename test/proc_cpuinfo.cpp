@@ -5,7 +5,7 @@
 using namespace boost::ut;
 using namespace sys_sage;
 
-#if PROC_CPUINFO
+#ifdef PROC_CPUINFO
 
 static suite<"cpuinfo"> _ = []
 {
