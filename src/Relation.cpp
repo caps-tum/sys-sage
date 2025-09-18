@@ -59,6 +59,7 @@ void sys_sage::Relation::_PrintRelationAttrib() const
     {
         cout << " -- attrib: ";
         for (const auto& n : attrib) {
+            // TODO: fix undefined behaviour caused by strict aliasing rule violation
             uint64_t* val = reinterpret_cast<uint64_t*>(n.second);
             std::cout << n.first << " = " << *val << "; ";
         }
