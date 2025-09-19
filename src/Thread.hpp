@@ -3,7 +3,9 @@
 
 #include "Component.hpp"
 #include <optional>
-#include <string_view>
+#include <string>
+#include <vector>
+#include <utility>
 
 namespace sys_sage {
 
@@ -37,7 +39,11 @@ namespace sys_sage {
 
     #ifdef PAPI_METRICS
 
-        std::optional<long long> GetPAPICounter(const std::string &event);
+        std::optional<long long> GetPAPICounterReading(const std::string &event,
+                                                       const std::optional<unsigned long long> &timestamp = std::nullopt);
+
+        std::optional<std::vector<std::pair<unsigned long long, long long>>>
+        GetAllPAPICounterReadings(const std::string &event);
 
         void PrintPAPICounters();
 
