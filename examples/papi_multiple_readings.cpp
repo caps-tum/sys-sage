@@ -1,10 +1,8 @@
+#include "sys-sage.hpp"
 #include <papi.h>
-#include <errno.h>
 #include <iostream>
 #include <memory>
-#include <sched.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
@@ -19,6 +17,17 @@ void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 
 int main(int argc, const char **argv)
 {
+  static constexpr size_t numReadings = 10;
+
+  if (argc != 2) {
+    std::cerr << "usage: " << argv[0] << " <path_to_hwloc_xml>\n";
+    return EXIT_FAILURE;
+  }
+  const char *hwlocXml = argv[1];
+  sys_sage::Node *node = new sys_sage::Node();
+  if (sys_sage::parseHwlocOutput(node, hwlocXml) != 0)
+    return EXIT_FAILURE;
+
   int rval;
   size_t n = 1'000'000;
   std::unique_ptr<double[]> a = std::make_unique<double[]>(n);
@@ -44,30 +53,36 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  long long counters[numEvents];
+  sys_sage::Thread *threads[numReadings];
 
   rval = PAPI_start(eventSet);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  saxpy(a.get(), b.get(), c.get(), n, alpha);
-
-  rval = PAPI_stop(eventSet, counters);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  // assume software thread was scheduled on a single hardware thread
-  rval = sched_getcpu();
-  if (rval < 0)
-    FATAL(strerror(errno));
-
-  std::cout << "performance counters on thread " << rval << ":\n";
-  char buf[PAPI_MAX_STR_LEN] = { '\0' };
-  for (int i = 0; i < numEvents; i++) {
-    rval = PAPI_event_code_to_name(events[i], buf);
+  for (size_t i = 0; i < numReadings; i++) {
+    saxpy(a.get(), b.get(), c.get(), n, alpha);
+    rval = sys_sage::PAPI_read(eventSet, node, &threads[i]);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
-    std::cout << "  " << buf << ": " << counters[i] << '\n';
+  }
+
+  // TODO: finish
+  std::string buf (PAPI_MAX_STR_LEN, '\0');
+  for (size_t i = 0; i < numReadings; i++) {
+    std::cout << "average performance counters on thread " << thread->GetId() << ":\n";
+
+    for (int j = 0; j < numEvents; j++) {
+      rval = PAPI_event_code_to_name(events[i], buf);
+      if (rval != PAPI_OK)
+        FATAL(PAPI_strerror(rval));
+
+      auto opt = GetAllPAPICounterReadings(buf);
+      if (!opt)
+        FATAL("could not query readings");
+      auto readings = *opt;
+
+      long long avg = 0;
+    }
   }
 
   rval = PAPI_cleanup_eventset(eventSet);

@@ -355,6 +355,7 @@ std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
   return it->second;
 }
 
+// TODO: maybe return a pointer to the vector
 std::optional<std::vector<std::pair<unsigned long long, long long>>>
 Thread::GetAllPAPICounterReadings(const std::string &event)
 {

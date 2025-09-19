@@ -25,7 +25,9 @@ if (QDMI)
 endif()
 
 if(PAPI_METRICS)
+    add_executable(sys-sage_papi_basics sys-sage_papi_basics.cpp)
     add_executable(papi_basics papi_basics.cpp)
+    add_executable(papi_attach papi_attach.cpp)
 endif()
 
 install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test DESTINATION bin/examples)
