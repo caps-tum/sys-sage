@@ -21,16 +21,17 @@ int main(int argc, const char **argv)
     std::cerr << "usage: " << argv[0] << " <path_to_hwloc_xml>\n";
     return EXIT_FAILURE;
   }
-  const char *hwlocXml = argv[1];
-  sys_sage::Node *node = new sys_sage::Node();
-  if (sys_sage::parseHwlocOutput(node, hwlocXml) != 0)
+
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   int rval;
+
   size_t n = 1'000'000;
-  std::unique_ptr<double[]> a = std::make_unique<double[]>(n);
-  std::unique_ptr<double[]> b = std::make_unique<double[]>(n);
-  std::unique_ptr<double[]> c = std::make_unique<double[]>(n);
+  auto a = std::make_unique<double[]>(n);
+  auto b = std::make_unique<double[]>(n);
+  auto c = std::make_unique<double[]>(n);
   double alpha = 3.14159;
 
   rval = PAPI_library_init(PAPI_VER_CURRENT);
@@ -59,7 +60,7 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = sys_sage::PAPI_stop(eventSet, node, &thread);
+  rval = sys_sage::PAPI_stop(eventSet, &node, &thread);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 

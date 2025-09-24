@@ -20,10 +20,11 @@ void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 int main(int argc, const char **argv)
 {
   int rval;
+
   size_t n = 1'000'000;
-  std::unique_ptr<double[]> a = std::make_unique<double[]>(n);
-  std::unique_ptr<double[]> b = std::make_unique<double[]>(n);
-  std::unique_ptr<double[]> c = std::make_unique<double[]>(n);
+  auto a = std::make_unique<double[]>(n);
+  auto b = std::make_unique<double[]>(n);
+  auto c = std::make_unique<double[]>(n);
   double alpha = 3.14159;
 
   rval = PAPI_library_init(PAPI_VER_CURRENT);
