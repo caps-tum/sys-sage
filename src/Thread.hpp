@@ -40,9 +40,9 @@ namespace sys_sage {
     #ifdef PAPI_METRICS
 
         std::optional<long long> GetPAPICounterReading(const std::string &event,
-                                                       const std::optional<unsigned long long> &timestamp = std::nullopt);
+                                                       unsigned long long timestamp = 0);
 
-        std::optional<std::vector<std::pair<unsigned long long, long long>>>
+        std::vector<std::pair<unsigned long long, long long>> *
         GetAllPAPICounterReadings(const std::string &event);
 
         void PrintPAPICounters();

@@ -12,22 +12,9 @@
 #include <utility>
 #include <vector>
 
-// note: This macro produces timestamps using a monotonic clock.
-//       While the timestamps within a single runtime of the program are
-//       guaranteed to be monotonic, the clock does not guarantee to be
-//       globally monotonic across multiple launches of the program and across
-//       system boot. Thus, the timestamp does not uniquely identify a single
-//       performance counter value.
-#define TIME() ( std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() )
+#define TIME() ( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() )
 
 using namespace sys_sage;
-
-static const std::string metricsKey ( "PAPIMetrics" );
-
-struct PAPIMetrics {
-  std::unordered_map<std::string,
-                     std::vector<std::pair<unsigned long long, long long>>> counters;
-};
 
 static std::optional<unsigned int> GetCpuNumFromTid(unsigned long tid)
 {
@@ -134,15 +121,6 @@ static int StoreCounters(const long long *counters, const int *events,
 {
   int rval;
 
-  PAPIMetrics *metrics;
-  auto metricsIt = thread->attrib.find(metricsKey);
-  if (metricsIt == thread->attrib.end()) {
-    metrics = new PAPIMetrics();
-    thread->attrib[metricsKey] = reinterpret_cast<void *>( metrics );
-  } else {
-    metrics = reinterpret_cast<PAPIMetrics *>( metricsIt->second );
-  }
-
   std::string buf (PAPI_MAX_STR_LEN, '\0');
 
   for (int i = 0; i < numEvents; i++) {
@@ -150,25 +128,29 @@ static int StoreCounters(const long long *counters, const int *events,
     if (rval != PAPI_OK)
       return rval;
 
-    auto [it, _] = metrics->counters.try_emplace(buf);
-    auto &readings = it->second;
+    std::vector<std::pair<unsigned long long, long long>> *readings;
+    auto readingsIt = thread->attrib.find(buf);
+    if (readingsIt == thread->attrib.end()) {
+      readings = new std::vector<std::pair<unsigned long long, long long>>;
+      thread->attrib[buf] = reinterpret_cast<void *>( readings );
+    } else {
+      readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
+    }
 
     unsigned long long timestamp;
     if constexpr (accumulate) {
-      if (readings.empty()) {
-        // TODO: what if timestamps collide?
+      if (readings->empty()) {
         timestamp = TIME();
-        readings.emplace_back(timestamp, counters[i]);
+        readings->emplace_back(timestamp, counters[i]);
       } else {
         // always accumulate on the last reading
-        auto &pair = readings.back();
+        auto &pair = readings->back();
         timestamp = pair.first;
         pair.second += counters[i];
       }
     } else {
-      // TODO: what if timestamps collide?
       timestamp = TIME();
-      readings.emplace_back(timestamp, counters[i]);
+      readings->emplace_back(timestamp, counters[i]);
     }
 
     if (outTimestamp)
@@ -329,24 +311,19 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters,
 
 // TODO: better error handling. Maybe log errors?
 std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
-                                                       const std::optional<unsigned long long> &timestamp)
+                                                       unsigned long long timestamp)
 {
-  auto metricsIt = attrib.find(metricsKey);
-  if (metricsIt == attrib.end())
-    return std::nullopt;
-  PAPIMetrics *metrics = reinterpret_cast<PAPIMetrics *>( metricsIt->second );
-
-  auto readingsIt = metrics->counters.find(event);
-  if (readingsIt == metrics->counters.end())
+  auto readingsIt = attrib.find(event);
+  if (readingsIt == attrib.end())
     return std::nullopt;
 
-  auto &readings = readingsIt->second;
-  if (!timestamp)
+  auto &readings = *reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
+  if (timestamp == 0)
     return readings.back().second;
 
   auto it = std::find_if(readings.begin(), readings.end(),
                          [timestamp](const std::pair<unsigned long long, long long> &pair) {
-                           return *timestamp == pair.first;
+                           return timestamp == pair.first;
                          }
             );
   if (it == readings.end())
@@ -355,30 +332,26 @@ std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
   return it->second;
 }
 
-// TODO: maybe return a pointer to the vector
-std::optional<std::vector<std::pair<unsigned long long, long long>>>
+std::vector<std::pair<unsigned long long, long long>> *
 Thread::GetAllPAPICounterReadings(const std::string &event)
 {
-  auto metricsIt = attrib.find(metricsKey);
-  if (metricsIt == attrib.end())
-    return std::nullopt;
-  PAPIMetrics *metrics = reinterpret_cast<PAPIMetrics *>( metricsIt->second );
+  auto readingsIt = attrib.find(event);
+  if (readingsIt == attrib.end())
+    return nullptr;
 
-  auto readingsIt = metrics->counters.find(event);
-  if (readingsIt == metrics->counters.end())
-    return std::nullopt;
-
-  return readingsIt->second;
+  return reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
 }
 
 void Thread::PrintPAPICounters()
 {
-  auto metricsIt = attrib.find(metricsKey);
-  if (metricsIt == attrib.end())
-    return;
-  PAPIMetrics *metrics = reinterpret_cast<PAPIMetrics *>( metricsIt->second );
+  int dummy;
 
   std::cout << "performance counters on thread " << id << ":\n";
-  for (const auto &[metric, readings] : metrics->counters)
-    std::cout << "  " << metric << ": " << readings.back().second << '\n';
+  for (const auto &[key, val] : attrib) {
+    if (PAPI_event_name_to_code(key.c_str(), &dummy) != PAPI_OK)
+      continue;
+
+    auto &readings = *reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( val );
+    std::cout << "  " << key << ": " << readings.back().second << '\n';
+  }
 }
