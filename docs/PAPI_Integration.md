@@ -23,9 +23,10 @@ as well as `outTimestamp` are optional output-parameters whose purpose will be
 explained later.
 
 The above functions offer a way to automatically integrate the extracted
-performance counters into the topology and thus relate the metrics to the
-hardware components without extra effort for the user. They can be thought of
-as wrapper functions around the actual PAPI routines.
+performance counters into the _sys-sage_ topology without extra effort on the
+user's side, thus coupling the metrics directly to the relevant hardware
+components and putting them into the context of the overall hardware topology.
+They can be thought of as wrapper functions around the actual PAPI routines.
 
 ## General Workflow
 
@@ -141,7 +142,7 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum`,
    the _sys-sage_ topology at a later point.
 
 3. Depending on the event set, figure out which hardware thread the counters
-   belong to and get its ID. Here we need to make a case destinction:
+   belong to and find its ID. Here we need to make a case destinction:
 
    - If the event set has explicitely been attached to a hardware thread,
      simply query for the ID with PAPI.
@@ -156,16 +157,36 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum`,
    Except for the first case, it could happen that the event set monitors
    performance counters on different hardware threads through repeated
    re-scheduling of the corresponding software thread. This leads into the
-   fact that the performance counter values of different readings may bee
-   scattered onto different hardware threads. This is unfortunate, but a way
-   around this is not known.
+   fact that the performance counter values of different readings may be
+   scattered onto different hardware threads.
 
 4. Together with the ID of the hardware thread, query for its handle in the
-   _sys-sage_ topology.
+   _sys-sage_ topology. This handle is recorded into `outThread` for the user,
+   if it is not `nullptr`.
 
-5. Store the values of `counters` into the `attrib` map of the hardware thread on
-   a per-event basis, meaning that if the value `counters[i]` at index `i`
+5. Store the values of `counters` into the `attrib` map of the hardware thread
+   on a per-event basis, meaning that if the value `counters[i]` at index `i`
    corresponds to the event `events[i]`, we will have a key-value pair of
    `{ events[i], counters[i] }`. Note that the string representation of the
    event code is used as the actual key. Further details about the storage
    mechanism is given later.
+
+### Multiple Counter Readings
+
+Per default, an event will be linked to only a single performance counter value
+at a time. This approach offers simplicity and reduces memory usage.
+
+Alternitavely, _sys-sage_ allows the user to store multiple performance counter
+readings of the same event. This option can be set through (TODO: finish
+sentence). To distinguish them from one another, timestamps have been used
+which are recorded into `outTimestamp`, if it is not `nullptr`. The user can
+utilize the timestamp to retrieve a single counter value associated to the
+corresponding reading. It is important to note that these timestamps are *not*
+guaranteed to be unique -- although most likely they will -- and in case of a
+collision, the one who was stored first will be returned (TODO: maybe return
+the last/most recent one?). On the other hand, all readings can be provided to
+the user at once.
+
+### Storing the counters
+
+For every event in the event set, _sys-sage_ follows the below procedure:
