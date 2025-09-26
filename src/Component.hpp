@@ -42,7 +42,7 @@ namespace sys_sage {
          * @param _id Numeric ID of the component (default 0)
          * @param _name Name of the component (default "unknown")
          *
-         * Sets componentType to sys_sage::ComponentType::None.
+         * Sets componentType to sys_sage::ComponentType::Generic.
          */
         Component(int _id = 0, std::string _name = "unknown");
         /**
@@ -52,7 +52,7 @@ namespace sys_sage {
          * @param _id Numeric ID of the component (default 0)
          * @param _name Name of the component (default "unknown")
          *
-         * Sets componentType to sys_sage::ComponentType::None.
+         * Sets componentType to sys_sage::ComponentType::Generic.
          */
         Component(Component * parent, int _id = 0, std::string _name = "unknown");
         //SVTODO reevaluate the delete vs destructor
@@ -101,11 +101,6 @@ namespace sys_sage {
         int InsertBetweenParentAndChildren(Component* parent, std::vector<Component*> children, bool alreadyParentsChild);
 
         /**
-        Removes the passed component from the list of children, without completely deleting (and deallocating) the child itself
-        @param child - child to remove
-        @return how many elements were deleted (normally, 0 or 1 should be possible)
-        */
-        /**
          * @brief Removes the passed component from the list of children, without completely deleting (and deallocating) the child itself
          * @param child Child to remove
          * @return Number of elements deleted (normally 0 or 1)
@@ -142,13 +137,21 @@ namespace sys_sage {
          * @note This function is deprecated and will be removed in the future. Use PrintAllRelationsInSubtree instead.
          */
     public:
-        [[deprecated("Use PrintAllRelationsInSubtree instead. This function will be removed in the future.")]]
+        [[ deprecated("Use PrintRelationsByType instead. This function will be removed in the future.") ]]
         void PrintAllDataPathsInSubtree();
         /**
          * @brief Prints all Relations in the subtree.
          * @param RelationType Filter by relation type (default: Any)
          */
+        [[deprecated("Use PrintRelationsByType instead. This function will be removed in the future (used up until version 1.0.0).")]]
         void PrintAllRelationsInSubtree(RelationType::type RelationType = RelationType::Any);
+
+        /**
+         * @brief Prints all Relations in the subtree spanned by this component.
+         * @param RelationType Filter by relation type (default: RelationType::Any)
+         */
+        void PrintRelationsByType(RelationType::type relationType = RelationType::Any);
+
         /**
          * @brief Returns name of the component.
          * @return Name
@@ -220,7 +223,15 @@ namespace sys_sage {
          * @param _componentType Required type of components
          * @return Vector of all matching children
          */
+        [[ deprecated("Use FindChildrenByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetAllChildrenByType(ComponentType::type _componentType) const;
+
+        /**
+         * @brief Searches for all children matching the given component type.
+         * @param _componentType Required type of components
+         * @return Vector of all matching children
+         */
+        std::vector<Component*> FindChildrenByType(ComponentType::type _componentType) const;
 
         /**
          * @brief Searches for all the children matching the given component type.
@@ -230,7 +241,19 @@ namespace sys_sage {
             \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
             \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
         */
+        [[ deprecated("Use FindChildrenByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetAllChildrenByType(std::vector<Component *> *_outArray, ComponentType::type _componentType) const;
+
+        /**
+         * @brief Searches for all the children matching the given component type.
+         * 
+         * @param _componentType - Required type of components
+         * @param outArray - output parameter (vector with results)
+            \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+            \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
+        */
+        void FindChildrenByType(std::vector<Component *> *_outArray, ComponentType::type _componentType) const;
+
         /**
         * @brief Searches the subtree to find a component with a matching id and componentType, i.e. looks for a certain component with a matching ID. The search is a DFS. The search starts with the calling component.
         * @return Returns first occurence that matches these criteria.
@@ -238,7 +261,17 @@ namespace sys_sage {
         * @param _componentType - the component type where to look for the id
         * @return Component * matching the criteria. Returns the first match. NULL if no match found
         */
+        [[ deprecated("Use GetDescendantById instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         Component* GetSubcomponentById(int _id, ComponentType::type _componentType);
+
+        /**
+        * @brief Searches the subtree to find a component with a matching id and componentType, i.e. looks for a certain component with a matching ID. The search is a DFS. The search starts with the calling component.
+        * @return Returns first occurence that matches these criteria.
+        * @param _id - the id to look for
+        * @param _componentType - the component type where to look for the id
+        * @return Component * matching the criteria. Returns the first match. NULL if no match found
+        */
+        Component *GetDescendantById(int _id, ComponentType::type _componentType);
 
         /**
          * @brief Searches for all the subcomponents (children, their children and so on) matching the given component type.
@@ -248,7 +281,18 @@ namespace sys_sage {
             \n An input is pointer to a std::std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
             \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
         */
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetAllSubcomponentsByType(std::vector<Component*>* outArray, ComponentType::type _componentType);
+
+        /**
+         * @brief Searches for all the descendants matching the given component type.
+         * 
+         * @param _componentType - Required type of components
+         * @param outArray - output parameter (vector with results)
+            \n An input is pointer to a std::std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+            \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
+        */
+        void FindDescendantsByType(std::vector<Component*>* outArray, ComponentType::type _componentType);
 
         /**
          * @brief Searches for all the subcomponents (children, their children and so on) matching the given component type.
@@ -256,27 +300,59 @@ namespace sys_sage {
          * @param _componentType - Required type of components.
          * @returns A vector of all the subcomponents matching the _componentType.
         */
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetAllSubcomponentsByType(ComponentType::type _componentType);
+
+        /**
+         * @brief Searches for all the subcomponents (children, their children and so on) matching the given component type.
+         * 
+         * @param _componentType - Required type of components.
+         * @returns A vector of all the subcomponents matching the _componentType.
+        */
+        std::vector<Component*> FindDescendantsByType(ComponentType::type _componentType);
 
         /**
          * @brief Counts number of subcomponents (children, grandchildren, etc.).
          * @return Number of subcomponents
          */
+        [[ deprecated("Use CountDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CountAllSubcomponents() const;
+
+        /**
+         * @brief Counts number of descendants.
+         * @return Number of descendants
+         */
+        int CountDescendants() const;
         
         /**
          * @brief Counts number of subcomponents (children, their children and so on) matching the requested component type.
          * @param _componentType - ComponentType to look for.
          * @return Returns number of subcomponents matching the requested component type.
          */
+        [[ deprecated("Use CountAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CountAllSubcomponentsByType(ComponentType::type _componentType) const;
+
+        /**
+         * @brief Counts number of descendants matching the requested component type.
+         * @param _componentType - ComponentType to look for.
+         * @return Returns number of descendants matching the requested component type.
+         */
+        int CountDescendantsByType(ComponentType::type _componentType) const;
 
         /**
         * @brief Counts number of children matching the requested component type.
         * @param _componentType - ComponentType to look for.
         * @return Returns number of children matching the requested component type.
         */
+        [[ deprecated("Use CountChildrenByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CountAllChildrenByType(ComponentType::type _componentType) const;
+
+        /**
+        * @brief Counts number of children matching the requested component type.
+        * @param _componentType - ComponentType to look for.
+        * @return Returns number of children matching the requested component type.
+        */
+        int CountChildrenByType(ComponentType::type _componentType) const;
 
         /**
          * @brief Moves up the tree until a parent of the given type is found.
@@ -289,7 +365,15 @@ namespace sys_sage {
          * 0=leaf, 1=children are leaves, 2=at most children's children are leaves .....
          * @return maximal distance to a leaf
          */
+        [[ deprecated("Use CalcSubtreeDepth instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int GetSubtreeDepth() const;//0=empty, 1=1element,...
+
+        /**
+         * @brief Retrieves maximal distance to a leaf (i.e. the depth of the subtree).
+         * 0=leaf, 1=children are leaves, 2=at most children's children are leaves .....
+         * @return maximal distance to a leaf
+         */
+        int CalcSubtreeDepth() const;//0=empty, 1=1element,...
 
         /**
          * @brief Retrieves Nth ancestor, which resides N levels above.
@@ -307,7 +391,18 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
          */
-        void GetNthDescendents(std::vector<Component*>* outArray, int depth);
+        [[ deprecated("Use FindNthDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        void GetNthDescendants(std::vector<Component*>* outArray, int depth);
+
+        /**
+         * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. The tree is traversed in order as the children are stored in std::vector children.
+         * E.g. if depth=1, only children of the current are retrieved; if depth=2, only children of the children are retrieved..
+         * @param depth - how many levels down the tree should be looked
+         * @param outArray - output parameter (vector with results)
+         *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+         *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
+         */
+        void FindNthDescendants(std::vector<Component*>* outArray, int depth);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. 
@@ -316,7 +411,17 @@ namespace sys_sage {
          * @param depth - how many levels down the tree should be looked
          * @return A std::vector<Component*> with the results.
          */
-        std::vector<Component*> GetNthDescendents(int depth);
+        [[ deprecated("Use FindNthDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        std::vector<Component*> GetNthDescendants(int depth);
+
+        /**
+         * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. 
+         * The tree is traversed in order as the children are stored in the std::vector.
+         * E.g. if depth=1, only children of the current are retrieved; if depth=2, only children of the children are retrieved..
+         * @param depth - how many levels down the tree should be looked
+         * @return A std::vector<Component*> with the results.
+         */
+        std::vector<Component*> FindNthDescendants(int depth);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which reside in the subtree and have a matching type. 
@@ -326,6 +431,7 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
          */
+        [[ deprecated("Use GetAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetSubcomponentsByType(std::vector<Component*>* outArray, ComponentType::type componentType);
 
         /**
@@ -334,6 +440,7 @@ namespace sys_sage {
          * @param componentType - componentType
          * @return A std::vector<Component*> with the results.
          */
+        [[ deprecated("Use GetAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetSubcomponentsByType(ComponentType::type _componentType);
 
         /**
@@ -342,13 +449,29 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
          */
+        [[ deprecated("Use GetAllDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetComponentsInSubtree(std::vector<Component*>* outArray);
+
+        /**
+         * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
+         * @param outArray - output parameter (vector with results)
+         *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
+         *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
+         */
+        void GetAllDescendants(std::vector<Component*>* outArray);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
          * @return A std::vector<Component*> with the results.
          */
+        [[ deprecated("Use GetAllDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetComponentsInSubtree();
+
+        /**
+         * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
+         * @return A std::vector<Component*> with the results.
+         */
+        std::vector<Component*> GetAllDescendants();
 
         /**
          * @brief Returns a (const) reference to the internal vector of relations for a given type.

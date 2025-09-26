@@ -22,7 +22,9 @@ namespace sys_sage {
     namespace ComponentType{
         using type = int32_t; /**< ComponentType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
+        [[ deprecated("Use sys_sage::ComponentType::Generic instead. This constant will be removed in the future (used up until version 1.0.0).") ]]
         constexpr type None = 1; /**< class Component (do not use normally)*/
+        constexpr type Generic = 1; /**< class Component (do not use normally)*/
         constexpr type Thread = 2; /**< class Thread */
         constexpr type Core = 3; /**< class Core */
         constexpr type Cache = 4; /**< class Cache */
