@@ -1,10 +1,8 @@
+#include "sys-sage.hpp"
 #include <papi.h>
-#include <errno.h>
 #include <iostream>
 #include <memory>
-#include <sched.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
@@ -19,6 +17,15 @@ void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 
 int main(int argc, const char **argv)
 {
+  if (argc != 2) {
+    std::cerr << "usage: " << argv[0] << " <path_to_hwloc_xml>\n";
+    return EXIT_FAILURE;
+  }
+
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
+    return EXIT_FAILURE;
+
   int rval;
 
   size_t n = 1'000'000;
@@ -45,7 +52,7 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  long long counters[numEvents];
+  sys_sage::Thread *thread;
 
   rval = PAPI_start(eventSet);
   if (rval != PAPI_OK)
@@ -53,31 +60,21 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = PAPI_stop(eventSet, counters);
+  rval = sys_sage::PAPI_stop(eventSet, &node, &thread);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  // assume software thread was scheduled on a single hardware thread
-  rval = sched_getcpu();
-  if (rval < 0)
-    FATAL(strerror(errno));
-
-  std::cout << "performance counters on thread " << rval << ":\n";
-  char buf[PAPI_MAX_STR_LEN] = { '\0' };
-  for (int i = 0; i < numEvents; i++) {
-    rval = PAPI_event_code_to_name(events[i], buf);
-    if (rval != PAPI_OK)
-      FATAL(PAPI_strerror(rval));
-    std::cout << "  " << buf << ": " << counters[i] << '\n';
-  }
+  thread->PrintPAPICounters();
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
-
+ 
   rval = PAPI_destroy_eventset(&eventSet);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
+
+  PAPI_shutdown();
 
   return EXIT_SUCCESS;
 }
