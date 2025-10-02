@@ -137,20 +137,21 @@ namespace sys_sage {
          * @note This function is deprecated and will be removed in the future. Use PrintAllRelationsInSubtree instead.
          */
     public:
-        [[ deprecated("Use PrintRelationsByType instead. This function will be removed in the future.") ]]
+        [[ deprecated("Use PrintRelationsInSubtree instead. This function will be removed in the future.") ]]
         void PrintAllDataPathsInSubtree();
+
         /**
          * @brief Prints all Relations in the subtree.
          * @param RelationType Filter by relation type (default: Any)
          */
-        [[deprecated("Use PrintRelationsByType instead. This function will be removed in the future (used up until version 1.0.0).")]]
+        [[ deprecated("Use PrintRelationsInSubtree instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void PrintAllRelationsInSubtree(RelationType::type RelationType = RelationType::Any);
 
         /**
-         * @brief Prints all Relations in the subtree spanned by this component.
-         * @param RelationType Filter by relation type (default: RelationType::Any)
+         * @brief Prints all Relations in the subtree.
+         * @param RelationType Filter by relation type (default: Any)
          */
-        void PrintRelationsByType(RelationType::type relationType = RelationType::Any);
+        void PrintRelationsInSubtree(RelationType::type relationType = RelationType::Any);
 
         /**
          * @brief Returns name of the component.
@@ -315,21 +316,15 @@ namespace sys_sage {
          * @brief Counts number of subcomponents (children, grandchildren, etc.).
          * @return Number of subcomponents
          */
-        [[ deprecated("Use CountDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use CountDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CountAllSubcomponents() const;
-
-        /**
-         * @brief Counts number of descendants.
-         * @return Number of descendants
-         */
-        int CountDescendants() const;
         
         /**
          * @brief Counts number of subcomponents (children, their children and so on) matching the requested component type.
          * @param _componentType - ComponentType to look for.
          * @return Returns number of subcomponents matching the requested component type.
          */
-        [[ deprecated("Use CountAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use CountDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CountAllSubcomponentsByType(ComponentType::type _componentType) const;
 
         /**
@@ -392,7 +387,7 @@ namespace sys_sage {
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
          */
         [[ deprecated("Use FindNthDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        void GetNthDescendants(std::vector<Component*>* outArray, int depth);
+        void GetNthDescendents(std::vector<Component*>* outArray, int depth);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. The tree is traversed in order as the children are stored in std::vector children.
@@ -412,7 +407,7 @@ namespace sys_sage {
          * @return A std::vector<Component*> with the results.
          */
         [[ deprecated("Use FindNthDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        std::vector<Component*> GetNthDescendants(int depth);
+        std::vector<Component*> GetNthDescendents(int depth);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. 
@@ -431,7 +426,7 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
          */
-        [[ deprecated("Use GetAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetSubcomponentsByType(std::vector<Component*>* outArray, ComponentType::type componentType);
 
         /**
@@ -440,7 +435,7 @@ namespace sys_sage {
          * @param componentType - componentType
          * @return A std::vector<Component*> with the results.
          */
-        [[ deprecated("Use GetAllDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetSubcomponentsByType(ComponentType::type _componentType);
 
         /**
@@ -449,29 +444,15 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
          */
-        [[ deprecated("Use GetAllDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetComponentsInSubtree(std::vector<Component*>* outArray);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
-         * @param outArray - output parameter (vector with results)
-         *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
-         *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
-         */
-        void GetAllDescendants(std::vector<Component*>* outArray);
-
-        /**
-         * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
          * @return A std::vector<Component*> with the results.
          */
-        [[ deprecated("Use GetAllDescendants instead. This function will be removed in the future (used up until version 1.0.0).") ]]
+        [[ deprecated("Use FindDescendantsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Component*> GetComponentsInSubtree();
-
-        /**
-         * @brief Retrieves a std::vector of Component pointers, which form the subtree (current node and all the subcomponents) of this.
-         * @return A std::vector<Component*> with the results.
-         */
-        std::vector<Component*> GetAllDescendants();
 
         /**
          * @brief Returns a (const) reference to the internal vector of relations for a given type.
@@ -480,7 +461,18 @@ namespace sys_sage {
          * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
          * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
          */
+        [[ deprecated("Use GetRelationsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         const std::vector<Relation*>& GetRelations(RelationType::type relationType) const;
+
+        /**
+         * @brief Returns a (const) reference to the internal vector of relations for a given type.
+         * @param relationType Type of relation (see RelationType for available types). Only use specific Relation Types, not RelationType::Any (you will get an empty vector).
+         * @return const std::vector<Relation*>& (reference to internal structure)
+         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
+         * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
+         */
+        const std::vector<Relation*>& GetRelationsByType(RelationType::type relationType) const;
+
         /**
          * @private
          * @brief Returns a non-const reference to the internal vector of relations (should not be called externally -- you can break things).
@@ -488,7 +480,17 @@ namespace sys_sage {
          * @return std::vector<Relation*>& (reference to internal structure)
          * @see public alternative GetRelations(RelationType::type relationType) const
          */
+        [[ deprecated("Use _GetRelationsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Relation*>& _GetRelations(RelationType::type relationType) const;
+
+        /**
+         * @brief Returns a (const) reference to the internal vector of relations for a given type.
+         * @param relationType Type of relation (see RelationType for available types). Only use specific Relation Types, not RelationType::Any (you will get an empty vector).
+         * @return const std::vector<Relation*>& (reference to internal structure)
+         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
+         * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
+         */
+        const std::vector<Relation*>& _GetRelationsByType(RelationType::type relationType) const;
 
         /**
          * @brief Returns a newly-constructed vector of all relations of a given type and position.
@@ -497,7 +499,18 @@ namespace sys_sage {
          * @return Vector of matching relations (copy, not reference)
          * @see getRelations(RelationType::type relationType) const as an alternative that returns a reference to the internal structure, i.e. has less overhead.
          */
+        [[ deprecated("Use FindRelations instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Relation*> GetAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) const;
+
+        /**
+         * @brief Returns a newly-constructed vector of all relations of a given type and position.
+         * @param relationType Type of relation (default: Any)
+         * @param thisComponentPosition Position of this component in the relation (default: -1 = do NOT care about position)
+         * @return Vector of matching relations (copy, not reference)
+         * @see getRelations(RelationType::type relationType) const as an alternative that returns a reference to the internal structure, i.e. has less overhead.
+         */
+        std::vector<Relation*> FindRelations(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) const;
+
         /**
          * @private
          * @brief Only called by Relation's AddComponent/UpdateComponent.
@@ -524,7 +537,19 @@ namespace sys_sage {
          * @param dp_type DataPath type to search for (default: Any)
          * @param direction Orientation/direction of a DataPath (default: Any)
          */
+        [[ deprecated("Use FindDataPaths instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void GetAllDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+
+        /**
+         * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation.
+         * Results are returned in std::vector<DataPath*>* outDpArr, where first the matching data paths in dp_outgoing are pushed back, then the ones in dp_incoming.
+         * @param outDpArr - output parameter (vector with results)
+         * An input is pointer to a std::vector<DataPath *>, in which the data paths will be pushed. It must be allocated before the call (but does not have to be empty).
+         * The method pushes back the found data paths -- i.e. the data paths(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
+         * @param dp_type DataPath type to search for (default: Any)
+         * @param direction Orientation/direction of a DataPath (default: Any)
+         */
+        void FindDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
          * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation/direction.
@@ -533,7 +558,17 @@ namespace sys_sage {
          * @param direction Orientation (default: Any)
          * @return Vector of matching DataPaths
          */
+        [[ deprecated("Use FindDataPaths instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<DataPath*> GetAllDataPaths(DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+
+        /**
+         * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation/direction.
+         * Results are returned in a std::vector<DataPath*>*.
+         * @param dp_type DataPath type to search for (default: Any)
+         * @param direction Orientation (default: Any)
+         * @return Vector of matching DataPaths
+         */
+        std::vector<DataPath*> FindDataPaths(DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
         @brief Checks the consistency of the component tree starting from this component.
@@ -546,14 +581,39 @@ namespace sys_sage {
         
         The function returns the total number of errors found in the component tree, including errors in the direct children and any nested descendants.
         */
+        [[ deprecated("Use CheckSubtreeConsistency instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int CheckComponentTreeConsistency() const;
+
+        /**
+        @brief Checks the consistency of the component tree starting from this component.
+
+        This function verifies that each child component has this component set as its parent.
+        It logs an error message for each child that has an incorrect parent and increments the error count.
+        The function then recursively checks the consistency of the entire subtree rooted at each child component.
+
+        @return The total number of inconsistencies found in the component tree.
+        
+        The function returns the total number of errors found in the component tree, including errors in the direct children and any nested descendants.
+        */
+        int CheckSubtreeConsistency() const;
+
         /**
          * @brief Calculates approximate memory footprint of the subtree of this element (including the relevant Relations).
          * @param out_component_size output parameter (contains the footprint of the component tree elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
          * @param out_dataPathSize output parameter (contains the footprint of the data-path graph elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
          * @return The total size in bytes
          */
+        [[ deprecated("Use CalcSubtreeSize instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize) const;
+
+        /**
+         * @brief Calculates approximate memory footprint of the subtree of this element (including the relevant Relations).
+         * @param out_component_size output parameter (contains the footprint of the component tree elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
+         * @param out_dataPathSize output parameter (contains the footprint of the data-path graph elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
+         * @return The total size in bytes
+         */
+        int CalcSubtreeSize(unsigned * out_component_size, unsigned * out_dataPathSize) const;
+
         /**
          * @private
          * Helper function of int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize); -- normally you would call this one.
@@ -564,7 +624,20 @@ namespace sys_sage {
          * @return The total size in bytes
          * @see GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize);
          */
+        [[ deprecated("Use _CalcSubtreeSize instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int _GetTopologySize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*>* countedRelations) const;
+
+        /**
+         * @private
+         * Helper function of int GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize); -- normally you would call this one.
+         * \n Calculates approximate memory footprint of the subtree of this element (including the relevant data paths). Does not count DataPaths stored in counted_dataPaths.
+         * @param out_component_size - output parameter (contains the footprint of the component tree elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
+         * @param out_dataPathSize - output parameter (contains the footprint of the data-path graph elements); an already allocated unsigned * is the input, the value is expected to be 0 (the result is accumulated here)
+         * @param counted_dataPaths - std::set<DataPath*>* of data paths that should not be counted
+         * @return The total size in bytes
+         * @see GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize);
+         */
+        int _CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*>* countedRelations) const;
 
         /**
          * @brief Retrieves the depth (level) of a component in the topology.
@@ -572,7 +645,16 @@ namespace sys_sage {
          * @return Depth (level) of the component in the topology
          * @see depth
          */
+        [[ deprecated("Use CalcDepth instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         int GetDepth(bool refresh);
+
+        /**
+         * @brief Retrieves the depth (level) of a component in the topology.
+         * @param refresh If true, recalculate the position (depth) of the component in the tree; if false, return the already stored value
+         * @return Depth (level) of the component in the topology
+         * @see depth
+         */
+        int CalcDepth(bool refresh);
 
         /**
          * @private
@@ -601,12 +683,20 @@ namespace sys_sage {
          * @brief Deletes all relations of this component (optionally filtered by type).
          * @param relationType Relation type to delete (default: Any)
          */
+        [[ deprecated("Use DeleteRelations instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void DeleteAllRelations(RelationType::type relationType = RelationType::Any);
+
+        /**
+         * @brief Deletes all relations of this component (optionally filtered by type).
+         * @param relationType Relation type to delete (default: Any)
+         */
+        void DeleteRelations(RelationType::type relationType = RelationType::Any);
+
         /**
          * @deprecated Use void DeleteAllRelations(int32_t relationType = sys_sage::RelationType::Any) instead.
          * @brief Deletes all DataPaths of this component.
          */
-        [[deprecated("DeleteAllDataPaths is deprecated. Use void DeleteAllRelations(int32_t relationType = sys_sage::RelationType::Any) instead.")]]
+        [[ deprecated("Use DeleteRelations instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void DeleteAllDataPaths();
         /**
         Deletes the whole subtree (all the children) of the component.
