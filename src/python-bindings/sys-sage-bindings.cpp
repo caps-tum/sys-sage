@@ -466,6 +466,9 @@ PYBIND11_MODULE(sys_sage, m) {
     py::class_<Qubit, std::unique_ptr<Qubit, py::nodelete>, Component>(m, "Qubit")
         .def(py::init<int, std::string>(), py::arg("id") = 0, py::arg("name") = "Qubit")
         .def(py::init<Component *, int, std::string> (), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "Qubit")
+        #ifdef QDMI
+        .def("RefreshProperties", &Qubit::RefreshProperties)
+        #endif
         .def_property_readonly("t1", &Qubit::GetT1)
         .def_property_readonly("t2", &Qubit::GetT2)
         .def_property_readonly("readout_fidelity", &Qubit::GetReadoutFidelity)
@@ -482,6 +485,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetAllGateTypes", &QuantumBackend::GetAllGateTypes, "Get a list of the quantum gates in the backend")
         #ifdef QDMI
         .def_property("device", &QuantumBackend::GetQDMIDevice, &QuantumBackend::SetQDMIDevice)
+        .def("RefreshTopology", &QuantumBackend::RefreshTopology, py::arg("qubit_indices"), "Get all qubits in the backend")
         #endif
         .def("addGate", &QuantumBackend::addGate, py::arg("gate"), "Add this gate to the backend")
         .def("GetGatesBySize", &QuantumBackend::GetGatesBySize, py::arg("size"), "Get quantum gates by their size")
