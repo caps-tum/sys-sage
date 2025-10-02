@@ -65,7 +65,7 @@ void sys_sage::Component::PrintAllDataPathsInSubtree()
 
 void sys_sage::Component::PrintAllRelationsInSubtree(RelationType::type relationType)
 {
-    PrintRelationsInSubtree(relationType)
+    PrintRelationsInSubtree(relationType);
 }
 
 void sys_sage::Component::PrintRelationsInSubtree(RelationType::type relationType)
@@ -200,7 +200,7 @@ std::vector<sys_sage::Component*> sys_sage::Component::GetAllChildrenByType(Comp
     return ret;
 }
 
-std::vector<sys_sage::Component*> sys_sage::FindChildrenByType(ComponentType::type _componentType) const;
+std::vector<sys_sage::Component*> sys_sage::Component::FindChildrenByType(ComponentType::type _componentType) const
 {
     vector<Component*> ret;
     FindChildrenByType(&ret, _componentType);
@@ -209,7 +209,7 @@ std::vector<sys_sage::Component*> sys_sage::FindChildrenByType(ComponentType::ty
 
 void sys_sage::Component::GetAllChildrenByType(std::vector <Component *> *_outArray, ComponentType::type _componentType) const
 {
-    FindChildrenByType(ret, _componentType);
+    FindChildrenByType(_outArray, _componentType);
 }
 
 void sys_sage::Component::FindChildrenByType(std::vector <Component *> *_outArray, ComponentType::type _componentType) const
@@ -303,7 +303,7 @@ std::vector<sys_sage::Component*> sys_sage::Component::FindNthDescendants(int de
 
 void sys_sage::Component::GetSubcomponentsByType(std::vector<Component*>* outArray, sys_sage::ComponentType::type _componentType)
 {
-    FindDescendantsByType(ret, _componentType);
+    FindDescendantsByType(outArray, _componentType);
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::GetSubcomponentsByType(sys_sage::ComponentType::type _componentType)
@@ -325,29 +325,12 @@ std::vector<sys_sage::Component*> sys_sage::Component::GetComponentsInSubtree()
     return outArray;
 }
 
-void sys_sage::Component::GetAllDescendants(std::vector<Component*>* outArray)
-{
-    outArray->push_back(this);
-    for(Component * child : children)
-    {
-        child->GetAllDescendants(outArray);
-    }
-    return;
-}
-
-std::vector<sys_sage::Component*> sys_sage::Component::GetAllDescendants()
-{
-    vector<Component*> outArray;
-    GetAllDescendants(&outArray);
-    return outArray;
-}
-
 sys_sage::Component* sys_sage::Component::GetSubcomponentById(int _id, ComponentType::type _componentType)
 {
     return GetDescendantById(_id, _componentType);
 }
 
-sys_sage::Component *sys_sage::Component::GetDescendantById(int _id, ComponentType::type _componentType);
+sys_sage::Component *sys_sage::Component::GetDescendantById(int _id, ComponentType::type _componentType)
 {
     if(componentType == _componentType && id == _id){
         return this;
@@ -379,7 +362,7 @@ std::vector<sys_sage::Component*> sys_sage::Component::FindDescendantsByType(Com
 
 void sys_sage::Component::GetAllSubcomponentsByType(std::vector<Component*>* outArray, ComponentType::type _componentType)
 {
-    FindDescendantsByType(ret, _componentType);
+    FindDescendantsByType(outArray, _componentType);
 }
 
 void sys_sage::Component::FindDescendantsByType(std::vector<Component*>* outArray, ComponentType::type _componentType)
@@ -480,7 +463,7 @@ std::vector<sys_sage::Relation*>& sys_sage::Component::_GetRelations(RelationTyp
     return _GetRelationsByType(relationType);
 }
 
-const std::vector<sys_sage::Relation*>& _GetRelationsByType(RelationType::type relationType) const
+std::vector<sys_sage::Relation*>& sys_sage::Component::_GetRelationsByType(RelationType::type relationType) const
 {
     if (relations &&
         relationType >= 0 && 
@@ -499,7 +482,7 @@ const std::vector<sys_sage::Relation*>& sys_sage::Component::GetRelations(Relati
     return GetRelationsByType(relationType);
 }
 
-const std::vector<sys_sage::Relation*>& GetRelationsByType(RelationType::type relationType) const
+const std::vector<sys_sage::Relation*>& sys_sage::Component::GetRelationsByType(RelationType::type relationType) const
 {
     if (relations &&
         relationType >= 0 && 

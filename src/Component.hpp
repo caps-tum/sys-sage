@@ -490,7 +490,7 @@ namespace sys_sage {
          * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
          * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
          */
-        const std::vector<Relation*>& _GetRelationsByType(RelationType::type relationType) const;
+        std::vector<Relation*>& _GetRelationsByType(RelationType::type relationType) const;
 
         /**
          * @brief Returns a newly-constructed vector of all relations of a given type and position.
