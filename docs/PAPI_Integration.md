@@ -33,7 +33,7 @@ They can be thought of as wrapper functions around the actual PAPI routines.
 The following diagram shows the overall workflow of the PAPI metrics collection
 and evaluation through _sys-sage_:
 
-<img src="images/sys-sage_PAPI_workflow.pdf">
+![](images/sys-sage_PAPI_workflow.png)
 
 The green boxes correspond to the _sys-sage_ API whereas the blue ones
 correspond to plain PAPI. An example of the basic usage can be found in the
