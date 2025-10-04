@@ -1,8 +1,8 @@
 # PAPI Integration
 
 The _sys-sage_ library provides routines corresponding to the known `PAPI_read`,
-`PAPI_accum`, `PAPI_stop` functions to capture the hardware performance
-counters on CPUs. Their function signatures contain:
+`PAPI_accum` and `PAPI_stop` functions to capture hardware performance counters
+on CPUs. Their function signatures contain:
 
 ```cpp
 int sys_sage::PAPI_read(int eventSet, Component *root,
@@ -24,104 +24,24 @@ explained later.
 
 The above functions offer a way to automatically integrate the extracted
 performance counters into the _sys-sage_ topology without extra effort on the
-user's side, thus coupling the metrics directly to the relevant hardware
+user's side, thus attributing the metrics directly to the relevant hardware
 components and putting them into the context of the overall hardware topology.
 They can be thought of as wrapper functions around the actual PAPI routines.
 
 ## General Workflow
 
-It's up to the user to initialize the PAPI library and to create and configure
-the event sets through the plain PAPI. Additionally, the user may use the known
-`PAPI_start` routine to start performance monitoring. These functions have
-intenionally not been adopted by _sys-sage_, as they do not read the
-performance counters.
+The following diagram shows the overall workflow of the PAPI metrics collection
+and evaluation through _sys-sage_:
 
-A simple example would be:
+![](images/sys-sage_PAPI_workflow.pdf)
 
-```cpp
-#include "sys-sage.hpp"
-#include <papi.h>
-#include <iostream>
-#include <memory>
-#include <stdlib.h>
+The green boxes correspond to the _sys-sage_ API whereas the blue ones
+correspond to plain PAPI. An example of the basic usage can be found in the
+`<path_to_sys-sage>/examples/papi_basics.cpp` file.
 
-#define FATAL(errMsg) do {\
-  std::cerr << "error: " << (errMsg) << '\n';\
-  return EXIT_FAILURE;\
-} while (false)
+## Under the Hood
 
-void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
-{
-  for (size_t i = 0; i < n; i++)
-    a[i] = alpha * b[i] + c[i];
-}
-
-int main(int argc, const char **argv)
-{
-  if (argc != 2) {
-    std::cerr << "usage: " << argv[0] << " <path_to_hwloc_xml>\n";
-    return EXIT_FAILURE;
-  }
-
-  sys_sage::Node node;
-  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
-    return EXIT_FAILURE;
-
-  int rval;
-
-  size_t n = 1'000'000;
-  auto a = std::make_unique<double[]>(n);
-  auto b = std::make_unique<double[]>(n);
-  auto c = std::make_unique<double[]>(n);
-  double alpha = 3.14159;
-
-  rval = PAPI_library_init(PAPI_VER_CURRENT);
-  if (rval != PAPI_VER_CURRENT)
-    FATAL(PAPI_strerror(rval));
-
-  int eventSet = PAPI_NULL;
-  rval = PAPI_create_eventset(&eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  int events[] = {
-    PAPI_TOT_INS,
-    PAPI_TOT_CYC
-  };
-  int numEvents = sizeof(events) / sizeof(events[0]);
-  rval = PAPI_add_events(eventSet, events, numEvents);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  sys_sage::Thread *thread;
-
-  rval = PAPI_start(eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  saxpy(a.get(), b.get(), c.get(), n, alpha);
-
-  rval = sys_sage::PAPI_stop(eventSet, &node, &thread);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  thread->PrintPAPICounters();
-
-  rval = PAPI_cleanup_eventset(eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  rval = PAPI_destroy_eventset(&eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  return EXIT_SUCCESS;
-}
-```
-
-### Under the Hood
-
-The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum`,
+The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
 `sys_sage::PAPI_stop` all follow a very similar strategy:
 
 1. Based on the given event set, determine the events associated to it and
@@ -155,7 +75,7 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum`,
      thread, in which case we simply call `sched_getcpu()`.
 
    Except for the first case, it could happen that the event set monitors
-   performance counters on different hardware threads through repeated
+   performance counters on different hardware threads caused by repeated
    re-scheduling of the corresponding software thread. This leads into the
    fact that the performance counter values of different readings may be
    scattered onto different hardware threads.
