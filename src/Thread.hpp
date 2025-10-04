@@ -2,9 +2,9 @@
 #define THREAD_HPP
 
 #include "Component.hpp"
+#include <forward_list>
 #include <optional>
 #include <string>
-#include <vector>
 #include <utility>
 
 namespace sys_sage {
@@ -42,7 +42,7 @@ namespace sys_sage {
         std::optional<long long> GetPAPICounterReading(const std::string &event,
                                                        unsigned long long timestamp = 0);
 
-        std::vector<std::pair<unsigned long long, long long>> *
+        std::forward_list<std::pair<unsigned long long, long long>> *
         GetAllPAPICounterReadings(const std::string &event);
 
         void PrintPAPICounters();

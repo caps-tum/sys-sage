@@ -1,7 +1,9 @@
 #include "sys-sage.hpp"
 #include <papi.h>
 #include <algorithm>
+#include <chrono>
 #include <fstream>
+#include <forward_list>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -10,15 +12,14 @@
 #include <string>
 #include <sstream>
 #include <utility>
-#include <vector>
 
-#define TIME() ( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() )
+#define TIME() ( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() )
 
 using namespace sys_sage;
 
 static std::optional<unsigned int> GetCpuNumFromTid(unsigned long tid)
 {
-  static constexpr int hwThreadIdField = 39;
+  static constexpr unsigned hwThreadIdField = 39;
 
   std::ifstream procStat ("/proc/" + std::to_string(tid) + "/stat");
   if (!procStat.is_open())
@@ -36,7 +37,7 @@ static std::optional<unsigned int> GetCpuNumFromTid(unsigned long tid)
 
   // iterate until the white space before `hwThreadIdField` is found
   pos++;
-  for (int field = 2; field < hwThreadIdField - 1; field++) {
+  for (unsigned field = 2; field < hwThreadIdField - 1; field++) {
     pos = line.find_first_of(' ', pos + 1);
     if (pos == std::string::npos)
       return std::nullopt;
@@ -128,29 +129,28 @@ static int StoreCounters(const long long *counters, const int *events,
     if (rval != PAPI_OK)
       return rval;
 
-    std::vector<std::pair<unsigned long long, long long>> *readings;
+    std::forward_list<std::pair<unsigned long long, long long>> *readings;
     auto readingsIt = thread->attrib.find(buf);
     if (readingsIt == thread->attrib.end()) {
-      readings = new std::vector<std::pair<unsigned long long, long long>>;
+      readings = new std::forward_list<std::pair<unsigned long long, long long>>;
       thread->attrib[buf] = reinterpret_cast<void *>( readings );
     } else {
-      readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
+      readings = reinterpret_cast<std::forward_list<std::pair<unsigned long long, long long>> *>( readingsIt->second );
     }
 
     unsigned long long timestamp;
     if constexpr (accumulate) {
       if (readings->empty()) {
         timestamp = TIME();
-        readings->emplace_back(timestamp, counters[i]);
+        readings->emplace_front(timestamp, counters[i]);
       } else {
-        // always accumulate on the last reading
-        auto &pair = readings->back();
+        auto &pair = readings->front(); // accumulate on the lastest reading
         timestamp = pair.first;
         pair.second += counters[i];
       }
     } else {
       timestamp = TIME();
-      readings->emplace_back(timestamp, counters[i]);
+      readings->emplace_front(timestamp, counters[i]);
     }
 
     if (outTimestamp)
@@ -181,13 +181,11 @@ int sys_sage::PAPI_read(int eventSet, Component *root, Thread **outThread,
   if (rval != PAPI_OK)
     return rval;
 
-  // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
   Thread *thread = static_cast<Thread *>(
     root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
   );
   if (thread == nullptr)
-    // TODO: is there a better way to handle the error?
-    return PAPI_EINVAL;
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
   if (outThread)
     *outThread = thread;
   rval = StoreCounters<false>(counters, events.get(), numEvents, thread,
@@ -219,13 +217,11 @@ int sys_sage::PAPI_accum(int eventSet, Component *root, Thread **outThread,
   if (rval != PAPI_OK)
     return rval;
 
-  // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
   Thread *thread = static_cast<Thread *>(
     root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
   );
   if (thread == nullptr)
-    // TODO: is there a better way to handle the error?
-    return PAPI_EINVAL;
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
   if (outThread)
     *outThread = thread;
   rval = StoreCounters<true>(counters, events.get(), numEvents, thread,
@@ -257,13 +253,11 @@ int sys_sage::PAPI_stop(int eventSet, Component *root, Thread **outThread,
   if (rval != PAPI_OK)
     return rval;
 
-  // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
   Thread *thread = static_cast<Thread *>(
     root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
   );
   if (thread == nullptr)
-    // TODO: is there a better way to handle the error?
-    return PAPI_EINVAL;
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
   if (outThread)
     *outThread = thread;
   rval = StoreCounters<false>(counters, events.get(), numEvents, thread,
@@ -291,13 +285,11 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters,
   if (rval != PAPI_OK)
     return rval;
 
-  // TODO: make `GetSubcomponentById` take in an `unsigned int` instead of `int`
   Thread *thread = static_cast<Thread *>(
     root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
   );
   if (thread == nullptr)
-    // TODO: is there a better way to handle the error?
-    return PAPI_EINVAL;
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
   if (outThread)
     *outThread = thread;
   rval = StoreCounters<false>(counters, events.get(),
@@ -317,29 +309,29 @@ std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
   if (readingsIt == attrib.end())
     return std::nullopt;
 
-  auto &readings = *reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
+  auto *readings = reinterpret_cast<std::forward_list<std::pair<unsigned long long, long long>> *>( readingsIt->second );
   if (timestamp == 0)
-    return readings.back().second;
+    return readings->front().second;
 
-  auto it = std::find_if(readings.begin(), readings.end(),
+  auto it = std::find_if(readings->begin(), readings->end(),
                          [timestamp](const std::pair<unsigned long long, long long> &pair) {
                            return timestamp == pair.first;
                          }
             );
-  if (it == readings.end())
+  if (it == readings->end())
     return std::nullopt;
 
   return it->second;
 }
 
-std::vector<std::pair<unsigned long long, long long>> *
+std::forward_list<std::pair<unsigned long long, long long>> *
 Thread::GetAllPAPICounterReadings(const std::string &event)
 {
   auto readingsIt = attrib.find(event);
   if (readingsIt == attrib.end())
     return nullptr;
 
-  return reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
+  return reinterpret_cast<std::forward_list<std::pair<unsigned long long, long long>> *>( readingsIt->second );
 }
 
 void Thread::PrintPAPICounters()
@@ -348,10 +340,12 @@ void Thread::PrintPAPICounters()
 
   std::cout << "performance counters on thread " << id << ":\n";
   for (const auto &[key, val] : attrib) {
+    // indirectly check if key is a valid PAPI event
     if (PAPI_event_name_to_code(key.c_str(), &dummy) != PAPI_OK)
       continue;
 
-    auto &readings = *reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( val );
-    std::cout << "  " << key << ": " << readings.back().second << '\n';
+    auto *readings = reinterpret_cast<std::forward_list<std::pair<unsigned long long, long long>> *>( val );
+    // only print the latest reading
+    std::cout << "  " << key << ": " << readings->front().second << '\n';
   }
 }
