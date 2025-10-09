@@ -47,7 +47,7 @@ void *work(void *arg)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = sys_sage::PAPI_stop(wargs->eventSet, wargs->topoRoot,
+  wargs->rval = sys_sage::PAPI_stop(wargs->eventSet, wargs->topoRoot, nullptr,
                                     &wargs->outThread);
   if (wargs->rval != PAPI_OK)
     return nullptr;

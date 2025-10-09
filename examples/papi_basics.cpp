@@ -60,7 +60,7 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = sys_sage::PAPI_stop(eventSet, &node, &thread);
+  rval = sys_sage::PAPI_stop(eventSet, &node, nullptr, &thread);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
