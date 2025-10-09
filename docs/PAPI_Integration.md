@@ -19,7 +19,7 @@ int sys_sage::PAPI_stop(int eventSet, Component *root,
 ```
 
 where `root` is a pointer to the root of the _sys-sage_ topology and `timestamp`
-as well as `thread` are optional parameters whose purpose will be explained
+as well as `thread` are (optional) parameters whose purpose will be explained
 later.
 
 The above functions offer a way to automatically integrate the performance
@@ -37,7 +37,7 @@ and evaluation through _sys-sage_:
 
 The green boxes correspond to the _sys-sage_ API whereas the blue ones
 correspond to plain PAPI. In general, the creation and configuration of event
-sets remains with the original PAPI, while the performance monitoring is now
+sets remain with the original PAPI, while the performance monitoring is now
 managed through _sys-sage_. An example of the basic usage can be found in the
 `<path_to_sys-sage>/examples/papi_basics.cpp` file.
 
@@ -86,7 +86,9 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    the software thread to a specific hardware thread for safety? Maybe provide
    a routine where you get a function pointer and then spawn a pthread which is
    pinned to a hardware thread and executes the instructions starting from the
-   function pointer while being monitored?).
+   function pointer while being monitored? Maybe have some metadata where you
+   store what the "first" hardware thread of each event set was and then always
+   use that one?).
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. This handle is recorded into `thread` for later
@@ -112,7 +114,7 @@ another, timestamps have been introduced which are recorded into `timestamp`,
 if it is not `nullptr`. A timestamp is always associated to the entire reading,
 meaning that performance counter values of different events share the same
 timestamp within the same reading. A timestamp can be used to get the value of
-a specific reading. It is important to state that these timestamps are *not*
+a specific reading. It is important to state that these timestamps are **not**
 guaranteed to be unique -- although most likely they will -- and in case of a
 collision, the value of the older reading will be returned (TODO: maybe return
 the last/most recent one?). Apart from that, the user may also access the
