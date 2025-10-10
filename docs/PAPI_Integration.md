@@ -64,7 +64,7 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    queried from the _sys-sage_ topology at a later point.
 
 3. Depending on the event set, figure out which hardware thread the counters
-   belong to and find its ID. Here we need to make a case destinction:
+   belong to and find its ID. Here, we need to make a case destinction:
 
    - If the event set has explicitely been attached to a hardware thread,
      simply query for the ID through PAPI.
@@ -76,7 +76,8 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    - Otherwise, the event set is implicitely attached to the current software
      thread, in which case we simply call `sched_getcpu()`.
 
-   Consider thread affinity for more reliable performance monitoring.
+   The user should consider thread affinity for more reliable performance
+   monitoring.
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. This handle is recorded into `thread` for later
@@ -104,19 +105,19 @@ performance counter values of different events share the same timestamp within
 the same reading. Furthermore, a timestamp can be used to get the value of a
 specific reading. It is important to state that these timestamps are **not**
 guaranteed to be unique -- although most likely they will -- and in case of a
-collision, the value of the older reading will be returned (TODO: maybe return
-the last/most recent one?). Apart from that, the user may also access the
-datastructure containing the values of all readings.
+collision, the value of the later reading will be returned. Apart from that,
+the user may also access the datastructure containing the values of all
+readings.
 
 Normally, a performance counter reading would not create a new entry in the
 datastructure, but rather update an already existing one to reflect the latest
 reading. This would either involve overwriting the previous value with a new
-one or adding new values to it. Either way, the previous timestamp will be
-overwritten. Of course, if no previous entry exists, a new one will be created.
-On the other side, always updating an existing entry may not be desirable, to
-which _sys-sage_ allows the user to indicate when a new entry should be created.
-Simply put, whenever `*timestamp == 0`, a new entry is added to the
-datastructure. This allows for the following:
+one or adding new values to it. Either way, the previous timestamp will always
+be overwritten. Of course, if no previous entry exists, a new one will be
+created automatically. On the other side, always updating an existing entry may
+not be desirable, to which _sys-sage_ allows the user to indicate when a new
+entry should be created. Simply put, whenever `*timestamp == 0`, a new entry is
+added to the datastructure. This allows for the following:
 
 ```cpp
 unsigned long long timestamp = 0;

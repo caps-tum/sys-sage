@@ -52,7 +52,7 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  char eventNames[numEvents][PAPI_MAX_STR_LEN];
+  char eventNames[numEvents][PAPI_MAX_STR_LEN] = { { '\0' } };
   for (int i = 0; i < numEvents; i++) {
     rval = PAPI_event_code_to_name(events[i], eventNames[i]);
     if (rval != PAPI_OK)

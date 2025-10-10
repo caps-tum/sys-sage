@@ -63,6 +63,7 @@ int main(int argc, char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
+  unsigned long long timestamp = 0;
   sys_sage::Thread *thread;
 
   rval = PAPI_start(eventSet);
@@ -76,7 +77,7 @@ int main(int argc, char **argv)
   if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
     FATAL("expected child process to stop right before exit\n", pid);
 
-  rval = sys_sage::PAPI_stop(eventSet, &node, nullptr, &thread);
+  rval = sys_sage::PAPI_stop(eventSet, &node, &timestamp, &thread);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 

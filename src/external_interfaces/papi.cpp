@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <sched.h>
 #include <string>
-#include <string.h>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -199,8 +198,7 @@ int sys_sage::PAPI_read(int eventSet, Component *root,
 }
 
 int sys_sage::PAPI_accum(int eventSet, Component *root,
-                         unsigned long long *timestamp,
-                         Thread **thread)
+                         unsigned long long *timestamp, Thread **thread)
 {
   if (!timestamp)
     return PAPI_EINVAL;
@@ -213,8 +211,7 @@ int sys_sage::PAPI_accum(int eventSet, Component *root,
   if (rval != PAPI_OK)
     return rval;
 
-  long long counters[numEvents];
-  memset(counters, 0, numEvents * sizeof(long long));
+  long long counters[numEvents] = { 0 };
   rval = ::PAPI_accum(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
@@ -326,12 +323,12 @@ std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
   if (timestamp == 0)
     return readings->back().second;
 
-  auto it = std::find_if(readings->begin(), readings->end(),
+  auto it = std::find_if(readings->rbegin(), readings->rend(),
                          [timestamp](const std::pair<unsigned long long, long long> &pair) {
                            return timestamp == pair.first;
                          }
             );
-  if (it == readings->end())
+  if (it == readings->rend())
     return std::nullopt;
 
   return it->second;
