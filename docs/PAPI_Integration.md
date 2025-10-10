@@ -6,7 +6,7 @@ on CPUs. The function signatures include
 
 ```cpp
 int sys_sage::PAPI_read(int eventSet, Component *root,
-                        unsigned long long *timestamp = nullptr,
+                        unsigned long long *timestamp,
                         Thread **thread = nullptr);
 
 int sys_sage::PAPI_accum(int eventSet, Component *root,
@@ -14,7 +14,7 @@ int sys_sage::PAPI_accum(int eventSet, Component *root,
                          Thread **thread = nullptr);
 
 int sys_sage::PAPI_stop(int eventSet, Component *root,
-                        unsigned long long *timestamp = nullptr,
+                        unsigned long long *timestamp,
                         Thread **thread = nullptr);
 ```
 
@@ -58,10 +58,10 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    - `sys_sage::PAPI_stop`  -> `PAPI_stop`
 
    For this, the counters are first written into a local array called `counters`.
-   Note that in the case of `PAPI_accum`, we need to provide an array with
-   0-valued entries, since the accumulation needs not to be done on temporary
-   data, but on the previously stored counter values, which are queried from
-   the _sys-sage_ topology at a later point.
+   Note that in the case of `sys_sage::PAPI_accum`, we need to provide an array
+   with 0-valued entries, since the accumulation needs not to be done on
+   temporary data, but on the previously stored counter values, which are
+   queried from the _sys-sage_ topology at a later point.
 
 3. Depending on the event set, figure out which hardware thread the counters
    belong to and find its ID. Here we need to make a case destinction:
@@ -76,35 +76,7 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    - Otherwise, the event set is implicitely attached to the current software
      thread, in which case we simply call `sched_getcpu()`.
 
-   Except for the first case, it could happen that the event set monitors
-   performance counters on different hardware threads caused by repeated
-   re-scheduling of the corresponding software thread. This leads into the
-   fact that the performance counter values of different readings may be
-   scattered onto different hardware threads.
-
-   (TODO: investigate if this could be a problem when accumulating, since if
-   the values are scattered, the accumulation might not make sense. Maybe
-   suggest to the user to always pin the software thread to a specific hardware
-   thread for safety? Maybe provide a routine where you get a function pointer
-   and then spawn a pthread which is pinned to a hardware thread and executes
-   the instructions starting from the function pointer while being monitored?
-
-   _Edit_: Now that I'm thinking about it, this is more of a problem for PAPI
-   itself, since the same conditions apply there. If a software thread is
-   re-scheduled on to different hardware threads, the accumulation might also
-   not make sense. I would suggest to explicitely inform the user here in this
-   documentation that thread-affinity might be important for proper measuremnt.
-
-   To be honest, I didn't find any resource which states that an event set that
-   is attached to a software thread actually "follows" that software thread
-   across different hardware threads through re-scheduling. I only got this
-   impression from reading Jazmin's thesis. I even browsed through the PAPI
-   source code and found something about `perf_event_open`, but I'm not exactly
-   sure as to how it's used in the code.
-
-   Anyways, I wrote a simple example that uses the sys-sage-PAPI integration to
-   accumulate some metrics and it shows that it will always find the same
-   thread throughout multiple iterations, so no actual scattering occurs).
+   Consider thread affinity for more reliable performance monitoring.
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. This handle is recorded into `thread` for later
@@ -126,32 +98,25 @@ values of the performance counters. It may be triggered by a call to either
 
 Now, the _sys-sage_ library allows the user to store the results of multiple
 performance counter readings of the same event. To distinguish them from one
-another, timestamps have been introduced which are recorded into `timestamp`,
-if it is not `nullptr`. A timestamp is always associated to the entire reading,
-meaning that performance counter values of different events share the same
-timestamp within the same reading. A timestamp can be used to get the value of
-a specific reading. It is important to state that these timestamps are **not**
+another, timestamps have been introduced which are recorded into `timestamp`.
+A timestamp is always associated to the entire reading, meaning that
+performance counter values of different events share the same timestamp within
+the same reading. Furthermore, a timestamp can be used to get the value of a
+specific reading. It is important to state that these timestamps are **not**
 guaranteed to be unique -- although most likely they will -- and in case of a
 collision, the value of the older reading will be returned (TODO: maybe return
 the last/most recent one?). Apart from that, the user may also access the
 datastructure containing the values of all readings.
 
-When calling `sys_sage::PAPI_read` or `sys_sage::PAPI_stop`, a new entry in
-the datastructure is created for every event. In the case of
-`sys_sage::PAPI_accum`, we need to be aware of the following: As already hinted
-at before, the accumulation needs to be done on already stored values. Normally,
-we accumulate the values on the results of the latest reading. However, if for
-instance an event is monitored for the first time and no previous entries exist,
-a new one will be created in the same fashion as in `sys_sage::PAPI_read`.
-Apart from that, always accumulating on the latest reading may not be desirable,
-as the user may want to keep values of previous readings unchanged while doing
-some new accumulation. To enable this behaviour and in contrast to the other
-routines, `sys_sage::PAPI_accum` expects `timestamp` to not be `nullptr`.
-Simply put,  whenever `*timestamp == 0`, a new entry is added to the
-datastructure. If this is not the case, we again look for the latest reading.
-Either way, we record a new timestamp in `timestamp`, which may also involve
-updating the timestamp of the already existing latest reading. This way, we
-can have something like this:
+Normally, a performance counter reading would not create a new entry in the
+datastructure, but rather update an already existing one to reflect the latest
+reading. This would either involve overwriting the previous value with a new
+one or adding new values to it. Either way, the previous timestamp will be
+overwritten. Of course, if no previous entry exists, a new one will be created.
+On the other side, always updating an existing entry may not be desirable, to
+which _sys-sage_ allows the user to indicate when a new entry should be created.
+Simply put, whenever `*timestamp == 0`, a new entry is added to the
+datastructure. This allows for the following:
 
 ```cpp
 unsigned long long timestamp = 0;
@@ -161,10 +126,8 @@ for (int i = 0; i < ITER; i++) {
 }
 ```
 
-where `timestamp` now refers to the latest reading of a newly created entry.
-(TODO: Maybe consider combining the parameters `thread` and `timestamp` into
-a struct, since `timestamp` is kind of useless on its one, because there is no
-way of accessing the values without `thread`).
+where `timestamp` now refers to the latest accumulated value of a newly created
+entry.
 
 ## Simple Storage
 
@@ -174,12 +137,12 @@ the performance counters into the topology, _sys-sage_ provides
 ```cpp
 int sys_sage::PAPI_store(int eventSet, const long long *counters,
                          int numCounters, Component *root,
-                         unsigned long long *timestamp = nullptr,
+                         unsigned long long *timestamp,
                          Thread **thread = nullptr);
 ```
 
 This routine will simply determine the right hardware thread to attribute the
-results from `counters` to.
+results in `counters` to.
 
 ## Accessing the Counter Values
 

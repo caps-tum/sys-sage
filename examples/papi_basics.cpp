@@ -52,6 +52,14 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
+  char eventNames[numEvents][PAPI_MAX_STR_LEN];
+  for (int i = 0; i < numEvents; i++) {
+    rval = PAPI_event_code_to_name(events[i], eventNames[i]);
+    if (rval != PAPI_OK)
+      FATAL(PAPI_strerror(rval));
+  }
+
+  unsigned long long timestamps[3] = { 0 };
   sys_sage::Thread *thread;
 
   rval = PAPI_start(eventSet);
@@ -60,11 +68,42 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = sys_sage::PAPI_stop(eventSet, &node, nullptr, &thread);
+  rval = sys_sage::PAPI_read(eventSet, &node, &timestamps[0], &thread);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  thread->PrintPAPICounters();
+  std::cout << "reading performance counters on thread " << thread->GetId() << ":\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[0]).value_or(-1) << '\n';
+
+  rval = PAPI_reset(eventSet);
+  if (rval != PAPI_OK)
+    FATAL(PAPI_strerror(rval));
+
+  for (int i = 0; i < 5; i++) {
+    saxpy(a.get(), b.get(), c.get(), n, alpha);
+    rval = sys_sage::PAPI_accum(eventSet, &node, &timestamps[1], &thread);
+    if (rval != PAPI_OK)
+      FATAL(PAPI_strerror(rval));
+  }
+
+  std::cout << "accumulating performance counters on thread " << thread->GetId() << ":\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[1]).value_or(-1) << '\n';
+
+  rval = PAPI_reset(eventSet);
+  if (rval != PAPI_OK)
+    FATAL(PAPI_strerror(rval));
+
+  saxpy(a.get(), b.get(), c.get(), n, alpha);
+
+  rval = sys_sage::PAPI_stop(eventSet, &node, &timestamps[2], &thread);
+  if (rval != PAPI_OK)
+    FATAL(PAPI_strerror(rval));
+
+  std::cout << "reading performance counters on thread " << thread->GetId() << ":\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[2]).value_or(-1) << '\n';
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)

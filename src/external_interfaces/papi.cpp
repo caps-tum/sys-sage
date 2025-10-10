@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <sched.h>
 #include <string>
+#include <string.h>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -140,21 +141,20 @@ static int StoreCounters(const long long *counters, const int *events,
     }
     readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
 
-    if constexpr (accum) {
-      if (*timestamp == 0) {
-        readings->emplace_back(ts, counters[i]);
-      } else {
-        auto &pair = readings->back(); // accumulate on the lastest reading
-        pair.first = ts; // update timestamp
-        pair.second += counters[i];
-      }
-    } else {
+    if (*timestamp == 0) {
       readings->emplace_back(ts, counters[i]);
+    } else {
+      auto &pair = readings->back(); // update the lastest reading
+      pair.first = ts;
+
+      if constexpr (accum)
+        pair.second += counters[i];
+      else
+        pair.second = counters[i];
     }
   }
 
-  if (timestamp)
-    *timestamp = ts;
+  *timestamp = ts;
 
   return PAPI_OK;
 }
@@ -162,6 +162,9 @@ static int StoreCounters(const long long *counters, const int *events,
 int sys_sage::PAPI_read(int eventSet, Component *root,
                         unsigned long long *timestamp, Thread **thread)
 {
+  if (!timestamp)
+    return PAPI_EINVAL;
+
   int rval;
 
   std::unique_ptr<int[]> events;
@@ -210,7 +213,8 @@ int sys_sage::PAPI_accum(int eventSet, Component *root,
   if (rval != PAPI_OK)
     return rval;
 
-  long long counters[numEvents] = { 0 };
+  long long counters[numEvents];
+  memset(counters, 0, numEvents * sizeof(long long));
   rval = ::PAPI_accum(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
@@ -238,6 +242,9 @@ int sys_sage::PAPI_accum(int eventSet, Component *root,
 int sys_sage::PAPI_stop(int eventSet, Component *root,
                         unsigned long long *timestamp, Thread **thread)
 {
+  if (!timestamp)
+    return PAPI_EINVAL;
+
   int rval;
 
   std::unique_ptr<int[]> events;
@@ -275,6 +282,9 @@ int sys_sage::PAPI_store(int eventSet, const long long *counters,
                          int numCounters, Component *root,
                          unsigned long long *timestamp, Thread **thread)
 {
+  if (!timestamp)
+    return PAPI_EINVAL;
+
   int rval;
 
   std::unique_ptr<int[]> events;
