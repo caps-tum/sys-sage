@@ -123,10 +123,10 @@ static int StoreCounters(const long long *counters, const int *events,
   int rval;
 
   unsigned long long ts = TIME();
-  std::string buf (PAPI_MAX_STR_LEN, '\0');
+  char buf[PAPI_MAX_STR_LEN] = { '\0' };
 
   for (int i = 0; i < numEvents; i++) {
-    rval = PAPI_event_code_to_name(events[i], buf.data());
+    rval = PAPI_event_code_to_name(events[i], buf);
     if (rval != PAPI_OK)
       return rval;
 

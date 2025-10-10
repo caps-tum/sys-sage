@@ -80,15 +80,31 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    performance counters on different hardware threads caused by repeated
    re-scheduling of the corresponding software thread. This leads into the
    fact that the performance counter values of different readings may be
-   scattered onto different hardware threads. (TODO: investigate if this could
-   be a problem when accumulating, since if the values are scattered, the
-   accumulation might not make sense. Maybe suggest to the user to always pin
-   the software thread to a specific hardware thread for safety? Maybe provide
-   a routine where you get a function pointer and then spawn a pthread which is
-   pinned to a hardware thread and executes the instructions starting from the
-   function pointer while being monitored? Maybe have some metadata where you
-   store what the "first" hardware thread of each event set was and then always
-   use that one?).
+   scattered onto different hardware threads.
+
+   (TODO: investigate if this could be a problem when accumulating, since if
+   the values are scattered, the accumulation might not make sense. Maybe
+   suggest to the user to always pin the software thread to a specific hardware
+   thread for safety? Maybe provide a routine where you get a function pointer
+   and then spawn a pthread which is pinned to a hardware thread and executes
+   the instructions starting from the function pointer while being monitored?
+
+   _Edit_: Now that I'm thinking about it, this is more of a problem for PAPI
+   itself, since the same conditions apply there. If a software thread is
+   re-scheduled on to different hardware threads, the accumulation might also
+   not make sense. I would suggest to explicitely inform the user here in this
+   documentation that thread-affinity might be important for proper measuremnt.
+
+   To be honest, I didn't find any resource which states that an event set that
+   is attached to a software thread actually "follows" that software thread
+   across different hardware threads through re-scheduling. I only got this
+   impression from reading Jazmin's thesis. I even browsed through the PAPI
+   source code and found something about `perf_event_open`, but I'm not exactly
+   sure as to how it's used in the code.
+
+   Anyways, I wrote a simple example that uses the sys-sage-PAPI integration to
+   accumulate some metrics and it shows that it will always find the same
+   thread throughout multiple iterations, so no actual scattering occurs).
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. This handle is recorded into `thread` for later
