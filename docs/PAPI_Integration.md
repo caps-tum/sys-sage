@@ -131,7 +131,7 @@ added to the datastructure. This allows for the following:
 unsigned long long timestamp = 0;
 for (int i = 0; i < ITER; i++) {
     compute();
-    sys_sage::PAPI_accum(eventSet, root, &timestamp);
+    sys_sage::PAPI_accum(eventSet, &timestamp, &root, &metrics);
 }
 ```
 
