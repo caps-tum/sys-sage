@@ -5,22 +5,18 @@ The _sys-sage_ library provides routines corresponding to the known `PAPI_read`,
 on CPUs. The function signatures include
 
 ```cpp
-int sys_sage::PAPI_read(int eventSet, Component *root,
-                        unsigned long long *timestamp,
-                        Thread **thread = nullptr);
+int sys_sage::PAPI_read(int eventSet, unsigned long long *timestamp,
+                        Component *root, PAPIMetrics **metrics);
 
-int sys_sage::PAPI_accum(int eventSet, Component *root,
-                         unsigned long long *timestamp,
-                         Thread **thread = nullptr);
+int sys_sage::PAPI_accum(int eventSet, unsigned long long *timestamp,
+                        Component *root, PAPIMetrics **metrics);
 
-int sys_sage::PAPI_stop(int eventSet, Component *root,
-                        unsigned long long *timestamp,
-                        Thread **thread = nullptr);
+int sys_sage::PAPI_stop(int eventSet, unsigned long long *timestamp,
+                        Component *root, PAPIMetrics **metrics);
 ```
 
-where `root` is a pointer to the root of the _sys-sage_ topology and `timestamp`
-as well as `thread` are (optional) parameters whose purpose will be explained
-later.
+where `root` is a pointer to the root of the _sys-sage_ topology. The purpose
+of `timestamp` and `metrics` will be explained later on.
 
 The above functions offer a way to automatically integrate the performance
 counter values into the _sys-sage_ topology, thus attributing the metrics
@@ -57,13 +53,13 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
 
    - `sys_sage::PAPI_stop`  -> `PAPI_stop`
 
-   For this, the counters are first written into a local array called `counters`.
+   For this, the counters are written into a local array called `counters`.
    Note that in the case of `sys_sage::PAPI_accum`, we need to provide an array
    with 0-valued entries, since the accumulation needs not to be done on
    temporary data, but on the previously stored counter values, which are
    queried from the _sys-sage_ topology at a later point.
 
-3. Depending on the event set, figure out which hardware thread the counters
+3. Depending on the event set, figure out to which hardware thread the counters
    belong to and find its ID. Here, we need to make a case destinction:
 
    - If the event set has explicitely been attached to a hardware thread,
@@ -76,15 +72,27 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
    - Otherwise, the event set is implicitely attached to the current software
      thread, in which case we simply call `sched_getcpu()`.
 
-   The user should consider thread affinity for more reliable performance
-   monitoring.
+   In the last two cases, the software thread can potentially migrate across
+   multiple hardware threads through repeated re-scheduling. From PAPI's
+   perspective, this doesn't pose any concern. The performance counter values
+   are simply fetched from the PMU of the current hardware thread and may
+   potentially be processed with the values stemming from other hardware
+   threads. This results in "mixed" performance counter values. If this
+   behaviour is not desired, the user should consider thread affinity and
+   pinning for more homogeneous performance monitoring.
+
+   To put possibly "mixed" performance counter values into the context of the
+   hardware threads, _sys-sage_ uses a new relation type called `PAPIMetrics`,
+   which naturally "keeps track" of the hardware threads.
 
 4. Together with the ID of the hardware thread, query for its handle in the
-   _sys-sage_ topology. This handle is recorded into `thread` for later
-   referencing by the user, if it is not `nullptr`.
+   _sys-sage_ topology. Furthermore, if `*metrics == nullptr`, a new relation
+   of type `RelationType::PAPIMetrics` is created, which contains the handle
+   and is recorded into `*metrics` for later reference by the user. Otherwise,
+   _sys-sage_ inserts the handle into `*metrics` if it's not already contained.
 
-5. Store the values of `counters` into the `attrib` map of the hardware thread
-   on a per-event basis, meaning that if the value `counters[i]` at index `i`
+5. Store the values of `counters` into the `attrib` map of `*metrics` on a
+   per-event basis, meaning that if the value `counters[i]` at index `i`
    corresponds to the event `events[i]`, we will have a key-value pair similar
    to `{ events[i], counters[i] }`. Note that the values are actually wrapped
    around a datastructure and that the string representation of the event code
@@ -106,7 +114,7 @@ the same reading. Furthermore, a timestamp can be used to get the value of a
 specific reading. It is important to state that these timestamps are **not**
 guaranteed to be unique -- although most likely they will -- and in case of a
 collision, the value of the later reading will be returned. Apart from that,
-the user may also access the datastructure containing the values of all
+the user may also access the entire datastructure containing the values of all
 readings.
 
 Normally, a performance counter reading would not create a new entry in the
@@ -130,33 +138,21 @@ for (int i = 0; i < ITER; i++) {
 where `timestamp` now refers to the latest accumulated value of a newly created
 entry.
 
-## Simple Storage
+## PAPIMetrics - A new Relation
 
-For the case that the user doesn't want each routine call to consequently store
-the performance counters into the topology, _sys-sage_ provides
-
-```cpp
-int sys_sage::PAPI_store(int eventSet, const long long *counters,
-                         int numCounters, Component *root,
-                         unsigned long long *timestamp,
-                         Thread **thread = nullptr);
-```
-
-This routine will simply determine the right hardware thread to attribute the
-results in `counters` to.
-
-## Accessing the Counter Values
-
-Given the event, a thread and an optional timestamp, the user may utilize
+As discussed before, `PAPIMetrics` offers a way to capture "mixed" performance
+counters values while putting them into the context of the hardware threads
+from which they stem from. Moreover, this new relation offers ways to access
+those values. These are
 
 ```cpp
-std::optional<long long> sys_sage::Thread::GetPAPICounterReading(const std::string &event,
-                                                                 unsigned long long timestamp = 0);
+long long sys_sage::PAPIMetrics::GetPerfCounterReading(int event,
+                                                       unsigned long long timestamp = 0);
 
 std::vector<std::pair<unsigned long long, long long>> *
-sys_sage::Thread::GetAllPAPICounterReadings(const std::string &event);
+sys_sage::PAPIMetrics::GetPerfCounterReadings(int event);
 
-void sys_sage::Thread::PrintPAPICounters();
+void sys_sage::PAPIMetrics::PrintLatestPerfCounterReadings();
 ```
 
 Note that `timestamp == 0` implies that the user wants the value of the latest

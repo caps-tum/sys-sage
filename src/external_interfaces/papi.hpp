@@ -1,18 +1,34 @@
 #ifdef PAPI_METRICS
 
+#include <vector>
+#include <utility>
+
 namespace sys_sage {
-  int PAPI_read(int eventSet, Component *root, unsigned long long *timestamp,
-                Thread **thread = nullptr);
+  class PAPIMetrics : public Relation {
+  public:
+    PAPIMetrics(Thread *thread);
 
-  int PAPI_accum(int eventSet, Component *root, unsigned long long *timestamp,
-                 Thread **thread = nullptr);
+    template <bool accum>
+    int StorePerfCounters(const int *events, int numEvents,
+                          const long long *counters, 
+                          unsigned long long *timestamp);
 
-  int PAPI_stop(int eventSet, Component *root, unsigned long long *timestamp,
-                Thread **thread = nullptr);
+    long long GetPerfCounterReading(int event, unsigned long long timestamp = 0);
 
-  int PAPI_store(int eventSet, const long long *counters, int numCounters,
-                 Component *root, unsigned long long *timestamp,
-                 Thread **thread = nullptr);
+    std::vector<std::pair<unsigned long long, long long>> *
+    GetPerfCounterReadings(int event);
+
+    void PrintLatestPerfCounterReadings();
+  };
+
+  int PAPI_read(int eventSet, unsigned long long *timestamp, Component *root,
+                PAPIMetrics **metrics);
+
+  int PAPI_accum(int eventSet, unsigned long long *timestamp, Component *root,
+                 PAPIMetrics **metrics);
+
+  int PAPI_stop(int eventSet, unsigned long long *timestamp, Component *root,
+                PAPIMetrics **metrics);
 }
 
 #endif

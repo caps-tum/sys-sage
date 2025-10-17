@@ -115,10 +115,130 @@ static int GetEvents(int eventSet, std::unique_ptr<int[]> &events,
   return PAPI_OK;
 }
 
+int sys_sage::PAPI_read(int eventSet, unsigned long long *timestamp,
+                        Component *root, PAPIMetrics **metrics)
+{
+  if (!timestamp || !root || !metrics)
+    return PAPI_EINVAL;
+
+  int rval;
+
+  std::unique_ptr<int[]> events;
+  int numEvents;
+  rval = GetEvents(eventSet, events, &numEvents);
+  if (rval != PAPI_OK)
+    return rval;
+
+  long long counters[numEvents];
+  rval = ::PAPI_read(eventSet, counters);
+  if (rval != PAPI_OK)
+    return rval;
+
+  unsigned int cpuNum;
+  rval = GetCpuNum(eventSet, &cpuNum);
+  if (rval != PAPI_OK)
+    return rval;
+
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
+  if (!thread)
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
+
+  if (!(*metrics))
+    *metrics = new PAPIMetrics(thread);
+  else if (!(*metrics)->ContainsComponent(thread))
+    (*metrics)->AddComponent(thread);
+
+  return (*metrics)->StorePerfCounters<false>(events.get(), numEvents, counters,
+                                          timestamp);
+}
+
+int sys_sage::PAPI_accum(int eventSet, unsigned long long *timestamp,
+                         Component *root, PAPIMetrics **metrics)
+{
+  if (!timestamp || !root || !metrics)
+    return PAPI_EINVAL;
+
+  int rval;
+
+  std::unique_ptr<int[]> events;
+  int numEvents;
+  rval = GetEvents(eventSet, events, &numEvents);
+  if (rval != PAPI_OK)
+    return rval;
+
+  long long counters[numEvents] = { 0 };
+  rval = ::PAPI_accum(eventSet, counters);
+  if (rval != PAPI_OK)
+    return rval;
+
+  unsigned int cpuNum;
+  rval = GetCpuNum(eventSet, &cpuNum);
+  if (rval != PAPI_OK)
+    return rval;
+
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
+  if (!thread)
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
+
+  if (!(*metrics))
+    *metrics = new PAPIMetrics(thread);
+  else if (!(*metrics)->ContainsComponent(thread))
+    (*metrics)->AddComponent(thread);
+
+  return (*metrics)->StorePerfCounters<true>(events.get(), numEvents, counters,
+                                          timestamp);
+}
+
+int sys_sage::PAPI_stop(int eventSet, unsigned long long *timestamp,
+                        Component *root, PAPIMetrics **metrics)
+{
+  if (!timestamp || !root || !metrics)
+    return PAPI_EINVAL;
+
+  int rval;
+
+  std::unique_ptr<int[]> events;
+  int numEvents;
+  rval = GetEvents(eventSet, events, &numEvents);
+  if (rval != PAPI_OK)
+    return rval;
+
+  long long counters[numEvents];
+  rval = ::PAPI_stop(eventSet, counters);
+  if (rval != PAPI_OK)
+    return rval;
+
+  unsigned int cpuNum;
+  rval = GetCpuNum(eventSet, &cpuNum);
+  if (rval != PAPI_OK)
+    return rval;
+
+  Thread *thread = static_cast<Thread *>(
+    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
+  );
+  if (!thread)
+    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
+
+  if (!(*metrics))
+    *metrics = new PAPIMetrics(thread);
+  else if (!(*metrics)->ContainsComponent(thread))
+    (*metrics)->AddComponent(thread);
+
+  return (*metrics)->StorePerfCounters<false>(events.get(), numEvents, counters,
+                                          timestamp);
+}
+
+PAPIMetrics::PAPIMetrics(Thread *thread)
+             : Relation ({ thread }, -1, false, RelationType::PAPIMetrics) {}
+
 template <bool accum>
-static int StoreCounters(const long long *counters, const int *events,
-                         int numEvents, unsigned long long *timestamp,
-                         Thread *thread)
+int PAPIMetrics::StorePerfCounters(const int *events, int numEvents,
+                                   const long long *counters, 
+                                   unsigned long long *timestamp)
 {
   int rval;
 
@@ -131,11 +251,11 @@ static int StoreCounters(const long long *counters, const int *events,
       return rval;
 
     std::vector<std::pair<unsigned long long, long long>> *readings;
-    auto readingsIt = thread->attrib.find(buf);
+    auto readingsIt = attrib.find(buf);
 
-    if (readingsIt == thread->attrib.end()) {
+    if (readingsIt == attrib.end()) {
       readings = new std::vector<std::pair<unsigned long long, long long>> { { ts, counters[i] } };
-      thread->attrib[buf] = reinterpret_cast<void *>( readings );
+      attrib[buf] = reinterpret_cast<void *>( readings );
       continue;
     }
     readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
@@ -158,166 +278,20 @@ static int StoreCounters(const long long *counters, const int *events,
   return PAPI_OK;
 }
 
-int sys_sage::PAPI_read(int eventSet, Component *root,
-                        unsigned long long *timestamp, Thread **thread)
+// TODO: maybe use another map instead of `attrib` to use integer keys?
+long long PAPIMetrics::GetPerfCounterReading(int event,
+                                             unsigned long long timestamp)
 {
-  if (!timestamp)
-    return PAPI_EINVAL;
-
   int rval;
 
-  std::unique_ptr<int[]> events;
-  int numEvents;
-  rval = GetEvents(eventSet, events, &numEvents);
+  char buf[PAPI_MAX_STR_LEN];
+  rval = PAPI_event_code_to_name(event, buf);
   if (rval != PAPI_OK)
-    return rval;
+    return -1;
 
-  long long counters[numEvents];
-  rval = ::PAPI_read(eventSet, counters);
-  if (rval != PAPI_OK)
-    return rval;
-
-  unsigned int cpuNum;
-  rval = GetCpuNum(eventSet, &cpuNum);
-  if (rval != PAPI_OK)
-    return rval;
-
-  Thread *thr = static_cast<Thread *>(
-    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
-  );
-  if (!thr)
-    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
-  if (thread)
-    *thread = thr;
-
-  rval = StoreCounters<false>(counters, events.get(), numEvents, timestamp, thr);
-  if (rval != PAPI_OK)
-    return rval;
-
-  return PAPI_OK;
-}
-
-int sys_sage::PAPI_accum(int eventSet, Component *root,
-                         unsigned long long *timestamp, Thread **thread)
-{
-  if (!timestamp)
-    return PAPI_EINVAL;
-
-  int rval;
-
-  std::unique_ptr<int[]> events;
-  int numEvents;
-  rval = GetEvents(eventSet, events, &numEvents);
-  if (rval != PAPI_OK)
-    return rval;
-
-  long long counters[numEvents] = { 0 };
-  rval = ::PAPI_accum(eventSet, counters);
-  if (rval != PAPI_OK)
-    return rval;
-
-  unsigned int cpuNum;
-  rval = GetCpuNum(eventSet, &cpuNum);
-  if (rval != PAPI_OK)
-    return rval;
-
-  Thread *thr = static_cast<Thread *>(
-    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
-  );
-  if (!thr)
-    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
-  if (thread)
-    *thread = thr;
-
-  rval = StoreCounters<true>(counters, events.get(), numEvents, timestamp, thr);
-  if (rval != PAPI_OK)
-    return rval;
-
-  return PAPI_OK;
-}
-
-int sys_sage::PAPI_stop(int eventSet, Component *root,
-                        unsigned long long *timestamp, Thread **thread)
-{
-  if (!timestamp)
-    return PAPI_EINVAL;
-
-  int rval;
-
-  std::unique_ptr<int[]> events;
-  int numEvents;
-  rval = GetEvents(eventSet, events, &numEvents);
-  if (rval != PAPI_OK)
-    return rval;
-
-  long long counters[numEvents];
-  rval = ::PAPI_stop(eventSet, counters);
-  if (rval != PAPI_OK)
-    return rval;
-
-  unsigned int cpuNum;
-  rval = GetCpuNum(eventSet, &cpuNum);
-  if (rval != PAPI_OK)
-    return rval;
-
-  Thread *thr = static_cast<Thread *>(
-    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
-  );
-  if (!thr)
-    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
-  if (thread)
-    *thread = thr;
-
-  rval = StoreCounters<false>(counters, events.get(), numEvents, timestamp, thr);
-  if (rval != PAPI_OK)
-    return rval;
-
-  return PAPI_OK;
-}
-
-int sys_sage::PAPI_store(int eventSet, const long long *counters,
-                         int numCounters, Component *root,
-                         unsigned long long *timestamp, Thread **thread)
-{
-  if (!timestamp)
-    return PAPI_EINVAL;
-
-  int rval;
-
-  std::unique_ptr<int[]> events;
-  int numEvents;
-  rval = GetEvents(eventSet, events, &numEvents);
-  if (rval != PAPI_OK)
-    return rval;
-
-  unsigned int cpuNum;
-  rval = GetCpuNum(eventSet, &cpuNum);
-  if (rval != PAPI_OK)
-    return rval;
-
-  Thread *thr = static_cast<Thread *>(
-    root->GetSubcomponentById(static_cast<int>(cpuNum), ComponentType::Thread)
-  );
-  if (!thr)
-    return PAPI_EINVAL; // TODO: is there a better way to handle the error?
-  if (thread)
-    *thread = thr;
-
-  rval = StoreCounters<false>(counters, events.get(),
-                              std::min(numEvents, numCounters), timestamp, thr);
-  if (rval != PAPI_OK)
-    return rval;
-
-  return PAPI_OK;
-}
-
-// TODO: better error handling. Maybe log errors?
-std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
-                                                       unsigned long long timestamp)
-{
-  auto readingsIt = attrib.find(event);
+  auto readingsIt = attrib.find(buf);
   if (readingsIt == attrib.end())
-    return std::nullopt;
+    return -1;
 
   auto *readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
   if (timestamp == 0)
@@ -329,33 +303,38 @@ std::optional<long long> Thread::GetPAPICounterReading(const std::string &event,
                          }
             );
   if (it == readings->rend())
-    return std::nullopt;
+    return -1;
 
   return it->second;
 }
 
+// TODO: maybe use another map instead of `attrib` to use integer keys?
 std::vector<std::pair<unsigned long long, long long>> *
-Thread::GetAllPAPICounterReadings(const std::string &event)
+PAPIMetrics::GetPerfCounterReadings(int event)
 {
-  auto readingsIt = attrib.find(event);
+  int rval;
+
+  char buf[PAPI_MAX_STR_LEN];
+  rval = PAPI_event_code_to_name(event, buf);
+  if (rval != PAPI_OK)
+    return nullptr;
+
+  auto readingsIt = attrib.find(buf);
   if (readingsIt == attrib.end())
     return nullptr;
 
   return reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( readingsIt->second );
 }
 
-void Thread::PrintPAPICounters()
+void PAPIMetrics::PrintLatestPerfCounterReadings()
 {
-  int dummy;
+  std::cout << "performance counters monitored on HW thread(s):";
+  for (Component *c : components)
+    std::cout << ' ' << static_cast<Thread *>(c)->GetId();
+  std::cout << '\n';
 
-  std::cout << "performance counters on thread " << id << ":\n";
   for (const auto &[key, val] : attrib) {
-    // indirectly check if key is a valid PAPI event
-    if (PAPI_event_name_to_code(key.c_str(), &dummy) != PAPI_OK)
-      continue;
-
     auto *readings = reinterpret_cast<std::vector<std::pair<unsigned long long, long long>> *>( val );
-    // only print the latest reading
     std::cout << "  " << key << ": " << readings->back().second << '\n';
   }
 }

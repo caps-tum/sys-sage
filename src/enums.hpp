@@ -112,13 +112,15 @@ namespace sys_sage {
         constexpr type DataPath = 1;
         constexpr type QuantumGate = 2;
         constexpr type CouplingMap = 3;
-        constexpr type _num_relation_types = 4;
+        constexpr type PAPIMetrics = 4;
+        constexpr type _num_relation_types = 5;
 
         constexpr type RelationTypeList [_num_relation_types] = {
             Relation, 
             DataPath, 
             QuantumGate, 
-            CouplingMap
+            CouplingMap,
+            PAPIMetrics
         };
 
         //SVTODO this should remain private???
@@ -127,7 +129,8 @@ namespace sys_sage {
             {Relation, "Relation"},
             {DataPath, "DataPath"},
             {QuantumGate, "QuantumGate"},
-            {CouplingMap, "CouplingMap"}
+            {CouplingMap, "CouplingMap"},
+            {PAPIMetrics, "PAPIMetrics"}
         };
 
         /**

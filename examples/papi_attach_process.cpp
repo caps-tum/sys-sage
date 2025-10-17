@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     FATAL(PAPI_strerror(rval), pid);
 
   unsigned long long timestamp = 0;
-  sys_sage::Thread *thread;
+  sys_sage::PAPIMetrics *metrics = nullptr;
 
   rval = PAPI_start(eventSet);
   if (rval != PAPI_OK)
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
   if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
     FATAL("expected child process to stop right before exit\n", pid);
 
-  rval = sys_sage::PAPI_stop(eventSet, &node, &timestamp, &thread);
+  rval = sys_sage::PAPI_stop(eventSet, &timestamp, &node, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
   waitpid(pid, &status, 0);
 
-  thread->PrintPAPICounters();
+  metrics->PrintLatestPerfCounterReadings();
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK) {

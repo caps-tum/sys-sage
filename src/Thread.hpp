@@ -2,10 +2,6 @@
 #define THREAD_HPP
 
 #include "Component.hpp"
-#include <optional>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace sys_sage {
 
@@ -36,18 +32,6 @@ namespace sys_sage {
         * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
         */
         ~Thread() override = default;
-
-    #ifdef PAPI_METRICS
-
-        std::optional<long long> GetPAPICounterReading(const std::string &event,
-                                                       unsigned long long timestamp = 0);
-
-        std::vector<std::pair<unsigned long long, long long>> *
-        GetAllPAPICounterReadings(const std::string &event);
-
-        void PrintPAPICounters();
-
-    #endif
 
     #ifdef PROC_CPUINFO //defined in proc_cpuinfo.cpp
     public:

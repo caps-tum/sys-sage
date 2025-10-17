@@ -16,8 +16,8 @@ static constexpr int hwThreadId = 3;
 
 struct worker_args {
   sys_sage::Component *topoRoot;
-  sys_sage::Thread *thread;
-  unsigned long long timestamp;
+  sys_sage::PAPIMetrics *metrics = nullptr;
+  unsigned long long timestamp = 0;
   int eventSet;
   int rval;
 };
@@ -48,8 +48,8 @@ void *work(void *arg)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = sys_sage::PAPI_stop(wargs->eventSet, wargs->topoRoot,
-                                    &wargs->timestamp, &wargs->thread);
+  wargs->rval = sys_sage::PAPI_stop(wargs->eventSet, &wargs->timestamp,
+                                    wargs->topoRoot, &wargs->metrics);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
     FATAL(strerror(rval));
 
   pthread_t worker;
-  worker_args wargs {.topoRoot = &node, .timestamp = 0, .eventSet = eventSet};
+  worker_args wargs {.topoRoot = &node, .eventSet = eventSet};
   rval = pthread_create(&worker, &attr, work, reinterpret_cast<void *>( &wargs ));
   if (rval != 0)
     FATAL(strerror(rval));
@@ -124,9 +124,10 @@ int main(int argc, const char **argv)
   if (wargs.rval != PAPI_OK)
     FATAL(PAPI_strerror(wargs.rval));
 
-  assert(wargs.thread->GetId() == hwThreadId);
+  assert(wargs.metrics->GetComponents().size() == 1
+         && static_cast<sys_sage::Thread *>(wargs.metrics->GetComponent(0))->GetId() == hwThreadId);
 
-  wargs.thread->PrintPAPICounters();
+  wargs.metrics->PrintLatestPerfCounterReadings();
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)

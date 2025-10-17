@@ -4,6 +4,8 @@
 #include <memory>
 #include <stdlib.h>
 
+static constexpr int iter = 5;
+
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   return EXIT_FAILURE;\
@@ -60,7 +62,7 @@ int main(int argc, const char **argv)
   }
 
   unsigned long long timestamps[3] = { 0 };
-  sys_sage::Thread *thread;
+  sys_sage::PAPIMetrics *metrics = nullptr;
 
   rval = PAPI_start(eventSet);
   if (rval != PAPI_OK)
@@ -68,28 +70,28 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = sys_sage::PAPI_read(eventSet, &node, &timestamps[0], &thread);
+  rval = sys_sage::PAPI_read(eventSet, timestamps, &node, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
-
-  std::cout << "reading performance counters on thread " << thread->GetId() << ":\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[0]).value_or(-1) << '\n';
 
   rval = PAPI_reset(eventSet);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < iter; i++) {
     saxpy(a.get(), b.get(), c.get(), n, alpha);
-    rval = sys_sage::PAPI_accum(eventSet, &node, &timestamps[1], &thread);
+    rval = sys_sage::PAPI_accum(eventSet, timestamps + 1, &node, &metrics);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
   }
 
-  std::cout << "accumulating performance counters on thread " << thread->GetId() << ":\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[1]).value_or(-1) << '\n';
+  long long counters[numEvents];
+  saxpy(a.get(), b.get(), c.get(), n, alpha);
+
+  // use plain PAPI interchangeably with the sys-sage integration
+  rval = PAPI_read(eventSet, counters);
+  if (rval != PAPI_OK)
+    FATAL(PAPI_strerror(rval));
 
   rval = PAPI_reset(eventSet);
   if (rval != PAPI_OK)
@@ -97,13 +99,30 @@ int main(int argc, const char **argv)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  rval = sys_sage::PAPI_stop(eventSet, &node, &timestamps[2], &thread);
+  rval = sys_sage::PAPI_stop(eventSet, timestamps + 2, &node, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  std::cout << "reading performance counters on thread " << thread->GetId() << ":\n";
+  std::cout << "performance counters on the 1st reading:\n";
   for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << thread->GetPAPICounterReading(eventNames[i], timestamps[2]).value_or(-1) << '\n';
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[0]) << '\n';
+
+  std::cout << "accumulated performance counters:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[1]) << '\n';
+
+  std::cout << "performance counters not stored in the sys-sage topology:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << counters[i] << '\n';
+
+  std::cout << "performance counters on the last reading:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[2]) << '\n';
+
+  std::cout << "performance counters were monitored on HW thread(s):";
+  for (sys_sage::Component *c : metrics->GetComponents())
+    std::cout << ' ' << static_cast<sys_sage::Thread *>(c)->GetId();
+  std::cout << '\n';
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)
