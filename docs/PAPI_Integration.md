@@ -73,17 +73,11 @@ The routines `sys_sage::PAPI_read`, `sys_sage::PAPI_accum` and
      thread, in which case we simply call `sched_getcpu()`.
 
    In the last two cases, the software thread can potentially migrate across
-   multiple hardware threads through repeated re-scheduling. From PAPI's
-   perspective, this doesn't pose any concern. The performance counter values
-   are simply fetched from the PMU of the current hardware thread and may
-   potentially be processed with the values stemming from other hardware
-   threads. This results in "mixed" performance counter values. If this
-   behaviour is not desired, the user should consider thread affinity and
-   pinning for more homogeneous performance monitoring.
-
-   To put possibly "mixed" performance counter values into the context of the
-   hardware threads, _sys-sage_ uses a new relation type called `PAPIMetrics`,
-   which naturally "keeps track" of the hardware threads.
+   multiple hardware threads through repeated re-scheduling. Since PAPI uses
+   `perf_event_open` internally, the Linux kernel will preserve the
+   intermediate performance counter values across context switches. To "keep
+   track" of these hardware threads and to attribute them to the performance
+   counter values, _sys-sage_ uses a new relation type called `PAPIMetrics`.
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. Furthermore, if `*metrics == nullptr`, a new relation
@@ -140,10 +134,9 @@ entry.
 
 ## PAPIMetrics - A new Relation
 
-As discussed before, `PAPIMetrics` offers a way to capture "mixed" performance
-counters values while putting them into the context of the hardware threads
-from which they stem from. Moreover, this new relation offers ways to access
-those values. These are
+As discussed before, `PAPIMetrics` offers a way to store performance counter
+values while putting them into relation with the involved hardware threads.
+Moreover, this new relation offers ways to access those values. These are
 
 ```cpp
 long long sys_sage::PAPIMetrics::GetPerfCounterReading(int event,
