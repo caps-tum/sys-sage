@@ -554,7 +554,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("FindGatesByType", &QuantumBackend::FindGatesByType, py::arg("type"), "Find quantum gates by their type")
         .def("GetNumberofGates", &QuantumBackend::GetNumberofGates, "Get the number of gates in the backend")
         // -- deprecated
-        .def("GetAllQubits", &QuantumBackend::GetAllQubits, "Get all qubits in the backend");
+        .def("GetAllQubits", &QuantumBackend::GetAllQubits, "Get all qubits in the backend")
         // --
         .def("FindAllQubits", &QuantumBackend::FindAllQubits, "Find all qubits in the backend");
 
