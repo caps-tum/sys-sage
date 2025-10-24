@@ -54,7 +54,7 @@ std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::FindGatesByType(Qu
     return gates;
 }
 
-std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::GetAllGateTypes() const 
+std::vector<sys_sage::QuantumGate*> &sys_sage::QuantumBackend::GetAllGateTypes() const 
 {
     return gate_types;
 }

@@ -407,12 +407,12 @@ int sys_sage::Component::CountAllChildrenByType(ComponentType::type _componentTy
     return CountChildrenByType(_componentType);
 }
 
-int sys_sage::Component::CountChildrenByType(ComponentType::type componentType) const
+int sys_sage::Component::CountChildrenByType(ComponentType::type _componentType) const
 {
     int cnt = 0;
     for(Component * child : children)
     {
-        if(child->GetComponentType() == componentType)
+        if(child->GetComponentType() == _componentType)
             cnt++;
     }
 

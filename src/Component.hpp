@@ -131,13 +131,13 @@ namespace sys_sage {
     private:
         void _PrintSubtree(int level) const;
         /**
-         * @deprecated Use PrintAllRelationsInSubtree instead. This function will be removed in the future.
+         * @deprecated Use PrintRelationsInSubtree instead. This function will be removed in the future.
          * @brief Prints all DataPaths that go from or to components in the subtree.
          * @see PrintAllRelationsInSubtree( RelationType::type RelationType = RelationType::Any)
-         * @note This function is deprecated and will be removed in the future. Use PrintAllRelationsInSubtree instead.
+         * @note This function is deprecated and will be removed in the future. Use PrintRelationsInSubtree instead.
          */
     public:
-        [[ deprecated("Use PrintRelationsInSubtree instead. This function will be removed in the future.") ]]
+        [[ deprecated("Use PrintRelationsInSubtree instead. This function will be removed in the future (used up until version 0.5.2).") ]]
         void PrintAllDataPathsInSubtree();
 
         /**
@@ -676,7 +676,7 @@ namespace sys_sage {
          * @brief Deletes and deallocates the DataPath pointer from the list of outgoing/incoming DataPaths.
          * @param dp DataPath to delete
          */
-        [[deprecated("DeleteDataPath is deprecated. Use void DeleteRelation(Relation * r) instead.")]]
+        [[deprecated("DeleteDataPath is deprecated. Use void DeleteRelation(Relation * r) instead (used up until version 0.5.2).")]]
         void DeleteDataPath(DataPath * dp);
 
         /**
@@ -693,7 +693,7 @@ namespace sys_sage {
         void DeleteRelations(RelationType::type relationType = RelationType::Any);
 
         /**
-         * @deprecated Use void DeleteAllRelations(int32_t relationType = sys_sage::RelationType::Any) instead.
+         * @deprecated Use void DeleteRelations(RelationType::type relationType = sys_sage::RelationType::Any) instead.
          * @brief Deletes all DataPaths of this component.
          */
         [[ deprecated("Use DeleteRelations instead. This function will be removed in the future (used up until version 1.0.0).") ]]

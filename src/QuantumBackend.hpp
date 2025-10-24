@@ -122,7 +122,7 @@ namespace sys_sage {
         * 
         * @return A vector of all quantum gate types.
         */
-        std::vector<QuantumGate*> GetAllGateTypes() const;
+        std::vector<QuantumGate*> &GetAllGateTypes() const;
 
         /**
         * @brief Gets the number of quantum gates in the quantum backend.
