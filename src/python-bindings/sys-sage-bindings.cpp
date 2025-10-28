@@ -333,7 +333,10 @@ PYBIND11_MODULE(sys_sage, m) {
         .def_property("parent", &Component::GetParent, &Component::SetParent, "The parent of the component")
         .def("SetParent", &Component::SetParent, py::arg("parent"), "Set the parent of the component")
         .def("PrintSubtree", &Component::PrintSubtree, "Print the subtree of the component up to level 0")
+        // -- deprecated
         .def("PrintAllRelationsInSubtree", &Component::PrintAllRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print all relations in the subtree")
+        // --
+        .def("PrintRelationsInSubtree", &Component::PrintRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print the relations in the subtree")
         .def_property("name", &Component::GetName, &Component::SetName, "The name of the component")
         .def_property_readonly("id", &Component::GetId, "The id of the component")
         .def_property_readonly("type", &Component::GetComponentType, "The type of the component")
@@ -342,35 +345,88 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetChild", &Component::GetChild, py::arg("id"), "Like get_child_by_id()")
         .def("GetChildById", &Component::GetChildById, py::arg("id"), "Get the first child component by id")
         .def("GetChildByType", &Component::GetChildByType, py::arg("type"), "Get the first child component by type")
-        //vector<Component*> as input doesnt work
+        // -- deprecated
         .def("GetAllChildrenByType", (std::vector<Component*> (Component::*)(ComponentType::type) const)(&Component::GetAllChildrenByType), py::arg("type"), "Get all child components by type")
+        // --
+        .def("FindChildrenByType", (std::vector<Component*> (Component::*)(ComponentType::type) const)(&Component::FindChildrenByType), py::arg("type"), "Find the child components by type")
+        // -- deprecated
         .def("GetAllSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))(&Component::GetAllSubcomponentsByType),py::arg("type") ,"Get all sub components by type")
+        // --
+        .def("FindDescendantsByType", (std::vector<Component*> (Component::*) (ComponentType::type)) (&Component::FindDescendantsByType), py::arg("type") , "Find descendants by type")
+        // -- deprecated
         .def("CountAllSubcomponents", &Component::CountAllSubcomponents, "Count all sub components")
+        // --
+        .def("CountDescendantsByType", &Component::CountDescendantsByType, py::arg("type"), "Count the descendants by type")
+        // -- deprecated
         .def("CountAllSubcomponentsByType", &Component::CountAllSubcomponentsByType, py::arg("type"),"Count sub components by type")
-        .def("CountChildrenByType", &Component::CountAllChildrenByType,py::arg("type"),"Count children by type")
+        // --
+        // -- deprecated
+        .def("CountAllChildrenByType", &Component::CountAllChildrenByType,py::arg("type"),"Count children by type")
+        // --
+        .def("CountChildrenByType", &Component::CountChildrenByType, py::arg("type"), "Count children by type")
         .def("GetAncestorByType", &Component::GetAncestorByType, py::arg("type"),"Get the first ancestor component by type")
+        // -- deprecated
         .def("GetSubtreeDepth", &Component::GetSubtreeDepth, "Get the depth of the subtree")
+        // --
+        .def("CalcSubtreeDepth", &Component::CalcSubtreeDepth, "Calculate the depth of the subtree")
         .def("GetNthAncestor", &Component::GetNthAncestor, py::arg("n"),"Get the nth ancestor of the component")
+        // -- deprecated
         .def("GetNthDescendents", (std::vector<Component*> (Component::*)(int))&Component::GetNthDescendents,py::arg("n"),"Get all the nth descendents of the component")
+        // --
+        .def("FindNthDescendants", (std::vector<Component*> (Component::*) (int)) &Component::FindNthDescendants, py::arg("n"), "Find the nth descendants of the component")
+        // -- deprecated
         .def("GetSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))&Component::GetSubcomponentsByType,py::arg("type"),"Get all the sub components of the component by type")
+        // --
+        // -- deprecated
         .def("GetComponentsInSubtree", (std::vector<Component*> (Component::*)())&Component::GetComponentsInSubtree,"Get all the components in the subtree of the component")
+        // --
+        // -- deprecated
         .def("GetSubcomponentById", &Component::GetSubcomponentById, py::arg("id"),py::arg("type"),"Get the first sub component by id and type")
+        // --
+        .def("GetDescendantById", &Component::GetDescendantById, py::arg("id"), py::arg("type"), "Get the first descendant by id and type")
+        // -- deprecated
         .def("GetRelations", &Component::GetRelations, py::arg("type"), "Get all relations of that type")
+        // --
+        .def("GetRelationsByType", &Component::GetRelationsByType, py::arg("type"), "Get all relations of that type")
+        // -- deprecated
         .def("GetAllRelationsBy", &Component::GetAllRelationsBy, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Get all relations of that type and position")
+        // --
+        .def("FindRelations", &Component::FindRelations, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Find the relations of that type and position")
         .def("GetDataPathByType", &Component::GetDataPathByType, py::arg("type"), py::arg("direction") = DataPathDirection::Any,"Get the first data path associated with the component by type")
+        // -- deprecated
         .def("GetAllDataPaths", (std::vector<DataPath *> (Component::*)(DataPathType::type, DataPathDirection::type) const)&Component::GetAllDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Get all datapaths of that type and direction")
+        // --
+        .def("FindDataPaths", (std::vector<DataPath *> (Component::*) (DataPathType::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Find the datapaths of that type and direction")
+        // -- deprecated
         .def("CheckComponentTreeConsistency", &Component::CheckComponentTreeConsistency,"Check if the component tree is consistent")
+        // --
+        .def("CheckSubtreeConsistency", &Component::CheckSubtreeConsistency, "Check if the subtree is consistent")
+
         // pybind11 doesn't support pass-by-reference or pass-by-pointer of primitive types.
         // -> use a tuple instead of output parameters
+        // -- deprecated
         .def("GetTopologySize", [] (Component &self) {
             unsigned out_component_size = 0;
             unsigned out_dataPathSize = 0;
             int total_bytes = self.GetTopologySize(&out_component_size, &out_dataPathSize);
             return std::make_tuple(total_bytes, out_component_size, out_dataPathSize);
         }, "Get the size of the topology")
+        // --
+        .def("CalcSubtreeSize", [] (Component &self) {
+            unsigned out_component_size = 0;
+            unsigned out_dataPathSize = 0;
+            int total_bytes = self.CalcSubtreeSize(&out_component_size, &out_dataPathSize);
+            return std::make_tuple(total_bytes, out_component_size, out_dataPathSize);
+        }, "Calculate the size of the subtree")
+        // -- deprecated
         .def("GetDepth", &Component::GetDepth,py::arg("refresh"),"Get the depth of the component, if refresh is true it will update the depth")
+        // --
+        .def("CalcDepth", &Component::CalcDepth, py::arg("refresh"), "Calculate the depth of the component, if refresh is true it will update the depth")
         .def("DeleteRelation", &Component::DeleteRelation, py::arg("relation"), "Delete the given relation from the component")
+        // -- deprecated
         .def("DeleteAllRelations", &Component::DeleteAllRelations, py::arg("type") = RelationType::Any,"Delete all relations of that type from the component")
+        // --
+        .def("DeleteRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any, "Delete the relations of that type from the component")
         .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
         .def("__bool__",[](Component& self){
@@ -466,6 +522,9 @@ PYBIND11_MODULE(sys_sage, m) {
     py::class_<Qubit, std::unique_ptr<Qubit, py::nodelete>, Component>(m, "Qubit")
         .def(py::init<int, std::string>(), py::arg("id") = 0, py::arg("name") = "Qubit")
         .def(py::init<Component *, int, std::string> (), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "Qubit")
+        #ifdef QDMI
+        .def("RefreshProperties", &Qubit::RefreshProperties)
+        #endif
         .def_property_readonly("t1", &Qubit::GetT1)
         .def_property_readonly("t2", &Qubit::GetT2)
         .def_property_readonly("readout_fidelity", &Qubit::GetReadoutFidelity)
@@ -482,12 +541,22 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetAllGateTypes", &QuantumBackend::GetAllGateTypes, "Get a list of the quantum gates in the backend")
         #ifdef QDMI
         .def_property("device", &QuantumBackend::GetQDMIDevice, &QuantumBackend::SetQDMIDevice)
+        .def("RefreshTopology", &QuantumBackend::RefreshTopology, py::arg("qubit_indices"), "Get all qubits in the backend")
         #endif
         .def("addGate", &QuantumBackend::addGate, py::arg("gate"), "Add this gate to the backend")
+        // -- deprecated
         .def("GetGatesBySize", &QuantumBackend::GetGatesBySize, py::arg("size"), "Get quantum gates by their size")
+        // --
+        .def("FindGatesBySize", &QuantumBackend::FindGatesBySize, py::arg("size"), "Find quantum gates by their size")
+        // -- deprecated
         .def("GetGatesByType", &QuantumBackend::GetGatesByType, py::arg("type"), "Get quantum gates by their type")
+        // --
+        .def("FindGatesByType", &QuantumBackend::FindGatesByType, py::arg("type"), "Find quantum gates by their type")
         .def("GetNumberofGates", &QuantumBackend::GetNumberofGates, "Get the number of gates in the backend")
-        .def("GetAllQubits", &QuantumBackend::GetAllQubits, "Get all qubits in the backend");
+        // -- deprecated
+        .def("GetAllQubits", &QuantumBackend::GetAllQubits, "Get all qubits in the backend")
+        // --
+        .def("FindAllQubits", &QuantumBackend::FindAllQubits, "Find all qubits in the backend");
 
     py::class_<AtomSite::SiteProperties>(m, "SiteProperties")
         .def_readwrite("nRows", &AtomSite::SiteProperties::nRows)

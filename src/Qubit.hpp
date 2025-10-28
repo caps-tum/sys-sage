@@ -87,11 +87,12 @@ namespace sys_sage {
         */
         const std::string& GetCalibrationTime() const;
 
+        #ifdef QDMI
         /**
          * @brief Refreshes the properties of the qubit.
          */
-        // TODO: this needs an implementation
         void RefreshProperties();
+        #endif
 
         /**
          * @private

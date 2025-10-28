@@ -61,6 +61,13 @@ namespace sys_sage {
         * @return The QDMI device.
         */
         QDMI_Device GetQDMIDevice();
+
+        /**
+         * @brief Refreshes the topology of the quantum backend.
+         * 
+         * @param qubit_indices The indices of the qubits that need to be refreshed.
+         */
+        void RefreshTopology(std::set<int> qubit_indices); // qubit_indices: indices of the qubits that need to be refreshed
     #endif
         /**
         * @brief Gets the number of qubits in the quantum backend.
@@ -82,7 +89,16 @@ namespace sys_sage {
         * @param _gate_size The size of the gates to retrieve.
         * @return A vector of quantum gates with the specified size.
         */
+        [[ deprecated("Use FindGatesBySize instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<QuantumGate*> GetGatesBySize(size_t _gate_size) const;
+
+        /**
+        * @brief Gets the quantum gates by their size.
+        * 
+        * @param _gate_size The size of the gates to retrieve.
+        * @return A vector of quantum gates with the specified size.
+        */
+        std::vector<QuantumGate*> FindGatesBySize(size_t _gate_size) const;
 
         /**
         * @brief Gets the quantum gates by their type.
@@ -90,7 +106,16 @@ namespace sys_sage {
         * @param _gate_type The type of the gates to retrieve.
         * @return A vector of quantum gates with the specified type.
         */
+        [[ deprecated("Use FindGatesByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<QuantumGate*> GetGatesByType(QuantumGateType::type _gate_type) const;
+
+        /**
+        * @brief Gets the quantum gates by their type.
+        * 
+        * @param _gate_type The type of the gates to retrieve.
+        * @return A vector of quantum gates with the specified type.
+        */
+        std::vector<QuantumGate*> FindGatesByType(QuantumGateType::type _gate_type) const;
 
         /**
         * @brief Gets all types of quantum gates in the quantum backend.
@@ -111,15 +136,15 @@ namespace sys_sage {
         * 
         * @return A vector of pointers to all qubits.
         */
+        [[ deprecated("Use FindAllQubits instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         std::vector<Qubit *> GetAllQubits();
 
         /**
-         * @brief Refreshes the topology of the quantum backend.
-         * 
-         * @param qubit_indices The indices of the qubits that need to be refreshed.
-         */
-        // TODO: implement this.
-        void RefreshTopology(std::set<int> qubit_indices); // qubit_indices: indices of the qubits that need to be refreshed
+        * @brief Gets all qubits in the quantum backend.
+        * 
+        * @return A vector of pointers to all qubits.
+        */
+        std::vector<Qubit *> FindAllQubits();
 
         /**
         @private 
