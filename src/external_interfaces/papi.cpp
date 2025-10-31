@@ -128,13 +128,10 @@ static void DeletePerfEntries(PAPIMetrics *metrics)
       if (!lastEntry.permanent) {
         cpuPerfIt->perfEntries.pop_back();
         if (cpuPerfIt->perfEntries.size() == 0) {
-          // TODO: introduce a reference counter for the CPUs of the relation
-          //       -> if (cpuPerf.entries.size() == 0) { cpu_ref_counter--; }
-          //       -> if (cpu_ref_counter == 0) { <erase_cpu_from_component_list>; }
-          auto refIt = metrics->cpuReferenceCounter.find(cpuPerfIt->cpuNum);
+          auto refIt = metrics->cpuReferenceCounters.find(cpuPerfIt->cpuNum);
           if (refIt->second == 1) {
-            metrics->cpuReferenceCounter.erase(refIt);
-            auto cpuIt = // TODO: remove CPU from `components` list
+            metrics->cpuReferenceCounters.erase(refIt);
+            metrics->RemoveCpu(cpuPerfIt->cpuNum);
           } else {
             refIt->second--;
           }
@@ -157,7 +154,7 @@ static void DeletePerfEntries(PAPIMetrics *metrics)
 
 static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
                              int numEvents, const long long *counters, 
-                             Thread *thread, bool permanent,
+                             Thread *cpu, bool permanent,
                              unsigned long long *timestamp)
 {
   int rval;
@@ -167,9 +164,9 @@ static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
     metrics->reset = false;
   }
 
-  if (!metrics->ContainsComponent(thread)) {
-    metrics->AddComponent(thread); // TODO: add reference counting
-    cpuReferenceCounters[thread->GetId()] = 0;
+  if (!metrics->ContainsComponent(cpu)) {
+    metrics->AddComponent(cpu); // TODO: add reference counting
+    metrics->cpuReferenceCounters[cpu->GetId()] = 0;
   }
 
   unsigned long long ts = TIME();
@@ -186,11 +183,11 @@ static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
       cpuPerfs = new std::vector<CpuPerf> {
                    {
                      .perfEntries = { {.timestamp = ts, .value = counters[i], .permanent = permanent} },
-                     .cpuNum = thread->GetId()
+                     .cpuNum = cpu->GetId()
                    }
                  };
       metrics->attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
-      cpuReferenceCounters[thread->GetId()]++;
+      metrics->cpuReferenceCounters[cpu->GetId()]++;
       continue;
     }
     
@@ -199,7 +196,7 @@ static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
     long long sum = 0;
     auto cpuPerfIt = cpuPerfs->end();
     for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
-      if (it->cpuNum == thread->GetId()) {
+      if (it->cpuNum == cpu->GetId()) {
         cpuPerfIt = it;
         continue;
       }
@@ -218,7 +215,7 @@ static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
       cpuPerfs->push_back(
         {
           .perfEntries = { {.timestamp = ts, .value = value, .permanent = permanent} },
-          .cpuNum = thread->GetId()
+          .cpuNum = cpu->GetId()
         }
       );
     } else {
@@ -229,6 +226,94 @@ static int StorePerfCounters(PAPIMetrics *metrics, const int *events,
       } else {
         lastEntry.timestamp = ts;
         lastEntry.value = value;
+        lastEntry.permanent = permanent;
+      }
+    }
+  }
+
+  metrics->latestTimestamp = ts;
+  if (timestamp)
+    *timestamp = ts;
+
+  return PAPI_OK;
+}
+
+static int AccumPerfCounters(PAPIMetrics *metrics, const int *events,
+                             int numEvents, const long long *counters, 
+                             Thread *cpu, bool permanent,
+                             unsigned long long *timestamp)
+{
+  int rval;
+
+  metrics->reset = true;
+
+  if (!metrics->ContainsComponent(cpu)) {
+    metrics->AddComponent(cpu); // TODO: add reference counting
+    metrics->cpuReferenceCounters[cpu->GetId()] = 0;
+  }
+
+  unsigned long long ts = TIME();
+
+  char buf[PAPI_MAX_STR_LEN] = { '\0' };
+  for (int i = 0; i < numEvents; i++) {
+    rval = PAPI_event_code_to_name(events[i], buf);
+    if (rval != PAPI_OK)
+      return rval;
+
+    std::vector<CpuPerf> *cpuPerfs;
+    auto eventIt = metrics->attrib.find(buf);
+    if (eventIt == metrics->attrib.end()) {
+      cpuPerfs = new std::vector<CpuPerf> {
+                   {
+                     .perfEntries = { {.timestamp = ts, .value = counters[i], .permanent = permanent} },
+                     .cpuNum = cpu->GetId()
+                   }
+                 };
+      metrics->attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
+      metrics->cpuReferenceCounters[cpu->GetId()]++;
+      continue;
+    }
+    
+    cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
+
+    long long sum = 0;
+    auto cpuPerfIt = cpuPerfs->end();
+    for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
+      if (it->cpuNum == cpu->GetId()) {
+        cpuPerfIt = it;
+        continue;
+      }
+
+      PerfEntry &lastEntry = it->perfEntries.back();
+
+      if (lastEntry.timestamp != metrics->latestTimestamp)
+        continue;
+
+      if (lastEntry.permanent)
+        sum += lastEntry.value;
+      else
+        lastEntry.timestamp = ts;
+    }
+
+    long long value = counters[i] + sum;
+
+    if (cpuPerfIt == cpuPerfs->end()) {
+      cpuPerfs->push_back(
+        {
+          .perfEntries = { {.timestamp = ts, .value = value, .permanent = permanent} },
+          .cpuNum = cpu->GetId()
+        }
+      );
+    } else {
+      PerfEntry &lastEntry = cpuPerfIt->perfEntries.back();
+
+      if (lastEntry.permanent) {
+        // TODO: maybe some extra logic needed
+        cpuPerfIt->perfEntries.emplace_back(ts, value, permanent);
+      } else {
+        lastEntry.timestamp = ts;
+        // TODO: maybe some extra logic needed
+        lastEntry.value += value;
         lastEntry.permanent = permanent;
       }
     }
@@ -260,22 +345,23 @@ int sys_sage::SS_PAPI_start(int eventSet, PAPIMetrics **metrics)
   return PAPI_OK;
 }
 
-//int sys_sage::SS_PAPI_reset(int eventSet, PAPIMetrics *metrics)
-//{
-//  if (!metrics)
-//    return PAPI_EINVAL;
-//
-//  int rval;
-//
-//  rval = PAPI_reset(eventSet);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  metrics->reset = true;
-//
-//  return PAPI_OK;
-//}
+int sys_sage::SS_PAPI_reset(int eventSet, PAPIMetrics *metrics)
+{
+  if (!metrics)
+    return PAPI_EINVAL;
 
+  int rval;
+
+  rval = PAPI_reset(eventSet);
+  if (rval != PAPI_OK)
+    return rval;
+
+  metrics->reset = true;
+
+  return PAPI_OK;
+}
+
+template <bool stop>
 int sys_sage::SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
                            bool permanent, unsigned long long *timestamp)
 {
@@ -291,7 +377,12 @@ int sys_sage::SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
     return rval;
 
   long long counters[numEvents];
-  rval = PAPI_read(eventSet, counters);
+
+  if (stop)
+    rval = PAPI_stop(eventSet, counters);
+  else
+    rval = PAPI_read(eventSet, counters);
+
   if (rval != PAPI_OK)
     return rval;
 
@@ -300,153 +391,64 @@ int sys_sage::SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
   if (rval != PAPI_OK)
     return rval;
 
-  Thread *thread = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
-  if (!thread)
+  Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+  if (!cpu)
     return PAPI_EINVAL; // TODO: better error handling
 
-  return StorePerfCounters(metrics, events.get(), numEvents, counters, thread,
+  return StorePerfCounters(metrics, events.get(), numEvents, counters, cpu,
                            permanent, timestamp);
 }
 
-//int sys_sage::SS_PAPI_accum(int eventSet, unsigned long long *timestamp,
-//                            Component *root, PAPIMetrics *metrics)
-//{
-//  if (!timestamp || !root || !metrics)
-//    return PAPI_EINVAL;
-//
-//  int rval;
-//
-//  std::unique_ptr<int[]> events;
-//  int numEvents;
-//  rval = GetEvents(eventSet, events, &numEvents);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  long long counters[numEvents] = { 0 };
-//  rval = PAPI_accum(eventSet, counters);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  unsigned int cpuNum;
-//  rval = GetCpuNum(eventSet, &cpuNum);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  Thread *thread = root->GetSubcomponentById(cpuNum, ComponentType::Thread);
-//  if (!thread)
-//    return PAPI_EINVAL; // TODO: better error handling
-//
-//  return AccumPerfCounters(metrics, events.get(), numEvents, counters,
-//                           timestamp, thread);
-//}
+int sys_sage::SS_PAPI_accum(int eventSet, PAPIMetrics *metrics, Component *root,
+                           bool permanent, unsigned long long *timestamp)
+{
+  if (!metrics || !root)
+    return PAPI_EINVAL;
 
-//int sys_sage::SS_PAPI_stop(int eventSet, unsigned long long *timestamp,
-//                           Component *root, PAPIMetrics *metrics)
-//{
-//  if (!timestamp || !root || !metrics)
-//    return PAPI_EINVAL;
-//
-//  int rval;
-//
-//  std::unique_ptr<int[]> events;
-//  int numEvents;
-//  rval = GetEvents(eventSet, events, &numEvents);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  long long counters[numEvents];
-//  rval = PAPI_stop(eventSet, counters);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  unsigned int cpuNum;
-//  rval = GetCpuNum(eventSet, &cpuNum);
-//  if (rval != PAPI_OK)
-//    return rval;
-//
-//  Thread *thread = root->GetSubcomponentById(cpuNum, ComponentType::Thread);
-//  if (!thread)
-//    return PAPI_EINVAL; // TODO: better error handling
-//
-//  return StorePerfCounters(metrics, events.get(), numEvents, counters,
-//                           timestamp, thread);
-//}
+  int rval;
+
+  std::unique_ptr<int[]> events;
+  int numEvents;
+  rval = GetEvents(eventSet, events, &numEvents);
+  if (rval != PAPI_OK)
+    return rval;
+
+  long long counters[numEvents] = { 0 };
+  rval = PAPI_accum(eventSet, counters);
+  if (rval != PAPI_OK)
+    return rval;
+
+  unsigned int cpuNum;
+  rval = GetCpuNum(eventSet, &cpuNum);
+  if (rval != PAPI_OK)
+    return rval;
+
+  Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+  if (!cpu)
+    return PAPI_EINVAL; // TODO: better error handling
+
+  return AccumPerfCounters(metrics, events.get(), numEvents, counters, cpu,
+                           permanent, timestamp);
+}
 
 PAPIMetrics::PAPIMetrics()
              : Relation (RelationType::PAPIMetrics), latestTimestamp (0),
                reset (true) {}
 
-//static int AccumPerfCounters(PAPIMetrics *metrics, const int *events,
-//                             int numEvents, const long long *counters, 
-//                             unsigned long long *timestamp, Thread *thread)
-//{
-//  int rval;
-//
-//  metrics->reset = true;
-//
-//  if (!metrics->ContainsComponent(thread))
-//    metrics->AddComponent(thread); // TODO: add reference counting
-//
-//  bool permanent = *timestamp == 0;
-//  *timestamp = TIME();
-//
-//  char buf[PAPI_MAX_STR_LEN] = { '\0' };
-//  for (int i = 0; i < numEvents; i++) {
-//    rval = PAPI_event_code_to_name(events[i], buf);
-//    if (rval != PAPI_OK)
-//      return rval;
-//
-//    std::vector<CpuPerf> *cpuPerfs;
-//    auto cpuPerfsIt = metrics->attrib.find(buf);
-//
-//    if (cpuPerfsIt == metrics->attrib.end()) { // no entries for this event
-//      PerfEntry perfEntry { .timestamp = ts, .value = counters[i], .permanent = permanent };
-//      cpuPerfs = new std::vector<CpuPerf> {
-//        // create a single CpuPerf which contains a single PerfEntry
-//        {
-//          .entries = { perfEntry },
-//          .cpuNum = thread->GetId()
-//        }
-//      };
-//
-//      metrics->attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
-//      continue;
-//    }
-//    cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( cpuPerfsIt->second );
-//
-//    auto cpuPerfIt = std::find_if(
-//                       cpuPerfs->begin(), cpuPerfs->end(),
-//                       [thread](const CpuPerf &cpuPerf) {
-//                         return cpuPerf.cpuNum == thread->GetId();
-//                       }
-//                     );
-//    if (cpuPerfIt == cpuPerfs->end()) {
-//      PerfEntry perfEntry { .timestamp = *timestamp, .value = counters[i], .permanent = permanent };
-//      cpuPerfs->entries.emplace_back(
-//        {
-//          .entries = { perfEntry },
-//          .cpuNum = thread->GetId()
-//        }
-//      );
-//    } else {
-//      CpuPerf &cpuPerf = cpuPerfIt->second;
-//      PerfEntry lastEntry = cpuPerf.entries.back();
-//
-//      if (lastEntry.permanent) {
-//        PerfEntry perfEntry { .timestamp = *timestamp, .value = lastEntry.value + counters[i], .permanent = permanent };
-//        cpuPerf.entries.emplace_back(perfEntry);
-//      } else {
-//        lastEntry.timestamp = *timestamp;
-//        lastEntry.value += counters[i];
-//        lastEntry.permanent = permanent;
-//      }
-//    }
-//  }
-//
-//  metrics->latestTimestamp = *timestamp;
-//
-//  return PAPI_OK;
-//}
+void PAPIMetrics::RemoveCpu(int cpuNum)
+{
+  auto cpuIt = std::find_if(components.begin(), components.end(),
+                            [cpuNum](const Component *component)
+                            {
+                              return component->GetId() == cpuNum;
+                            }
+               );
+  Component *cpu = *cpuIt;
+  components.erase(cpuIt);
+
+  std::vector<Relation *> &metricRels = cpu->_GetRelations(RelationType::PAPIMetrics);
+  metricRels.erase(std::remove( metricRels.begin(), metricRels.end(), this ));
+}
 
 // TODO: maybe use another map instead of `attrib` to use integer keys?
 long long PAPIMetrics::GetCpuPerfVal(int event, int cpuNum,

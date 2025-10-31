@@ -20,6 +20,8 @@ namespace sys_sage {
   //   - it would be better to use an `attrib` map that uses integer keys
   //     for the event codes instead of `std::string`
   //   - the `components` vector needs to support reference counting
+
+  // TODO: change name to `CpuMetrics`
   class PAPIMetrics : public Relation {
   public:
     PAPIMetrics();
@@ -27,6 +29,8 @@ namespace sys_sage {
     long long GetCpuPerfVal(int event, int cpuNum = -1, unsigned long long timestamp = 0);
 
     CpuPerf *GetCpuPerf(int event, int cpuNum);
+
+    void RemoveCpu(int cpuNum);
 
     //void PrintLatestPerfCounterReadings();
 
@@ -37,17 +41,16 @@ namespace sys_sage {
 
   int SS_PAPI_start(int eventSet, PAPIMetrics **metrics);
 
+  int SS_PAPI_reset(int eventSet, PAPIMetrics *metrics);
+
+  template <bool stop = false>
   int SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
                    bool permanent = false,
                    unsigned long long *timestamp = nullptr);
 
-  //int SS_PAPI_reset(int eventSet, PAPIMetrics *metrics);
-
-  //int SS_PAPI_accum(int eventSet, unsigned long long *timestamp, Component *root,
-  //                  PAPIMetrics *metrics);
-
-  //int SS_PAPI_stop(int eventSet, unsigned long long *timestamp, Component *root,
-  //                 PAPIMetrics *metrics);
+  int SS_PAPI_accum(int eventSet, PAPIMetrics *metrics, Component *root,
+                    bool permanent = false,
+                    unsigned long long *timestamp = nullptr);
 }
 
 #endif
