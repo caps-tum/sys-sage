@@ -308,11 +308,11 @@ static int AccumPerfCounters(PAPIMetrics *metrics, const int *events,
       PerfEntry &lastEntry = cpuPerfIt->perfEntries.back();
 
       if (lastEntry.permanent) {
-        // TODO: maybe some extra logic needed
+        if (lastEntry.timestamp == metrics->latestTimestamp)
+          value += lastEntry.value;
         cpuPerfIt->perfEntries.emplace_back(ts, value, permanent);
       } else {
         lastEntry.timestamp = ts;
-        // TODO: maybe some extra logic needed
         lastEntry.value += value;
         lastEntry.permanent = permanent;
       }
