@@ -63,37 +63,37 @@ int main(int argc, char **argv)
   SS_PAPI_start(eventSet, &metrics);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node, true);
+  SS_PAPI_read(eventSet, metrics, &node);
   migrate(targetCpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node, true);
+  SS_PAPI_read(eventSet, metrics, &node);
   migrate(targetTargetCpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node, true);
+  SS_PAPI_read(eventSet, metrics, &node);
   migrate(cpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node, true);
+  SS_PAPI_read(eventSet, metrics, &node);
 
   PAPI_stop(eventSet, &tmp);
 
   assert(metrics->GetComponents().size() == 3);
 
   CpuPerf *cpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, cpu);
-  assert(cpuPerf->perfEntries.size() == 2);
-  std::cout << metrics->GetCpuPerfVal(PAPI_TOT_INS, cpu) << '\n';
+  assert(cpuPerf->perfEntries.size() == 1);
+  std::cout << "CPU " << cpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, cpu) << '\n';
 
   CpuPerf *targetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetCpu);
   assert(targetCpuPerf->perfEntries.size() == 1);
-  std::cout << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetCpu) << '\n';
+  std::cout << "CPU " << targetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetCpu) << '\n';
 
   CpuPerf *targetTargetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetTargetCpu);
   assert(targetTargetCpuPerf->perfEntries.size() == 1);
-  std::cout << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetTargetCpu) << '\n';
+  std::cout << "CPU " << targetTargetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetTargetCpu) << '\n';
 
-  std::cout << metrics->GetCpuPerfVal(PAPI_TOT_INS) << '\n';
+  std::cout << "\ntotal: " << metrics->GetCpuPerfVal(PAPI_TOT_INS) << '\n';
 
   return EXIT_SUCCESS;
 }

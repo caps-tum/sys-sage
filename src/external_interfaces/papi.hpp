@@ -1,6 +1,6 @@
 #ifdef PAPI_METRICS
 
-#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 namespace sys_sage {
@@ -16,12 +16,13 @@ namespace sys_sage {
     int cpuNum;
   };
 
-  // the relation class doesn't fit my needs entirely:
+  // the relation class doesn't perfectly fit my needs:
   //   - it would be better to use an `attrib` map that uses integer keys
   //     for the event codes instead of `std::string`
   //   - the `components` vector needs to support reference counting
+  //
+  //   -> maybe make `PAPIMetrics` its own thing?
 
-  // TODO: change name to `CpuMetrics`
   class PAPIMetrics : public Relation {
   public:
     PAPIMetrics();
@@ -31,8 +32,6 @@ namespace sys_sage {
     CpuPerf *GetCpuPerf(int event, int cpuNum);
 
     void RemoveCpu(int cpuNum);
-
-    //void PrintLatestPerfCounterReadings();
 
     std::unordered_map<int, int> cpuReferenceCounters;
     unsigned long long latestTimestamp;

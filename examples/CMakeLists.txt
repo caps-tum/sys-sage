@@ -25,7 +25,7 @@ if (QDMI)
 endif()
 
 if(PAPI_METRICS)
-    add_executable(foo foo.cpp)
+    add_executable(papi_migrate papi_migrate.cpp)
     #add_executable(papi_basics papi_basics.cpp)
     #add_executable(papi_attach_cpu papi_attach_cpu.cpp)
     #add_executable(papi_attach_process papi_attach_process.cpp)
