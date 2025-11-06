@@ -26,9 +26,9 @@ endif()
 
 if(PAPI_METRICS)
     add_executable(papi_migrate papi_migrate.cpp)
-    #add_executable(papi_basics papi_basics.cpp)
-    #add_executable(papi_attach_cpu papi_attach_cpu.cpp)
-    #add_executable(papi_attach_process papi_attach_process.cpp)
+    add_executable(papi_basics papi_basics.cpp)
+    add_executable(papi_attach_cpu papi_attach_cpu.cpp)
+    add_executable(papi_attach_process papi_attach_process.cpp)
 endif()
 
 install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test DESTINATION bin/examples)

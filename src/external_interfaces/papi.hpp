@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <ostream>
 
 namespace sys_sage {
 
@@ -51,5 +52,7 @@ namespace sys_sage {
                     bool permanent = false,
                     unsigned long long *timestamp = nullptr);
 }
+
+std::ostream &operator<<(std::ostream &stream, const sys_sage::PerfEntry &perfEntry);
 
 #endif

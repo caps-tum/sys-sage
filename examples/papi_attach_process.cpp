@@ -9,11 +9,33 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+using namespace sys_sage;
+
 #define FATAL(errMsg, pid) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   kill(pid, SIGKILL);\
   return EXIT_FAILURE;\
 } while(false)
+
+void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
+                  int numEvents, PAPIMetrics *metrics)
+{
+  std::cout << "total perf counter vals:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
+
+  std::cout << "\nperf counters per CPUs:\n";
+  for (const Component *cpu : metrics->GetComponents()) {
+    int cpuNum = cpu->GetId();
+    std::cout << "  CPU " << cpuNum << ":\n";
+
+    for (int i = 0; i < numEvents; i++) {
+      std::cout << "    " << eventNames[i] << ":\n";
+      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+        std::cout << "      " << perfEntry << '\n';
+    }
+  }
+}
 
 int main(int argc, char **argv)
 {
@@ -22,8 +44,8 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  sys_sage::Node node;
-  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
+  Node node;
+  if (parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   pid_t pid = fork();
@@ -59,14 +81,19 @@ int main(int argc, char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
+  char eventNames[numEvents][PAPI_MAX_STR_LEN] = { { '\0' } };
+  for (int i = 0; i < numEvents; i++) {
+    rval = PAPI_event_code_to_name(events[i], eventNames[i]);
+    if (rval != PAPI_OK)
+      FATAL(PAPI_strerror(rval), pid);
+  }
+
   rval = PAPI_attach(eventSet, pid);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
-  unsigned long long timestamp = 0;
-  sys_sage::PAPIMetrics *metrics = nullptr;
-
-  rval = PAPI_start(eventSet);
+  PAPIMetrics *metrics = nullptr;
+  rval = SS_PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
@@ -77,15 +104,13 @@ int main(int argc, char **argv)
   if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
     FATAL("expected child process to stop right before exit\n", pid);
 
-  rval = sys_sage::PAPI_stop(eventSet, &timestamp, &node, &metrics);
+  rval = SS_PAPI_read<true>(eventSet, metrics, &node);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
   ptrace(PTRACE_CONT, pid, nullptr, nullptr);
 
   waitpid(pid, &status, 0);
-
-  metrics->PrintLatestPerfCounterReadings();
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK) {
@@ -100,6 +125,8 @@ int main(int argc, char **argv)
   }
 
   PAPI_shutdown();
+
+  printResults(events, eventNames, numEvents, metrics);
 
   return EXIT_SUCCESS;
 }

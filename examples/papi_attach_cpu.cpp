@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <sched.h>
 
+using namespace sys_sage;
+
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   return EXIT_FAILURE;\
@@ -15,12 +17,31 @@
 static constexpr int hwThreadId = 3;
 
 struct worker_args {
-  sys_sage::Component *topoRoot;
-  sys_sage::PAPIMetrics *metrics = nullptr;
-  unsigned long long timestamp = 0;
+  Component *topoRoot;
+  PAPIMetrics *metrics = nullptr;
   int eventSet;
   int rval;
 };
+
+void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
+                  int numEvents, PAPIMetrics *metrics)
+{
+  std::cout << "total perf counter vals:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
+
+  std::cout << "\nperf counters per CPUs:\n";
+  for (const Component *cpu : metrics->GetComponents()) {
+    int cpuNum = cpu->GetId();
+    std::cout << "  CPU " << cpuNum << ":\n";
+
+    for (int i = 0; i < numEvents; i++) {
+      std::cout << "    " << eventNames[i] << ":\n";
+      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+        std::cout << "      " << perfEntry << '\n';
+    }
+  }
+}
 
 void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 {
@@ -42,14 +63,14 @@ void *work(void *arg)
   auto c = std::make_unique<double[]>(n);
   double alpha = 3.14159;
 
-  wargs->rval = PAPI_start(wargs->eventSet);
+  wargs->rval = SS_PAPI_start(wargs->eventSet, &wargs->metrics);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = sys_sage::PAPI_stop(wargs->eventSet, &wargs->timestamp,
-                                    wargs->topoRoot, &wargs->metrics);
+  wargs->rval = SS_PAPI_read<true>(wargs->eventSet, wargs->metrics,
+                                   wargs->topoRoot);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
@@ -65,8 +86,8 @@ int main(int argc, const char **argv)
     return EXIT_FAILURE;
   }
 
-  sys_sage::Node node;
-  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
+  Node node;
+  if (parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   int rval;
@@ -92,6 +113,13 @@ int main(int argc, const char **argv)
   rval = PAPI_add_events(eventSet, events, numEvents);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
+
+  char eventNames[numEvents][PAPI_MAX_STR_LEN] = { { '\0' } };
+  for (int i = 0; i < numEvents; i++) {
+    rval = PAPI_event_code_to_name(events[i], eventNames[i]);
+    if (rval != PAPI_OK)
+      FATAL(PAPI_strerror(rval));
+  }
 
   PAPI_option_t opt;
   opt.cpu.eventset = eventSet;
@@ -125,9 +153,7 @@ int main(int argc, const char **argv)
     FATAL(PAPI_strerror(wargs.rval));
 
   assert(wargs.metrics->GetComponents().size() == 1
-         && static_cast<sys_sage::Thread *>(wargs.metrics->GetComponent(0))->GetId() == hwThreadId);
-
-  wargs.metrics->PrintLatestPerfCounterReadings();
+         && wargs.metrics->GetComponent(0)->GetId() == hwThreadId);
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)
@@ -138,6 +164,8 @@ int main(int argc, const char **argv)
     FATAL(PAPI_strerror(rval));
 
   PAPI_shutdown();
+
+  printResults(events, eventNames, numEvents, wargs.metrics);
 
   return EXIT_SUCCESS;
 }

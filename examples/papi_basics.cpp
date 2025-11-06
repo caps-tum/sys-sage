@@ -4,12 +4,34 @@
 #include <memory>
 #include <stdlib.h>
 
-static constexpr int iter = 5;
+using namespace sys_sage;
+
+static constexpr int ITER = 5;
 
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   return EXIT_FAILURE;\
 } while (false)
+
+void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
+                  int numEvents, PAPIMetrics *metrics)
+{
+  std::cout << "total perf counter vals:\n";
+  for (int i = 0; i < numEvents; i++)
+    std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
+
+  std::cout << "\nperf counters per CPUs:\n";
+  for (const Component *cpu : metrics->GetComponents()) {
+    int cpuNum = cpu->GetId();
+    std::cout << "  CPU " << cpuNum << ":\n";
+
+    for (int i = 0; i < numEvents; i++) {
+      std::cout << "    " << eventNames[i] << ":\n";
+      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+        std::cout << "      " << perfEntry << '\n';
+    }
+  }
+}
 
 void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 {
@@ -24,8 +46,8 @@ int main(int argc, const char **argv)
     return EXIT_FAILURE;
   }
 
-  sys_sage::Node node;
-  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
+  Node node;
+  if (parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   int rval;
@@ -61,68 +83,23 @@ int main(int argc, const char **argv)
       FATAL(PAPI_strerror(rval));
   }
 
-  unsigned long long timestamps[3] = { 0 };
-  sys_sage::PAPIMetrics *metrics = nullptr;
-
-  rval = PAPI_start(eventSet);
+  PAPIMetrics *metrics = nullptr;
+  rval = SS_PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  saxpy(a.get(), b.get(), c.get(), n, alpha);
-
-  rval = sys_sage::PAPI_read(eventSet, timestamps, &node, &metrics);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  rval = PAPI_reset(eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  for (int i = 0; i < iter; i++) {
+  for (int i = 0; i < ITER; i++) {
     saxpy(a.get(), b.get(), c.get(), n, alpha);
-    rval = sys_sage::PAPI_accum(eventSet, timestamps + 1, &node, &metrics);
+
+    rval = SS_PAPI_read(eventSet, metrics, &node, true);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
   }
 
-  long long counters[numEvents];
-  saxpy(a.get(), b.get(), c.get(), n, alpha);
-
-  // use plain PAPI interchangeably with the sys-sage integration
-  rval = PAPI_read(eventSet, counters);
+  // stop the event set without storing perf counters -> use plain PAPI_stop
+  rval = PAPI_stop(eventSet, nullptr);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
-
-  rval = PAPI_reset(eventSet);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  saxpy(a.get(), b.get(), c.get(), n, alpha);
-
-  rval = sys_sage::PAPI_stop(eventSet, timestamps + 2, &node, &metrics);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval));
-
-  std::cout << "performance counters on the 1st reading:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[0]) << '\n';
-
-  std::cout << "accumulated performance counters:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[1]) << '\n';
-
-  std::cout << "performance counters not stored in the sys-sage topology:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << counters[i] << '\n';
-
-  std::cout << "performance counters on the last reading:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << metrics->GetPerfCounterReading(events[i], timestamps[2]) << '\n';
-
-  std::cout << "performance counters were monitored on HW thread(s):";
-  for (sys_sage::Component *c : metrics->GetComponents())
-    std::cout << ' ' << static_cast<sys_sage::Thread *>(c)->GetId();
-  std::cout << '\n';
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK)
@@ -133,6 +110,8 @@ int main(int argc, const char **argv)
     FATAL(PAPI_strerror(rval));
 
   PAPI_shutdown();
+
+  printResults(events, eventNames, numEvents, metrics);
 
   return EXIT_SUCCESS;
 }

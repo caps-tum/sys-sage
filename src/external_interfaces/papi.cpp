@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <stddef.h>
 #include <sched.h>
 #include <string>
@@ -525,6 +526,11 @@ CpuPerf *sys_sage::PAPIMetrics::GetCpuPerf(int event, int cpuNum)
     return nullptr;
 
   return &(*cpuPerfIt);
+}
+
+std::ostream &operator<<(std::ostream &stream, const PerfEntry &perfEntry)
+{
+  return stream << "{ " << perfEntry.timestamp << ", " << perfEntry.value << ", " << perfEntry.permanent << " }";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
