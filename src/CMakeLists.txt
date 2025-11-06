@@ -36,6 +36,7 @@ set(SOURCES
     parsers/hwloc.cpp
     parsers/caps-numa-benchmark.cpp
     parsers/mt4g.cpp
+    parsers/mt4g_csv.cpp
     parsers/cccbench.cpp
     parsers/qdmi-parser.cpp
     parsers/iqm-parser.cpp
@@ -68,6 +69,7 @@ set(HEADERS
     parsers/hwloc.hpp
     parsers/caps-numa-benchmark.hpp
     parsers/mt4g.hpp
+    parsers/mt4g_csv.hpp
     parsers/cccbench.hpp
     parsers/qdmi-parser.hpp
     parsers/iqm-parser.hpp
