@@ -2,57 +2,211 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 using namespace sys_sage;
 using json = nlohmann::json;
 
-static void ParseCompute(Chip *gpu, const json &compute)
+#define kHz_to_Hz(kHz) (kHz) * 1000
+#define GiBs_to_Bs(GiBs) (GiBs) * 1073741824
+
+static void ParseGeneral(const json &general, Chip *gpu)
 {
-  int *maxThreadsPerMultiProcessor = nullptr;
-  int *multiProcessorCount = nullptr;
+  gpu->SetModel(general["name"].get<std::string>());
+  gpu->SetVendor(general["vendor"].get<std::string>());
 
-  for (auto &[key, value] : compute.items()) {
-    if (key == "maxBlocksPerMultiProcessor"
-        || key == "maxThreadsPerBlock"
-        || key == "numberOfCoresPerMultiProcessor"
-        || key == "warpSize") {
-      int *i = new int( value.get<int>() );
-      gpu->attrib[key] = reinterpret_cast<void *>( i );
+  gpu->attrib["computeCapability"] = reinterpret_cast<void *>(
+    new std::pair<int, int> {
+          general["computeCapability"]["major"].get<int>(),
+          general["computeCapability"]["minor"].get<int>()
+        }
+  );
 
-    } else if (key == "maxThreadsPerMultiProcessor") {
-      maxThreadsPerMultiProcessor = new int( value.get<int>() );
-      gpu->attrib[key] = reinterpret_cast<void *>( maxThreadsPerMultiProcessor );
-
-    } else if (key == "multiProcessorCount") {
-      multiProcessorCount = new int( value.get<int>() );
-      gpu->attrib[key] = reinterpret_cast<void *>( multiProcessorCount );
-    }
-  }
+  gpu->attrib["clockRate"] = reinterpret_cast<void *>(
+    new double( kHz_to_Hz(general["clockRate"]["value"].get<double>()) )
+  );
 }
 
-static void ParseGeneral(Chip *gpu, const json &general)
+static std::tuple<int, int> ParseCompute(const json &compute, Chip *gpu)
 {
-  for (auto &[key, value] : general.items()) {
-    if (key == "clockRate") {
-      double *rate = new double(value.at("value").get<double>());
-      gpu->attrib[key] = reinterpret_cast<void *>( rate );
-    } else if (key == "computeCapability") {
-      std::pair<int, int> *majorMinor = new std::pair<int, int> {
-                                              value.at("major").get<int>(),
-                                              value.at("minor").get<int>()
-                                            };
-      gpu->attrib[key] = reinterpret_cast<void *>( majorMinor );
-    } else if (key == "name") {
-      gpu->SetModel(value.get<std::string>());
-    } else if (key == "vendor") {
-      gpu->SetVendor(value.get<std::string>());
-    }
+  auto *multiProcessorCount = new int( compute["multiProcessorCount"].get<int>() );
+  gpu->attrib["multiProcessorCount"] = reinterpret_cast<void *>( multiProcessorCount );
+
+  auto *numberOfCoresPerMultiProcessor = new int( compute["numberOfCoresPerMultiProcessor"].get<int>() );
+  gpu->attrib["numberOfCoresPerMultiProcessor"] = reinterpret_cast<void *>( numberOfCoresPerMultiProcessor );
+
+  gpu->attrib["maxThreadsPerBlock"] = reinterpret_cast<void *>(
+    new int( compute["maxThreadsPerBlock"].get<int>() )
+  );
+  gpu->attrib["warpSize"] = reinterpret_cast<void *>(
+    new int( compute["warpSize"].get<int>() )
+  );
+  gpu->attrib["maxThreadsPerMultiProcessor"] = reinterpret_cast<void *>(
+    new int( compute["maxThreadsPerMultiProcessor"].get<int>() )
+  );
+  gpu->attrib["maxBlocksPerMultiProcessor"] = reinterpret_cast<void *>(
+    new int( compute["maxBlocksPerMultiProcessor"].get<int>() )
+  );
+
+  // TODO: maybe parse register info?
+
+  if (auto it = compute.find("numXDCDs"); it != compute.end()) {
+    gpu->attrib["numXDCDs"] = reinterpret_cast<void *>(
+        new int( it->get<int>() )
+    );
   }
+  if (auto it = compute.find("computeUnitsPerDie"); it != compute.end()) {
+    gpu->attrib["computeUnitsPerDie"] = reinterpret_cast<void *>(
+        new int( it->get<int>() )
+    );
+  }
+  if (auto it = compute.find("numSIMDsPerCu"); it != compute.end()) {
+    gpu->attrib["numSIMDsPerCu"] = reinterpret_cast<void *>(
+        new int( it->get<int>() )
+    );
+  }
+
+
+  return { *multiProcessorCount, *numberOfCoresPerMultiProcessor };
 }
 
-static void ParseMemory(Chip *gpu, const json &memory)
-{}
+static std::tuple<double, double, double>
+ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut)
+{
+  auto *main = new Memory(gpu, 0, "GPU Main Memory",
+                          mainJson["totalGlobalMem"]["value"].get<long long>());
+  *mainOut = main;
+
+  main->attrib["clockRate"] = reinterpret_cast<void *>(
+    new double ( kHz_to_Hz(mainJson["memoryClockRate"]["value"].get<double>()) )
+  );
+  main->attrib["busWidth"] = reinterpret_cast<void *>(
+    new int ( mainJson["memoryBusWidth"]["value"].get<int>() )
+  );
+
+  double latency = -1;
+  if (auto it = mainJson.find("latency"); it != mainJson.end())
+    latency = (*it)["mean"].get<double>();
+
+  double readBandwidth = -1;
+  if (auto it = mainJson.find("readBandwidth"); it != mainJson.end())
+    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  double writeBandwidth = -1;
+  if (auto it = mainJson.find("writeBandwidth"); it != mainJson.end())
+    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  // use for data paths
+  return { latency, readBandwidth, writeBandwidth };
+}
+
+static std::tuple<double, double>
+ParseL3Cache(const json &l3Json, Memory *main, std::vector<Cache *> &l3Caches)
+{
+  int amount = l3Json.value("amount", 1);
+  l3Caches.reserve(amount);
+
+  long long size = l3Json["size"]["value"].get<long long>();
+
+  int lineSize = -1;
+  if (auto it = l3Json.find("lineSize"); it != l3Json.end())
+    lineSize = (*it)["value"].get<int>();
+
+  for (int i = 0; i < amount; i++)
+    l3Caches.push_back(new Cache(main, i, "L3", size, -1, lineSize));
+
+  double readBandwidth = -1;
+  if (auto it = l3Json.find("readBandwidth"); it != l3Json.end())
+    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  double writeBandwidth = -1;
+  if (auto it = l3Json.find("writeBandwidth"); it != l3Json.end())
+    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  // use for data paths
+  return { readBandwidth, writeBandwidth };
+}
+
+static std::tuple<double, double, double, double>
+ParseL2Cache(const json &l2Json, std::vector<Component *> &parents, 
+             std::vector<Cache *> &l2Caches)
+{
+  long long size = l2Json["size"]["value"].get<long long>();
+
+  int lineSize = -1;
+  if (auto it = l2Json.find("lineSize"); it != l2Json.end()) {
+    if (auto it2 = it->find("value"); it2 != it->end())
+      lineSize = it2->get<int>();
+    else
+      lineSize = (*it)["size"].get<int>();
+  }
+
+  int fetchGranularity = -1;
+  if (auto it = l2Json.find("fetchGranularity"); it != l2Json.end())
+    fetchGranularity = (*it)["size"].get<int>();
+
+  int segmentSize = -1;
+  if (auto it = l2Json.find("segmentSize"); it != l2Json.end())
+    segmentSize = (*it)["size"].get<int>();
+
+  int amount = l2Json.value("amount", 1);
+  l2Caches.reserve(amount);
+  int amountPerParent = amount / parents.size();
+
+  int id = 0;
+  for (Component *parent : parents) {
+    for (int i = 0; i < amountPerParent; i++) {
+      auto *l2Cache = new Cache(parent, id, "L2", size, -1, lineSize);
+
+      if (fetchGranularity > 0)
+        l2Cache->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
+      if (segmentSize > 0)
+        l2Cache->attrib["segmentSize"] = reinterpret_cast<void *>( new double(segmentSize) );
+
+      l2Caches.push_back(l2Cache);
+      id++;
+    }
+  }
+
+  double latency = -1;
+  if (auto it = l2Json.find("latency"); it != l2Json.end())
+    latency = (*it)["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = l2Json.find("missPenalty"); it != l2Json.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  double readBandwidth = -1;
+  if (auto it = l2Json.find("readBandwidth"); it != l2Json.end())
+    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  double writeBandwidth = -1;
+  if (auto it = l2Json.find("writeBandwidth"); it != l2Json.end())
+    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+
+  // use for data paths
+  return { latency, missPenalty, readBandwidth, writeBandwidth };
+}
+
+// TODO: this is very ugly. Fix it
+static void ParseMemory(const json &memory, Chip *gpu)
+{
+  std::vector<Memory *> main { nullptr };
+  auto [mainLatency, mainReadBandwidth, mainWriteBandwidth] = ParseMainMemory(memory["main"], gpu, &main.front());
+
+  std::vector<Cache *> l3Caches;
+  std::tuple<double, double> l3CacheBandwidth;
+  if (auto it = memory.find("l3"); it != memory.end())
+    l3CacheBandwidth = ParseL3Cache(*it, main.front(), l3Caches);
+
+  std::vector<Cache *> l2Caches;
+  if (l3Caches.size() == 0)
+    auto [l2Latency, l2MissPenalty, l2ReadBandwidth, l2WriteBandwidth] = ParseL2Cache(memory["l2"], main, l2Caches);
+  else
+    auto [l2Latency, l2MissPenalty, l2ReadBandwidth, l2WriteBandwidth] = ParseL2Cache(memory["l2"], l3Caches, l2Caches);
+}
 
 int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
 {
@@ -69,11 +223,11 @@ int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
 
   json data = json::parse(file);
 
-  Chip *gpu = new Chip(parent, gpuId, "GPU", ChipType::Gpu);
+  auto *gpu = new Chip(parent, gpuId, "GPU", ChipType::Gpu);
 
-  ParseCompute(gpu, data.at("compute"));
-  ParseGeneral(gpu, data.at("general"));
-  ParseMemory(gpu, data.at("memory"));
+  ParseGeneral(data["general"], gpu);
+  auto [numMPs, numCores] = ParseCompute(data["compute"], gpu);
+  ParseMemory(data["memory"], gpu);
 
   return 0;
 }
