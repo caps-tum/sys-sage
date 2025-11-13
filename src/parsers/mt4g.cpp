@@ -1,7 +1,6 @@
 #include "mt4g.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -32,10 +31,10 @@ static void ParseGeneral(const json &general, Chip *gpu)
 
 static std::tuple<int, int> ParseCompute(const json &compute, Chip *gpu)
 {
-  auto *multiProcessorCount = new int( compute["multiProcessorCount"].get<int>() );
+  auto multiProcessorCount = new int( compute["multiProcessorCount"].get<int>() );
   gpu->attrib["multiProcessorCount"] = reinterpret_cast<void *>( multiProcessorCount );
 
-  auto *numberOfCoresPerMultiProcessor = new int( compute["numberOfCoresPerMultiProcessor"].get<int>() );
+  auto numberOfCoresPerMultiProcessor = new int( compute["numberOfCoresPerMultiProcessor"].get<int>() );
   gpu->attrib["numberOfCoresPerMultiProcessor"] = reinterpret_cast<void *>( numberOfCoresPerMultiProcessor );
 
   gpu->attrib["maxThreadsPerBlock"] = reinterpret_cast<void *>(
@@ -73,12 +72,13 @@ static std::tuple<int, int> ParseCompute(const json &compute, Chip *gpu)
   return { *multiProcessorCount, *numberOfCoresPerMultiProcessor };
 }
 
-static void ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut,
-                            std::vector<Thread *> &cores)
+static void ParseMainMemory(const json &mainJson, Chip *gpu,
+                            std::vector<Thread *> &cores,
+                            std::vector<Component *> &leafs)
 {
-  auto *main = new Memory(gpu, 0, "GPU Main Memory",
-                          mainJson["totalGlobalMem"]["value"].get<long long>());
-  *mainOut = main;
+  auto main = new Memory(gpu, 0, "GPU Main Memory",
+                         mainJson["totalGlobalMem"]["value"].get<long long>());
+  leafs.push_back(main);
 
   main->attrib["clockRate"] = reinterpret_cast<void *>(
     new double ( kHz_to_Hz(mainJson["memoryClockRate"]["value"].get<double>()) )
@@ -87,37 +87,27 @@ static void ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut,
     new int ( mainJson["memoryBusWidth"]["value"].get<int>() )
   );
 
-  double latency = -1;
-  if (auto it = mainJson.find("latency"); it != mainJson.end())
-    latency = (*it)["mean"].get<double>();
+  // the existence of `latency` implies the existence of `readBandwidth` and `writeBandwidth`
+  if (auto it = mainJson.find("latency"); it != mainJson.end()) {
+    double latency = (*it)["mean"].get<double>();
+    double readBandwidth = GiBs_to_Bs( mainJson["readBandwidth"]["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( mainJson["writeBandwidth"]["value"].get<double>() );
 
-  double readBandwidth = -1;
-  if (auto it = mainJson.find("readBandwidth"); it != mainJson.end())
-    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
-
-  double writeBandwidth = -1;
-  if (auto it = mainJson.find("writeBandwidth"); it != mainJson.end())
-    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
-
-  if (latency > 0 || readBandwidth > 0 || writeBandwidth > 0) {
-    for (auto *core : cores) {
-      auto *dp = new DataPath(main, core, DataPathOrientation::Oriented,
-                              DataPathType::Logical, -1, latency);
-      if (readBandwidth > 0)
-        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
-      if (writeBandwidth > 0)
-        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+    for (auto core : cores) {
+      auto dp = new DataPath(main, core, DataPathOrientation::Oriented,
+                             DataPathType::Logical, -1, latency);
+      dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+      dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
     }
   }
 }
 
-// assume `l3Caches` is empty
-static void ParseL3Cache(const json &l3Json, Memory *main,
-                         std::vector<Component *> &l3Caches,
-                         std::vector<Thread *> &cores)
+static void ParseL3Cache(const json &l3Json, std::vector<Thread *> &cores,
+                         std::vector<Component *> &leafs)
 {
   int amount = l3Json.value("amount", 1);
-  l3Caches.reserve(amount);
+  int amountPerLeaf = amount / leafs.size();
+  std::vector<Component *> l3Caches (amount);
 
   long long size = l3Json["size"]["value"].get<long long>();
 
@@ -125,47 +115,45 @@ static void ParseL3Cache(const json &l3Json, Memory *main,
   if (auto it = l3Json.find("lineSize"); it != l3Json.end())
     lineSize = (*it)["value"].get<int>();
 
-  for (int i = 0; i < amount; i++)
-    l3Caches.push_back(new Cache(main, i, "L3", size, -1, lineSize));
+  int id = 0;
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerLeaf; i++) {
+      l3Caches[id] = new Cache(leaf, id, "L3", size, -1, lineSize);
+      id++;
+    }
+  }
 
-  double readBandwidth = -1;
-  if (auto it = l3Json.find("readBandwidth"); it != l3Json.end())
-    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+  // the existence of `readBandwidth` implies the existence of `writeBandwidth`
+  if (auto it = l3Json.find("readBandwidth"); it != l3Json.end()) {
+    double readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( l3Json["writeBandwidth"]["value"].get<double>() );
 
-  double writeBandwidth = -1;
-  if (auto it = l3Json.find("writeBandwidth"); it != l3Json.end())
-    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
-
-  if (readBandwidth > 0 || writeBandwidth > 0) {
-    for (auto *l3Cache : l3Caches) {
-      for (auto *core : cores) {
-        auto *dp = new DataPath(l3Cache, core, DataPathOrientation::Oriented,
-                                DataPathType::Logical, -1, -1);
-        if (readBandwidth > 0)
-          dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
-        if (writeBandwidth > 0)
-          dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+    for (auto l3Cache : l3Caches) {
+      for (auto core : cores) {
+        auto dp = new DataPath(l3Cache, core, DataPathOrientation::Oriented,
+                               DataPathType::Logical, -1, -1);
+        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
       }
     }
   }
+
+  leafs = std::move(l3Caches);
 }
 
-static void ParseL2Cache(const json &l2Json, std::vector<Component *> &parents, 
-                         std::vector<Component *> &l2Caches,
-                         std::vector<Thread *> &cores)
+static void ParseL2Cache(const json &l2Json, std::vector<Thread *> &cores,
+                         std::vector<Component *> &leafs)
 {
   int amount = l2Json.value("amount", 1);
-  l2Caches.reserve(amount);
-  int amountPerParent = amount / parents.size();
+  int amountPerLeaf = amount / leafs.size();
+  std::vector<Component *> l2Caches (amount);
 
   long long size = l2Json["size"]["value"].get<long long>();
 
   int lineSize = -1;
   if (auto it = l2Json.find("lineSize"); it != l2Json.end()) {
-    if (auto it2 = it->find("value"); it2 != it->end())
-      lineSize = it2->get<int>();
-    else
-      lineSize = (*it)["size"].get<int>();
+    auto valueIt = it->find("value");
+    lineSize = valueIt != it->end() ? valueIt->get<int>() : (*it)["size"].get<int>();
   }
 
   int fetchGranularity = -1;
@@ -177,94 +165,120 @@ static void ParseL2Cache(const json &l2Json, std::vector<Component *> &parents,
     segmentSize = (*it)["size"].get<int>();
 
   int id = 0;
-  for (Component *parent : parents) {
-    for (int i = 0; i < amountPerParent; i++) {
-      auto *l2Cache = new Cache(parent, id++, "L2", size, -1, lineSize);
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerLeaf; i++) {
+      l2Caches[id] = new Cache(leaf, id, "L2", size, -1, lineSize);
 
       if (fetchGranularity > 0)
-        l2Cache->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
+        l2Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
       if (segmentSize > 0)
-        l2Cache->attrib["segmentSize"] = reinterpret_cast<void *>( new double(segmentSize) );
+        l2Caches[id]->attrib["segmentSize"] = reinterpret_cast<void *>( new double(segmentSize) );
 
-      l2Caches.push_back(l2Cache);
+      id++;
     }
   }
 
-  double latency = -1;
-  if (auto it = l2Json.find("latency"); it != l2Json.end())
-    latency = (*it)["mean"].get<double>();
+  if (auto it = l2Json.find("latency"); it != l2Json.end()) {
+    double latency = (*it)["mean"].get<double>();
+    double readBandwidth = GiBs_to_Bs( l2Json["readBandwidth"]["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( l2Json["writeBandwidth"]["value"].get<double>() );
+    double missPenalty = -1;
+    if (auto missPenaltyIt = l2Json.find("missPenalty"); missPenaltyIt != l2Json.end())
+      missPenalty = (*missPenaltyIt)["value"].get<double>();
 
-  double missPenalty = -1;
-  if (auto it = l2Json.find("missPenalty"); it != l2Json.end())
-    missPenalty = (*it)["value"].get<double>();
-
-  double readBandwidth = -1;
-  if (auto it = l2Json.find("readBandwidth"); it != l2Json.end())
-    readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
-
-  double writeBandwidth = -1;
-  if (auto it = l2Json.find("writeBandwidth"); it != l2Json.end())
-    writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
-
-  if (latency > 0 || missPenalty > 0 || readBandwidth > 0 || writeBandwidth > 0) {
-    for (auto *l2Cache : l2Caches) {
-      for (auto *core : cores) {
-        auto *dp = new DataPath(l2Cache, core, DataPathOrientation::Oriented,
-                                DataPathType::Logical, -1, latency);
+    for (auto l2Cache : l2Caches) {
+      for (auto core : cores) {
+        auto dp = new DataPath(l2Cache, core, DataPathOrientation::Oriented,
+                               DataPathType::Logical, -1, latency);
+        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
         if (missPenalty > 0)
           dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
-        if (readBandwidth > 0)
-          dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
-        if (writeBandwidth > 0)
-          dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
       }
     }
   }
+
+  leafs = std::move(l2Caches);
 }
 
 static void ParseScalarL1Cache(const json &scalarL1Json,
-                               std::vector<Component *> &parents,
-                               std::vector<Component *> &scalarL1Caches,
-                               std::vector<Thread *> &cores)
+                               std::vector<Subdivision *> &mps,
+                               std::vector<Thread *> &cores,
+                               std::vector<Component *> &leafs)
 {
-  size_t fetchGranularity = scalarL1Json["fetchGranularity"]["size"].get<size_t>();
-  size_t size = scalarL1Json["size"]["size"].get<size_t>();
+  int uniqueAmount = scalarL1Json.value("uniqueAmount", 1);
+  int amountPerLeaf = uniqueAmount / leafs.size();
+  std::vector<Component *> scalarL1Caches (uniqueAmount);
 
-  std::optional<size_t> lineSize = std::nullopt;
+  long long size = scalarL1Json["size"]["size"].get<long long>();
+
+  long long lineSize = -1;
   if (auto it = scalarL1Json.find("lineSize"); it != scalarL1Json.end())
     lineSize = (*it)["size"].get<size_t>();
+
+  size_t fetchGranularity = scalarL1Json["fetchGranularity"]["size"].get<size_t>();
+
+  auto sharedBetweenJsonIt = scalarL1Json.find("sharedBetween");
+
+  auto mpIt = mps.begin();
+  int id = 0;
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerLeaf; i++) {
+      scalarL1Caches[id] = new Cache(leaf, id, "Scalar L1", size, -1, lineSize);
+
+      scalarL1Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>(
+        new size_t (fetchGranularity)
+      );
+
+      if (sharedBetweenJsonIt != scalarL1Json.end() && sharedBetweenJsonIt->size() > 0) {
+        for (const auto &elem : (*sharedBetweenJsonIt)[id]) {
+          (*mpIt)->SetId(elem.get<int>());
+          scalarL1Caches[id]->InsertChild(*mpIt);
+          mpIt++;
+        }
+      }
+
+      id++;
+    }
+  }
+
+  double latency = scalarL1Json["latency"]["mean"].get<double>();
 
   double missPenalty = -1;
   if (auto it = scalarL1Json.find("missPenalty"); it != scalarL1Json.end())
     missPenalty = (*it)["value"].get<double>();
 
-  double frequency = scalarL1Json["frequency"]["mean"].get<double>();
+  auto coreIt = cores.begin();
+  int numCoresPerMP = cores.size() / mps.size();
+  for (auto scalarL1Cache : scalarL1Caches) {
+    int numCores = scalarL1Cache->GetChildren().size() * numCoresPerMP;
+    for (int i = 0; i < numCores; i++) {
+      auto dp = new DataPath(scalarL1Cache, *coreIt, DataPathOrientation::Oriented,
+                             DataPathType::Logical, -1, latency);
+      if (missPenalty > 0)
+        dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+
+      coreIt++;
+    }
+  }
+
+  leafs = std::move(scalarL1Caches);
 }
 
 static void ParseGlobalMemory(const json &memory, Chip *gpu,
-                              std::vector<Thread *> &cores)
+                              std::vector<Subdivision *> &mps,
+                              std::vector<Thread *> &cores,
+                              std::vector<Component *> &leafs)
 {
-  Memory *main;
-  ParseMainMemory(memory["main"], gpu, &main, cores);
-
-  std::vector<Component *> components;
+  ParseMainMemory(memory["main"], gpu, cores, leafs);
 
   if (auto it = memory.find("l3"); it != memory.end())
-    ParseL3Cache(*it, main, components, cores);
-  else
-    components.push_back(main);
+    ParseL3Cache(*it, cores, leafs);
 
-  std::vector<Component *> l2Caches;
-  ParseL2Cache(memory["l2"], components, l2Caches, cores);
+  ParseL2Cache(memory["l2"], cores, leafs);
 
-  if (auto it = memory.find("scalarL1"); it != memory.end()) {
-    std::vector<Component *> scalarL1Caches;
-    ParseScalarL1Cache(*it, l2Caches, scalarL1Caches, cores);
-    components = std::move(scalarL1Caches);
-  } else {
-    components = std::move(l2Caches);
-    l2Caches.clear();
-  }
+  if (auto it = memory.find("scalarL1"); it != memory.end())
+    ParseScalarL1Cache(*it, mps, cores, leafs);
 }
 
 int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
@@ -287,19 +301,19 @@ int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
   ParseGeneral(data["general"], gpu);
 
   auto [numMPs, numCoresPerMP] = ParseCompute(data["compute"], gpu);
+
+  std::vector<Subdivision *> mps (numMPs);
   std::vector<Thread *> cores (numMPs * numCoresPerMP);
 
-  int id = 0;
   for (int i = 0; i < numMPs; i++) {
-    auto *mp = new Subdivision(i, "Multiprocessor");
-    mp->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
-    for (int j = 0; j < numCoresPerMP; j++) {
-      cores[id] = new Thread(id, "GPU Core");
-      id++;
-    }
+    mps[i] = new Subdivision(i, "Multiprocessor");
+    mps[i]->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
   }
+  for (int i = 0; i < numMPs * numCoresPerMP; i++)
+    cores[i] = new Thread(i, "GPU Core");
 
-  ParseGlobalMemory(data["memory"], gpu, cores);
+  std::vector<Component *> leafs;
+  ParseGlobalMemory(data["memory"], gpu, mps, cores, leafs);
 
   return 0;
 }

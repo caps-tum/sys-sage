@@ -171,6 +171,14 @@ namespace sys_sage {
          * @see id
          */
         int GetId() const;
+
+        /**
+         * @brief Sets Id of the component.
+         * @param _id Id of the component
+         * @see id
+         */
+        void SetId(int _id);
+
         /**
          * @brief Returns component type of the component.
          * The component type denotes which class the instance is (often stored as Component*, even though they are a member of one of the child classes).
