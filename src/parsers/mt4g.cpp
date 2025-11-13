@@ -1,6 +1,7 @@
 #include "mt4g.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -72,8 +73,8 @@ static std::tuple<int, int> ParseCompute(const json &compute, Chip *gpu)
   return { *multiProcessorCount, *numberOfCoresPerMultiProcessor };
 }
 
-static std::tuple<double, double, double>
-ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut)
+static void ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut,
+                            std::vector<Thread *> &cores)
 {
   auto *main = new Memory(gpu, 0, "GPU Main Memory",
                           mainJson["totalGlobalMem"]["value"].get<long long>());
@@ -98,12 +99,22 @@ ParseMainMemory(const json &mainJson, Chip *gpu, Memory **mainOut)
   if (auto it = mainJson.find("writeBandwidth"); it != mainJson.end())
     writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
 
-  // use for data paths
-  return { latency, readBandwidth, writeBandwidth };
+  if (latency > 0 || readBandwidth > 0 || writeBandwidth > 0) {
+    for (auto *core : cores) {
+      auto *dp = new DataPath(main, core, DataPathOrientation::Oriented,
+                              DataPathType::Logical, -1, latency);
+      if (readBandwidth > 0)
+        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+      if (writeBandwidth > 0)
+        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+    }
+  }
 }
 
-static std::tuple<double, double>
-ParseL3Cache(const json &l3Json, Memory *main, std::vector<Cache *> &l3Caches)
+// assume `l3Caches` is empty
+static void ParseL3Cache(const json &l3Json, Memory *main,
+                         std::vector<Component *> &l3Caches,
+                         std::vector<Thread *> &cores)
 {
   int amount = l3Json.value("amount", 1);
   l3Caches.reserve(amount);
@@ -125,14 +136,28 @@ ParseL3Cache(const json &l3Json, Memory *main, std::vector<Cache *> &l3Caches)
   if (auto it = l3Json.find("writeBandwidth"); it != l3Json.end())
     writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
 
-  // use for data paths
-  return { readBandwidth, writeBandwidth };
+  if (readBandwidth > 0 || writeBandwidth > 0) {
+    for (auto *l3Cache : l3Caches) {
+      for (auto *core : cores) {
+        auto *dp = new DataPath(l3Cache, core, DataPathOrientation::Oriented,
+                                DataPathType::Logical, -1, -1);
+        if (readBandwidth > 0)
+          dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        if (writeBandwidth > 0)
+          dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+      }
+    }
+  }
 }
 
-static std::tuple<double, double, double, double>
-ParseL2Cache(const json &l2Json, std::vector<Component *> &parents, 
-             std::vector<Cache *> &l2Caches)
+static void ParseL2Cache(const json &l2Json, std::vector<Component *> &parents, 
+                         std::vector<Component *> &l2Caches,
+                         std::vector<Thread *> &cores)
 {
+  int amount = l2Json.value("amount", 1);
+  l2Caches.reserve(amount);
+  int amountPerParent = amount / parents.size();
+
   long long size = l2Json["size"]["value"].get<long long>();
 
   int lineSize = -1;
@@ -151,14 +176,10 @@ ParseL2Cache(const json &l2Json, std::vector<Component *> &parents,
   if (auto it = l2Json.find("segmentSize"); it != l2Json.end())
     segmentSize = (*it)["size"].get<int>();
 
-  int amount = l2Json.value("amount", 1);
-  l2Caches.reserve(amount);
-  int amountPerParent = amount / parents.size();
-
   int id = 0;
   for (Component *parent : parents) {
     for (int i = 0; i < amountPerParent; i++) {
-      auto *l2Cache = new Cache(parent, id, "L2", size, -1, lineSize);
+      auto *l2Cache = new Cache(parent, id++, "L2", size, -1, lineSize);
 
       if (fetchGranularity > 0)
         l2Cache->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
@@ -166,7 +187,6 @@ ParseL2Cache(const json &l2Json, std::vector<Component *> &parents,
         l2Cache->attrib["segmentSize"] = reinterpret_cast<void *>( new double(segmentSize) );
 
       l2Caches.push_back(l2Cache);
-      id++;
     }
   }
 
@@ -186,26 +206,65 @@ ParseL2Cache(const json &l2Json, std::vector<Component *> &parents,
   if (auto it = l2Json.find("writeBandwidth"); it != l2Json.end())
     writeBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
 
-  // use for data paths
-  return { latency, missPenalty, readBandwidth, writeBandwidth };
+  if (latency > 0 || missPenalty > 0 || readBandwidth > 0 || writeBandwidth > 0) {
+    for (auto *l2Cache : l2Caches) {
+      for (auto *core : cores) {
+        auto *dp = new DataPath(l2Cache, core, DataPathOrientation::Oriented,
+                                DataPathType::Logical, -1, latency);
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+        if (readBandwidth > 0)
+          dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        if (writeBandwidth > 0)
+          dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+      }
+    }
+  }
 }
 
-// TODO: this is very ugly. Fix it
-static void ParseMemory(const json &memory, Chip *gpu)
+static void ParseScalarL1Cache(const json &scalarL1Json,
+                               std::vector<Component *> &parents,
+                               std::vector<Component *> &scalarL1Caches,
+                               std::vector<Thread *> &cores)
 {
-  std::vector<Memory *> main { nullptr };
-  auto [mainLatency, mainReadBandwidth, mainWriteBandwidth] = ParseMainMemory(memory["main"], gpu, &main.front());
+  size_t fetchGranularity = scalarL1Json["fetchGranularity"]["size"].get<size_t>();
+  size_t size = scalarL1Json["size"]["size"].get<size_t>();
 
-  std::vector<Cache *> l3Caches;
-  std::tuple<double, double> l3CacheBandwidth;
+  std::optional<size_t> lineSize = std::nullopt;
+  if (auto it = scalarL1Json.find("lineSize"); it != scalarL1Json.end())
+    lineSize = (*it)["size"].get<size_t>();
+
+  double missPenalty = -1;
+  if (auto it = scalarL1Json.find("missPenalty"); it != scalarL1Json.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  double frequency = scalarL1Json["frequency"]["mean"].get<double>();
+}
+
+static void ParseGlobalMemory(const json &memory, Chip *gpu,
+                              std::vector<Thread *> &cores)
+{
+  Memory *main;
+  ParseMainMemory(memory["main"], gpu, &main, cores);
+
+  std::vector<Component *> components;
+
   if (auto it = memory.find("l3"); it != memory.end())
-    l3CacheBandwidth = ParseL3Cache(*it, main.front(), l3Caches);
-
-  std::vector<Cache *> l2Caches;
-  if (l3Caches.size() == 0)
-    auto [l2Latency, l2MissPenalty, l2ReadBandwidth, l2WriteBandwidth] = ParseL2Cache(memory["l2"], main, l2Caches);
+    ParseL3Cache(*it, main, components, cores);
   else
-    auto [l2Latency, l2MissPenalty, l2ReadBandwidth, l2WriteBandwidth] = ParseL2Cache(memory["l2"], l3Caches, l2Caches);
+    components.push_back(main);
+
+  std::vector<Component *> l2Caches;
+  ParseL2Cache(memory["l2"], components, l2Caches, cores);
+
+  if (auto it = memory.find("scalarL1"); it != memory.end()) {
+    std::vector<Component *> scalarL1Caches;
+    ParseScalarL1Cache(*it, l2Caches, scalarL1Caches, cores);
+    components = std::move(scalarL1Caches);
+  } else {
+    components = std::move(l2Caches);
+    l2Caches.clear();
+  }
 }
 
 int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
@@ -226,8 +285,21 @@ int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
   auto *gpu = new Chip(parent, gpuId, "GPU", ChipType::Gpu);
 
   ParseGeneral(data["general"], gpu);
-  auto [numMPs, numCores] = ParseCompute(data["compute"], gpu);
-  ParseMemory(data["memory"], gpu);
+
+  auto [numMPs, numCoresPerMP] = ParseCompute(data["compute"], gpu);
+  std::vector<Thread *> cores (numMPs * numCoresPerMP);
+
+  int id = 0;
+  for (int i = 0; i < numMPs; i++) {
+    auto *mp = new Subdivision(i, "Multiprocessor");
+    mp->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
+    for (int j = 0; j < numCoresPerMP; j++) {
+      cores[id] = new Thread(id, "GPU Core");
+      id++;
+    }
+  }
+
+  ParseGlobalMemory(data["memory"], gpu, cores);
 
   return 0;
 }
