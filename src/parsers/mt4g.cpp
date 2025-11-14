@@ -263,72 +263,6 @@ static bool ParseScalarL1Cache(const json &scalarL1Json,
   return insertMPs;
 }
 
-static void ParseL1Cache(const json &l1Json, std::vector<Component *> &cores,
-                         int numCoresPerMP, std::vector<Component *> &leafs)
-{
-  // this could be problematic if the leafs aren't the MPs
-  int amountPerLeaf = l1Json.value("amountPerMultiprocessor", 1);
-  std::vector<Component *> l1Caches ( amountPerLeaf * leafs.size() );
-
-  long long size = -1;
-  if (auto it = l1Json.find("size"); it != l1Json.end()) {
-    size = (*it)["size"].get<long long>();
-  }
-
-  int lineSize = -1;
-  if (auto it = l1Json.find("lineSize"); it != l1Json.end()) {
-    lineSize = (*it)["size"].get<int>();
-  }
-
-  int fetchGranularity = -1;
-  if (auto it = l1Json.find("fetchGranularity"); it != l1Json.end())
-    fetchGranularity = (*it)["size"].get<int>();
-
-  int id = 0;
-  for (auto leaf : leafs) {
-    for (int i = 0; i < amountPerLeaf; i++, id++) {
-      l1Caches[id] = new Cache(leaf, id, "L1", size, -1, lineSize);
-
-      if (fetchGranularity > 0)
-        l1Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
-    }
-  }
-
-  if (auto it = l1Json.find("latency"); it != l1Json.end()) {
-    double latency = (*it)["mean"].get<double>();
-    
-    double missPenalty = -1;
-    if (auto missPenaltyIt = l1Json.find("missPenalty"); missPenaltyIt != l1Json.end())
-      missPenalty = (*missPenaltyIt)["value"].get<double>();
-
-    //TODO: fix
-    //auto coreIt = cores.begin();
-    //for (auto l1Cache : l1Caches) {
-    //  for (int i = 0; i < numCoresPerMP; i++, coreIt++) {
-    //    auto dp = new DataPath(l1Cache, *coreIt, DataPathOrientation::Oriented,
-    //                           DataPathType::Logical, -1, latency);
-
-    //    if (missPenalty > 0)
-    //      dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
-    //  }
-    //}
-
-    int numMPs = leafs.size();
-    for (int i = 0; i < numMPs; i++) {
-      for (int j = 0; j < numCoresPerMP; j++) {
-        for (int k = 0; k < amountPerLeaf; k++) {
-          auto dp = new DataPath(l1Caches[k + i * amountPerLeaf], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
-
-          if (missPenalty > 0)
-            dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
-        }
-      }
-    }
-  }
-
-  leafs = std::move(l1Caches);
-}
-
 static void ParseSharedMemory(const json &sharedJson,
                               std::vector<Component *> &cores, int numCoresPerMP,
                               std::vector<Component *> &leafs)
@@ -449,6 +383,204 @@ static void ParseConstantCache(const json &constantJson,
   }
 }
 
+static std::tuple<bool, bool>
+ParseL1Cache(const json &l1Json, std::vector<Component *> &cores,
+             int numCoresPerMP, std::vector<Component *> &leafs)
+{
+  // this could be problematic if the leafs aren't the MPs
+  int amountPerLeaf = l1Json.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> l1Caches ( amountPerLeaf * leafs.size() );
+
+  long long size = -1;
+  if (auto it = l1Json.find("size"); it != l1Json.end()) {
+    size = (*it)["size"].get<long long>();
+  }
+
+  int lineSize = -1;
+  if (auto it = l1Json.find("lineSize"); it != l1Json.end()) {
+    lineSize = (*it)["size"].get<int>();
+  }
+
+  int fetchGranularity = -1;
+  if (auto it = l1Json.find("fetchGranularity"); it != l1Json.end())
+    fetchGranularity = (*it)["size"].get<int>();
+
+
+  bool sharedWithTexture = false;
+  bool sharedWithReadOnly = false;
+  std::string name ( "L1" );
+
+  if (auto it = l1Json.find("sharedWith"); it != l1Json.end()) {
+    for (const auto &elem : *it) {
+      const std::string elemName = elem.get<std::string>();
+
+      if (elemName == "Texture")
+        sharedWithTexture = true;
+      else if (elemName == "Read Only")
+        sharedWithReadOnly = true;
+
+      name += "+" + elemName;
+    }
+  }
+
+  int id = 0;
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerLeaf; i++, id++) {
+      l1Caches[id] = new Cache(leaf, id, name, size, -1, lineSize);
+
+      if (fetchGranularity > 0)
+        l1Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
+    }
+  }
+
+  if (auto it = l1Json.find("latency"); it != l1Json.end()) {
+    double latency = (*it)["mean"].get<double>();
+    
+    double missPenalty = -1;
+    if (auto missPenaltyIt = l1Json.find("missPenalty"); missPenaltyIt != l1Json.end())
+      missPenalty = (*missPenaltyIt)["value"].get<double>();
+
+    //TODO: fix
+    //auto coreIt = cores.begin();
+    //for (auto l1Cache : l1Caches) {
+    //  for (int i = 0; i < numCoresPerMP; i++, coreIt++) {
+    //    auto dp = new DataPath(l1Cache, *coreIt, DataPathOrientation::Oriented,
+    //                           DataPathType::Logical, -1, latency);
+
+    //    if (missPenalty > 0)
+    //      dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+    //  }
+    //}
+
+    int numMPs = leafs.size();
+    for (int i = 0; i < numMPs; i++) {
+      for (int j = 0; j < numCoresPerMP; j++) {
+        for (int k = 0; k < amountPerLeaf; k++) {
+          auto dp = new DataPath(l1Caches[k + i * amountPerLeaf], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+          if (missPenalty > 0)
+            dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+        }
+      }
+    }
+  }
+
+  int amountCoresPerL1Cache = numCoresPerMP / amountPerLeaf;
+
+  auto coreIt = cores.begin();
+  for (auto l1Cache : l1Caches) {
+    for (int i = 0; i < amountCoresPerL1Cache; i++, coreIt++)
+      l1Cache->InsertChild(*coreIt);
+  }
+
+  return { sharedWithTexture, sharedWithReadOnly };
+}
+
+static bool ParseTextureCache(const json &textureJson, std::vector<Component *> &cores,
+                              int numCoresPerMP, std::vector<Component *> &leafs)
+{
+  int amountPerMP = textureJson.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> textureCaches ( amountPerMP * leafs.size() );
+
+  long long size = textureJson["size"]["size"].get<long long>();
+
+  int lineSize = -1;
+  if (auto it = textureJson.find("lineSize"); it != textureJson.end())
+    lineSize = (*it)["size"].get<int>();
+
+  int fetchGranularity = textureJson["fetchGranularity"]["size"].get<int>();
+
+  bool sharedWithReadOnly = false;
+  std::string name ( "Texture" );
+
+  if (auto it = textureJson.find("sharedWith"); it != textureJson.end()) {
+    for (const auto &elem : *it) {
+      const std::string elemName = elem.get<std::string>();
+
+      if (elemName == "Read Only")
+        sharedWithReadOnly = true;
+
+      name += "+" + elemName;
+    }
+  }
+
+  int id = 0;
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerMP; i++, id++) {
+      textureCaches[id] = new Cache(leaf, id, name, size, -1, lineSize);
+      textureCaches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new int(fetchGranularity) );
+    }
+  }
+
+  double latency = textureJson["latency"]["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = textureJson.find("missPenalty"); it != textureJson.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  int numMPs = leafs.size();
+  for (int i = 0; i < numMPs; i++) {
+    for (int j = 0; j < numCoresPerMP; j++) {
+      for (int k = 0; k < amountPerMP; k++) {
+        auto dp = new DataPath(textureCaches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+      }
+    }
+  }
+
+  return sharedWithReadOnly;
+}
+
+static void ParseReadOnlyCache(const json &readOnlyJson, std::vector<Component *> &cores,
+                              int numCoresPerMP, std::vector<Component *> &leafs)
+{
+  int amountPerMP = readOnlyJson.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> readOnlyCaches ( amountPerMP * leafs.size() );
+
+  long long size = readOnlyJson["size"]["size"].get<long long>();
+
+  int lineSize = -1;
+  if (auto it = readOnlyJson.find("lineSize"); it != readOnlyJson.end())
+    lineSize = (*it)["size"].get<int>();
+
+  int fetchGranularity = readOnlyJson["fetchGranularity"]["size"].get<int>();
+
+  std::string name ( "Read Only" );
+
+  if (auto it = readOnlyJson.find("sharedWith"); it != readOnlyJson.end()) {
+    for (const auto &elem : *it)
+      name += "+" + elem.get<std::string>();
+  }
+
+  int id = 0;
+  for (auto leaf : leafs) {
+    for (int i = 0; i < amountPerMP; i++, id++) {
+      readOnlyCaches[id] = new Cache(leaf, id, name, size, -1, lineSize);
+      readOnlyCaches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new int(fetchGranularity) );
+    }
+  }
+
+  double latency = readOnlyJson["latency"]["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = readOnlyJson.find("missPenalty"); it != readOnlyJson.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  int numMPs = leafs.size();
+  for (int i = 0; i < numMPs; i++) {
+    for (int j = 0; j < numCoresPerMP; j++) {
+      for (int k = 0; k < amountPerMP; k++) {
+        auto dp = new DataPath(readOnlyCaches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+      }
+    }
+  }
+}
+
 // `leafs` is assumed to be empty
 static void ParseGlobalMemory(const json &memory, Chip *gpu,
                               std::vector<Component *> &mps,
@@ -480,7 +612,15 @@ static void ParseLocalMemory(const json &memory, std::vector<Component *> &cores
 
   ParseConstantCache(memory["constant"], cores, numCoresPerMP, leafs);
 
-  ParseL1Cache(memory["l1"], cores, numCoresPerMP, leafs);
+  auto [sharedWithTexture, l1SharedWithReadOnly] = ParseL1Cache(memory["l1"], cores, numCoresPerMP, leafs);
+
+  bool textureSharedWithReadOnly = false;
+
+  if (auto it = memory.find("texture"); it != memory.end() && !sharedWithTexture)
+    textureSharedWithReadOnly = ParseTextureCache(*it, cores, numCoresPerMP, leafs);
+
+  if (auto it = memory.find("readOnly"); it != memory.end() && !l1SharedWithReadOnly && !textureSharedWithReadOnly)
+    ParseReadOnlyCache(*it, cores, numCoresPerMP, leafs);
 }
 
 int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
