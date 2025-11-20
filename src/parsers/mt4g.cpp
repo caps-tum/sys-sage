@@ -100,7 +100,8 @@ static void ParseMainMemory(const json &main, std::vector<Component *> &cores,
     double writeBandwidth = GiBs_to_Bs( main["writeBandwidth"]["value"].get<double>() );
 
     for (auto core : cores) {
-      auto dp = new DataPath(mainMem, core, DataPathOrientation::Oriented,
+      // bidirectional, because we have read & write bandwidth
+      auto dp = new DataPath(mainMem, core, DataPathOrientation::Bidirectional,
                              DataPathType::Logical, -1, latency);
       dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
       dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
@@ -140,7 +141,7 @@ static void ParseL3Caches(const json &l3, std::vector<Component *> &cores,
 
     for (auto l3Cache : l3Caches) {
       for (auto core : cores) {
-        auto dp = new DataPath(l3Cache, core, DataPathOrientation::Oriented,
+        auto dp = new DataPath(l3Cache, core, DataPathOrientation::Bidirectional,
                                DataPathType::Logical, -1, -1);
         dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
         dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
@@ -198,7 +199,7 @@ static void ParseL2Caches(const json &l2, std::vector<Component *> &cores,
 
     for (auto l2Cache : l2Caches) {
       for (auto core : cores) {
-        auto dp = new DataPath(l2Cache, core, DataPathOrientation::Oriented,
+        auto dp = new DataPath(l2Cache, core, DataPathOrientation::Bidirectional,
                                DataPathType::Logical, -1, latency);
         dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
         dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
@@ -368,9 +369,7 @@ static void ParseConstantCaches(const json &constant,
   for (auto cL1_5Cache : cL1_5Caches) {
     for (uint32_t i = 0; i < amountPerMP; i++, cL1Id++) {
       cL1Caches[cL1Id] = new Cache(cL1_5Cache, cL1Id, "Constant L1", cL1LineSize, -1, cL1Size);
-      cL1Caches[cL1Id]->attrib["fetchGranularity"] = reinterpret_cast<void *>(
-        new size_t (cL1FetchGranularity)
-      );
+      cL1Caches[cL1Id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new size_t (cL1FetchGranularity) );
     }
   }
 
@@ -471,6 +470,14 @@ ParseL1Caches(const json &l1, std::vector<Component *> &mps,
     }
   }
 
+  size_t amountCoresPerL1Cache = numCoresPerMP / amountPerMP;
+  auto coreIt = cores.begin();
+
+  for (auto l1Cache : l1Caches) {
+    for (size_t i = 0; i < amountCoresPerL1Cache; i++, coreIt++)
+      l1Cache->InsertChild(*coreIt);
+  }
+
   if (auto it = l1.find("latency"); it != l1.end()) {
     double latency = (*it)["mean"].get<double>();
     
@@ -488,14 +495,6 @@ ParseL1Caches(const json &l1, std::vector<Component *> &mps,
         }
       }
     }
-  }
-
-  size_t amountCoresPerL1Cache = numCoresPerMP / amountPerMP;
-  auto coreIt = cores.begin();
-
-  for (auto l1Cache : l1Caches) {
-    for (size_t i = 0; i < amountCoresPerL1Cache; i++, coreIt++)
-      l1Cache->InsertChild(*coreIt);
   }
 
   return { sharedWithTexture, sharedWithReadOnly };
