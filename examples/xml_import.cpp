@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     parseCapsNumaBenchmark((Component*)n, bwPath, ";");
 
 
-    std::vector<Component *> c_orig = topo->GetComponentsInSubtree();
+    std::vector<Component *> c_orig = topo->FindDescendantsByType(ComponentType::Any);
 
     exportToXml(topo, "output.xml");
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     for (auto c : c_orig) {
         int type = c->GetComponentType();
         int id = c->GetId();
-        Component *c2 = topo2->GetSubcomponentById(id, type);
+        Component *c2 = topo2->GetDescendantById(id, type);
         if (c2 == NULL) {
             cout << "Component with id " << id << " and type " << type
                 << " not found in imported topology" << endl;

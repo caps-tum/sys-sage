@@ -77,7 +77,7 @@ void sys_sage::Relation::Delete()
 {
     for(Component* c : components)
     {
-        std::vector<Relation*>& component_relation_vector = c->_GetRelations(type);
+        std::vector<Relation*>& component_relation_vector = c->_GetRelationsByType(type);
         component_relation_vector.erase(std::remove(component_relation_vector.begin(), component_relation_vector.end(), this), component_relation_vector.end());
     }
     delete this;
@@ -97,7 +97,7 @@ int sys_sage::Relation::UpdateComponent(int index, Component * _new_component)
         std::cerr << "WARNING: sys_sage::Relation::UpdateComponent index out of bounds -- nothing updated." << std::endl;
         return 1;
     }
-    std::vector<Relation*>& component_relation_vector = components[index]->_GetRelations(type);
+    std::vector<Relation*>& component_relation_vector = components[index]->_GetRelationsByType(type);
     component_relation_vector.erase(std::remove(component_relation_vector.begin(), component_relation_vector.end(), this), component_relation_vector.end());
 
     _new_component->_AddRelation(type, this);

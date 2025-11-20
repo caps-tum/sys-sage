@@ -26,7 +26,7 @@ void calculateQubitWeight(Qubit* q, int tsForHistory = -1, double T1_max = 1, do
 
     double coupling_map_fidelity = 0.0;
     int num_neighbours = 0;
-    for(Relation* r : q->GetRelations(sys_sage::RelationType::CouplingMap))
+    for(Relation* r : q->GetRelationsByType(sys_sage::RelationType::CouplingMap))
     {
         coupling_map_fidelity += (static_cast<CouplingMap*>(r))->GetFidelity();
         num_neighbours++;
@@ -128,7 +128,7 @@ int main()
         {
             Qubit* q = static_cast<Qubit*>(c);
             std::cout << "Qubit " << q->GetId() << " has coupling map { ";
-            for(Relation* r : q->GetRelations(sys_sage::RelationType::CouplingMap))
+            for(Relation* r : q->GetRelationsByType(sys_sage::RelationType::CouplingMap))
             {
                 CouplingMap* cm = static_cast<CouplingMap*>(r); 
                 std::cout << (cm->GetComponent(0) == q ? cm->GetComponent(1)->GetId() : cm->GetComponent(0)->GetId() )<< " ";
@@ -152,7 +152,7 @@ int main()
         {
             auto rh = reinterpret_cast<std::vector<std::tuple<int,double>>*>(c->attrib["weight_history"]);
             for(auto entry: *rh)
-                file << std::get<0>(entry) << "," << c->GetId() << "," << c->GetRelations(sys_sage::RelationType::CouplingMap).size() << "," << std::get<1>(entry) << "\n";
+                file << std::get<0>(entry) << "," << c->GetId() << "," << c->GetRelationsByType(sys_sage::RelationType::CouplingMap).size() << "," << std::get<1>(entry) << "\n";
         }
     }
     

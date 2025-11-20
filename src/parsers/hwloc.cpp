@@ -197,7 +197,7 @@ int sys_sage::removeUnknownCompoents(Component* c){
     for(Component* child : children_copy)
     {
         ret += removeUnknownCompoents(child);
-        if(child->GetComponentType() == sys_sage::ComponentType::None)
+        if(child->GetComponentType() == sys_sage::ComponentType::Generic)
         {
             vector<Component*> grandchildren = child->GetChildren();
             int num_grandchildren = grandchildren.size();
@@ -241,6 +241,6 @@ int sys_sage::parseHwlocOutput(Node* n, string xmlPath)
         //return ret;
     }
     xmlFreeDoc(document);
-    err = n->CheckComponentTreeConsistency();
+    err = n->CheckSubtreeConsistency();
     return err;
 }

@@ -23,9 +23,9 @@ namespace sys_sage {
         using type = int32_t; /**< ComponentType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
         constexpr type Any = -1;
-        [[ deprecated("Use ComponentType::Generic instead. This constant will be removed in the future (used up until version 1.0.0).") ]]
-        constexpr type None = 1; /**< class Component (do not use normally)*/
         constexpr type Generic = 1; /**< class Component (do not use normally)*/
+        [[ deprecated("Use ComponentType::Generic instead. This constant will be removed in the future (used up until version 1.0.0).") ]]
+        constexpr type None = Generic; /**< class Component (do not use normally)*/
         constexpr type Thread = 2; /**< class Thread */
         constexpr type Core = 3; /**< class Core */
         constexpr type Cache = 4; /**< class Cache */
@@ -42,7 +42,7 @@ namespace sys_sage {
 
         //SVTODO this should remain private???
         static const std::unordered_map<type, const char*> names = {
-            {None, "GenericComponent"},
+            {Generic, "GenericComponent"},
             {Thread, "HW_Thread"},
             {Core, "Core"},
             {Cache, "Cache"},

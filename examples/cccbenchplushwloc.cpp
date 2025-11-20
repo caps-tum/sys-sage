@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     }
     cout << "-- End parseHwlocOutput" << endl;
 
-    cout << "Total num HW threads: " << topo->CountAllSubcomponentsByType(sys_sage::ComponentType::Thread) << endl;
+    cout << "Total num HW threads: " << topo->CountDescendantsByType(sys_sage::ComponentType::Thread) << endl;
 
     cout << "---------------- Printing the whole tree ----------------" << endl;
     topo->PrintSubtree();
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
 
     auto allcores = new std::vector<Component *>();
-    topo->GetAllSubcomponentsByType(allcores, sys_sage::ComponentType::Core);    
+    topo->FindDescendantsByType(allcores, sys_sage::ComponentType::Core);    
     //auto allcores = topo->GetAllChildrenByType(SYS_SAGE_COMPONENT_CORE);
 
     for(auto c0 : *allcores)
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
             cout << endl << c0->GetId() << " " << c1->GetId() << endl;
 
     cout << "---------------- Printing all DataPaths ----------------" << endl;
-    n->PrintAllRelationsInSubtree();
+    n->PrintRelationsInSubtree();
     cout << "----------------                        ----------------" << endl;
     delete topo;
     delete n;

@@ -68,7 +68,7 @@ std::vector<sys_sage::Qubit *> sys_sage::QuantumBackend::GetAllQubits()
 
 std::vector<sys_sage::Qubit *> sys_sage::QuantumBackend::FindAllQubits()
 {
-    auto all_children = GetAllChildrenByType(sys_sage::ComponentType::Qubit);
+    auto all_children = FindChildrenByType(sys_sage::ComponentType::Qubit);
     std::vector<Qubit *> qubits;
     qubits.reserve(all_children.size());
     
