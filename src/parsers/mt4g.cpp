@@ -605,10 +605,12 @@ static void ParseReadOnlyCaches(const json &readOnly, std::vector<Component *> &
   }
 }
 
-static void ParseGlobalMemory(const json &memory, std::vector<Component *> &mps,
-                              std::vector<Component *> &cores,
-                              std::vector<Component *> &leafs)
+static void ParseGlobalMemory(const json &memory, Chip *gpu,
+                              std::vector<Component *> &mps,
+                              std::vector<Component *> &cores)
 {
+  std::vector<Component *> leafs { gpu };
+
   ParseMainMemory(memory["main"], cores, leafs);
 
   if (auto it = memory.find("l3"); it != memory.end())
@@ -625,6 +627,9 @@ static void ParseGlobalMemory(const json &memory, std::vector<Component *> &mps,
   for (auto leaf : leafs)
     for (size_t i = 0; i < amountPerLeaf; i++, mpIt++)
       leaf->InsertChild(*mpIt);
+
+  // at the end of the function, the leafs are the lowest level of global
+  // memory/cache and the MPs are inserted as the leafs' children
 }
 
 static void ParseLocalMemory(const json &memory, std::vector<Component *> &mps,
@@ -679,11 +684,7 @@ int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
   for (size_t i = 0; i < numCores; i++)
     cores[i] = new Thread(i, "GPU Core");
 
-  std::vector<Component *> leafs { gpu };
-  ParseGlobalMemory(data["memory"], mps, cores, leafs);
-
-  // at this point, the leafs are the lowest level of global memory/cache
-  // and the MPs are inserted as the leafs' children
+  ParseGlobalMemory(data["memory"], gpu, mps, cores);
 
   ParseLocalMemory(data["memory"], mps, cores);
 
