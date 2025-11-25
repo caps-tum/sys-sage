@@ -176,7 +176,7 @@ static suite<"topology"> _ = []
         for (size_t i = 0; i < s; i++)
           expect(that % qg[i] == gates + i);
 
-        expect(that % qb.GetGatesBySize(0) == qg);
+        expect(that % qb.FindGatesBySize(0) == qg);
         expect(that % "QuantumBackend"sv == qb.GetComponentTypeStr());
     };
 
@@ -228,7 +228,7 @@ static suite<"topology"> _ = []
 
         expect(that % a.GetChildByType(ComponentType::Memory) == &b);
         expect(that % a.GetChildByType(ComponentType::Chip) == &d);
-        expect(that % a.GetAllChildrenByType(ComponentType::Memory) == (std::vector<Component *>{&b, &c}));
+        expect(that % a.FindChildrenByType(ComponentType::Memory) == (std::vector<Component *>{&b, &c}));
     };
 
     "Get parent by type"_test = []
@@ -247,7 +247,7 @@ static suite<"topology"> _ = []
             Node c;
             a.InsertChild(&b);
             b.InsertChild(&c);
-            expect(that % 0 == a.CheckComponentTreeConsistency());
+            expect(that % 0 == a.CheckSubtreeConsistency());
         }
         {
             Node a;
@@ -256,7 +256,7 @@ static suite<"topology"> _ = []
             a.InsertChild(&b);
             b.InsertChild(&c);
             c.SetParent(&a);
-            expect(that % 1 == a.CheckComponentTreeConsistency());
+            expect(that % 1 == a.CheckSubtreeConsistency());
         }
     };
 
@@ -272,7 +272,7 @@ static suite<"topology"> _ = []
         c.InsertChild(&d);
 
         std::vector<Component *> array;
-        a.GetNthDescendents(&array, 1);
+        a.FindNthDescendants(&array, 1);
         expect(that % 2_u == array.size());
     };
 
@@ -288,7 +288,7 @@ static suite<"topology"> _ = []
         c.InsertChild(&d);
 
         std::vector<Component *> array;
-        a.GetSubcomponentsByType(&array, ComponentType::Chip);
+        a.FindDescendantsByType(&array, ComponentType::Chip);
         expect(that % 2_u == array.size());
     };
 
@@ -307,7 +307,7 @@ static suite<"topology"> _ = []
         d.InsertChild(&e);
         d.InsertChild(&f);
 
-        expect(that % 3 == a.CountAllSubcomponentsByType(ComponentType::Thread));
+        expect(that % 3 == a.CountDescendantsByType(ComponentType::Thread));
     };
 
     "Linearize subtree"_test = []
@@ -322,7 +322,7 @@ static suite<"topology"> _ = []
         a.InsertChild(&c);
 
         std::vector<Component *> array;
-        a.GetComponentsInSubtree(&array);
+        a.FindDescendantsByType(&array, ComponentType::Any);
         expect(that % array == (std::vector<Component *>{&a, &b, &d, &c}));
     };
 
@@ -343,6 +343,6 @@ static suite<"topology"> _ = []
         e.InsertChild(&f);
         a.InsertChild(&g);
 
-        expect(that % 3 == a.GetSubtreeDepth());
+        expect(that % 3 == a.CalcSubtreeDepth());
     };
 };

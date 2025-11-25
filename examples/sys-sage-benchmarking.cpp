@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 1000; i++) {
         hwlocComponentList.clear();
         t_start = high_resolution_clock::now();
-        n->GetComponentsInSubtree(&hwlocComponentList);
+        n->FindDescendantsByType(&hwlocComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     std::vector<DataPath*> capsDataPaths;
     for(Component* gpu_c: hwlocComponentList)
     {
-        capsDataPaths = gpu_c->GetAllDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+        capsDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
         // capsDataPaths = gpu_c->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
         caps_dataPaths += capsDataPaths.size();
     }
@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
     // get size of hwloc representation + caps-benchmark DataPaths
     unsigned hwloc_component_size = 0;
     unsigned caps_numa_dataPathSize = 0;
-    unsigned total_size = n->GetTopologySize(&hwloc_component_size, &caps_numa_dataPathSize);
+    unsigned total_size = n->CalcSubtreeSize(&hwloc_component_size, &caps_numa_dataPathSize);
     cout << "hwloc_component_size, " << hwloc_component_size
         << ", caps_numa_dataPathSize, " << caps_numa_dataPathSize
         << ", total_size, " << total_size << endl;
@@ -233,12 +233,12 @@ int main(int argc, char *argv[])
 
     //for NUMA 0 get NUMA with min BW
     uint64_t time_getNumaMaxBw = UINT64_MAX;
-    Numa * numa = (Numa*)n->GetSubcomponentById(0, sys_sage::ComponentType::Numa);
+    Numa * numa = (Numa*)n->GetDescendantById(0, sys_sage::ComponentType::Numa);
     if(numa==NULL){ std::cerr << "numa 0 not found in sys-sage" << endl; return 1;}
     unsigned int max_bw = 0;
     Component* max_bw_component = NULL;
     t_start = high_resolution_clock::now();
-    std::vector<DataPath*> dp_vec = numa->GetAllDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+    std::vector<DataPath*> dp_vec = numa->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
     // vector<DataPath*>* dp = numa->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
     for(DataPath* dp : dp_vec)
     {
@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 100; i++) {
         mt4gComponentList.clear();
         t_start = high_resolution_clock::now();
-        gpu->GetComponentsInSubtree(&mt4gComponentList);
+        gpu->FindDescendantsByType(&mt4gComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 1000; i++) {
         allComponentList.clear();
         t_start = high_resolution_clock::now();
-        t->GetComponentsInSubtree(&allComponentList);
+        t->FindDescendantsByType(&allComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() - t_start.time_since_epoch().count() - timer_overhead;
         if (time < time_GetAllComponentsList) {
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
     std::vector<DataPath*> componentDataPaths;
     for(Component* gpu_c: mt4gComponentList)
     {
-        componentDataPaths = gpu_c->GetAllDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+        componentDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
         // componentDataPaths = gpu_c->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
         mt4g_dataPaths += componentDataPaths.size();
     }

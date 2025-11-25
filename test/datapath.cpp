@@ -47,11 +47,11 @@ static suite<"data-path"> _ = []
         Component a, b;
         DataPath dp{&a, &b, DataPathOrientation::Oriented, DataPathType::Physical};
 
-        expect(that % a.GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming).empty());
-        expect(that % std::vector{&dp} == a.GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
+        expect(that % a.FindDataPaths(DataPathType::Any, DataPathDirection::Incoming).empty());
+        expect(that % std::vector{&dp} == a.FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
 
-        expect(that % b.GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing).empty());
-        expect(that % std::vector{&dp} == b.GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming));
+        expect(that % b.FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing).empty());
+        expect(that % std::vector{&dp} == b.FindDataPaths(DataPathType::Any, DataPathDirection::Incoming));
     };
 
     "Bidirectional data path"_test = []
@@ -59,11 +59,11 @@ static suite<"data-path"> _ = []
         Component a, b;
         DataPath dp{&a, &b, DataPathOrientation::Bidirectional, DataPathType::Physical};
 
-        expect(that % std::vector{&dp} == a.GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming));
-        expect(that % std::vector{&dp} == a.GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
+        expect(that % std::vector{&dp} == a.FindDataPaths(DataPathType::Any, DataPathDirection::Incoming));
+        expect(that % std::vector{&dp} == a.FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
 
-        expect(that % std::vector{&dp} == b.GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming));
-        expect(that % std::vector{&dp} == b.GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
+        expect(that % std::vector{&dp} == b.FindDataPaths(DataPathType::Any, DataPathDirection::Incoming));
+        expect(that % std::vector{&dp} == b.FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing));
     };
 
     "Get data path by type"_test = []
@@ -93,28 +93,28 @@ static suite<"data-path"> _ = []
         "Get all incoming logical data paths"_test = [&]()
         {
             std::vector<DataPath *> v;
-            a.GetAllDataPaths(&v, DataPathType::Logical, DataPathDirection::Incoming);
+            a.FindDataPaths(&v, DataPathType::Logical, DataPathDirection::Incoming);
             expect(that % v.empty());
         };
 
         "Get all incoming physical data paths"_test = [&]()
         {
             std::vector<DataPath *> v;
-            a.GetAllDataPaths(&v, DataPathType::Physical, DataPathDirection::Incoming);
+            a.FindDataPaths(&v, DataPathType::Physical, DataPathDirection::Incoming);
             expect(std::vector{&dp4} == v);
         };
 
         "Get all outgoing logical data paths"_test = [&]()
         {
             std::vector<DataPath *> v;
-            a.GetAllDataPaths(&v, DataPathType::Logical, DataPathDirection::Outgoing);
+            a.FindDataPaths(&v, DataPathType::Logical, DataPathDirection::Outgoing);
             expect(that % std::vector{&dp1} == v);
         };
 
         "Get all outgoing physical data paths"_test = [&]()
         {
             std::vector<DataPath *> v;
-            a.GetAllDataPaths(&v, DataPathType::Physical, DataPathDirection::Outgoing);
+            a.FindDataPaths(&v, DataPathType::Physical, DataPathDirection::Outgoing);
             expect(that % std::vector{&dp2, &dp3} == v);
         };
 
@@ -122,7 +122,7 @@ static suite<"data-path"> _ = []
         {
             std::vector<DataPath *> v;
 
-            a.GetAllDataPaths(&v, DataPathType::Physical, DataPathDirection::Any);
+            a.FindDataPaths(&v, DataPathType::Physical, DataPathDirection::Any);
             expect(that % std::vector{&dp2, &dp3, &dp4} == v);
         };
     };

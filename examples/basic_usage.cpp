@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     }
     cout << "-- End parseHwlocOutput" << endl;
 
-    cout << "Total num HW threads: " << topo->CountAllSubcomponentsByType(sys_sage::ComponentType::Thread) << endl;
+    cout << "Total num HW threads: " << topo->CountDescendantsByType(sys_sage::ComponentType::Thread) << endl;
 
     cout << "---------------- Printing the whole tree ----------------" << endl;
     topo->PrintSubtree();
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     cout << "-- End parseCapsNumaBenchmark" << endl;
 
     cout << "---------------- Printing all Relations ----------------" << endl;
-    n->PrintAllRelationsInSubtree();
+    n->PrintRelationsInSubtree();
     cout << "----------------                        ----------------" << endl;
 
     std::string output_name = "sys-sage_sample_output.xml";

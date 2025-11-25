@@ -34,13 +34,13 @@ static suite<"import"> _ = [] {
     Chip* chip = (Chip*)node->GetChildById(0);
     expect(chip != nullptr);
     expect(chip->GetModel() == "Intel(R) Xeon(R) Silver 4116 CPU @ 2.10GHz");
-    expect (nullptr != (Thread *)chip->GetSubcomponentById(0, ComponentType::Thread));
+    expect (nullptr != (Thread *)chip->GetDescendantById(0, ComponentType::Thread));
 
     Chip* chip2 = (Chip*)node->GetChildById(1);
     expect(chip2 != nullptr);
-    Numa* numa = (Numa*)chip2->GetSubcomponentById(2, ComponentType::Numa);
+    Numa* numa = (Numa*)chip2->GetDescendantById(2, ComponentType::Numa);
     expect(numa != nullptr);
-    std::vector<DataPath*> dp_out = numa->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing);
+    std::vector<DataPath*> dp_out = numa->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing);
     expect(dp_out.size() == 4);
     //find a all datapaths where target is other Numa
     std::set<int> found;

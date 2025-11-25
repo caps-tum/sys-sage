@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     }
     cout << "-- End parseGpuTopo" << endl;
 
-    cout << "Total num GPU cores: " << topo->CountAllSubcomponentsByType(sys_sage::ComponentType::Thread) << endl;
+    cout << "Total num GPU cores: " << topo->CountDescendantsByType(sys_sage::ComponentType::Thread) << endl;
 
     std::string output_name = "sys-sage_gpu_sample_output.xml";
     cout << "-------- Exporting as XML to " << output_name << " --------" << endl;

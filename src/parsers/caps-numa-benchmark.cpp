@@ -56,13 +56,13 @@ int sys_sage::parseCapsNumaBenchmark(Component* rootComponent, std::string bench
 
         if(cpu_is_source){
             src_cpu_id = stoi(benchmarkData[i][src_cpu_idx]);
-            src = rootComponent->GetSubcomponentById(src_cpu_id, sys_sage::ComponentType::Thread);
+            src = rootComponent->GetDescendantById(src_cpu_id, sys_sage::ComponentType::Thread);
         }else{
             src_numa_id = stoi(benchmarkData[i][src_numa_idx]);
-            src = rootComponent->GetSubcomponentById(src_numa_id, sys_sage::ComponentType::Numa);
+            src = rootComponent->GetDescendantById(src_numa_id, sys_sage::ComponentType::Numa);
         }
         target_numa_id = stoi(benchmarkData[i][target_numa_idx]);
-        target = rootComponent->GetSubcomponentById(target_numa_id, sys_sage::ComponentType::Numa);
+        target = rootComponent->GetDescendantById(target_numa_id, sys_sage::ComponentType::Numa);
         if(src == NULL || target == NULL)
             std::cerr << "error: could not find components; skipping " << std::endl;
         else{

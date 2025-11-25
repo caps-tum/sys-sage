@@ -271,7 +271,7 @@ xmlNodePtr sys_sage::_buildComponentSubtree(Component* c)
 {
     switch(c->GetComponentType()) //not all necessarily have their specific implementation; if not, it will just call the default Component->_CreateXmlSubtree 
     {
-        case ComponentType::None:
+        case ComponentType::Generic:
             return reinterpret_cast<Component*>(c)->_CreateXmlSubtree();
         case ComponentType::Thread:
             return reinterpret_cast<Thread*>(c)->_CreateXmlSubtree();
@@ -382,14 +382,14 @@ int sys_sage::exportToXml(
 
     //scan all Components for their relations
     std::vector<Component*> components;
-    root->GetComponentsInSubtree(&components);
+    root->FindDescendantsByType(&components, ComponentType::Any);
     std::cout << "Number of components to export: " << components.size() << std::endl;
     for(Component* cPtr : components)
     {
         //iterate over different relation types and process them separately
         for(RelationType::type rt : RelationType::RelationTypeList)
         {
-            std::vector<Relation*> rList = cPtr->GetRelations(rt);
+            std::vector<Relation*> rList = cPtr->GetRelationsByType(rt);
 
             for(Relation* r: rList)
             {

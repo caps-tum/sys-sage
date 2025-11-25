@@ -78,7 +78,7 @@ void sys_sage::Component::PrintRelationsInSubtree(RelationType::type relationTyp
         {
             if (relationType == rt || relationType == RelationType::Any)
             {
-                vector<Relation*> c_relations = c->GetRelations(rt);
+                vector<Relation*> c_relations = c->GetRelationsByType(rt);
                 if(c_relations.size() > 0)
                 {
                     std::cout << RelationType::ToString(rt) << "s regarding Component (" << c->GetComponentTypeStr() << ") id " << c->GetId() << std::endl;
@@ -608,7 +608,7 @@ int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigne
     int component_size = 0;
     switch(componentType)
     {
-        case ComponentType::None:
+        case ComponentType::Generic:
             component_size += sizeof(Component);
         break;
         case ComponentType::Thread:
@@ -663,7 +663,7 @@ int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigne
 
     for(RelationType::type rt : RelationType::RelationTypeList)
     {
-        std::vector<Relation*> rv = GetRelations(rt);
+        std::vector<Relation*> rv = GetRelationsByType(rt);
         for(Relation* r: rv)
         {
             if(countedRelations->find(r) == countedRelations->end())
@@ -756,7 +756,7 @@ void sys_sage::Component::DeleteRelations(RelationType::type relationType)
         {
             while(true)
             {
-                vector<Relation*> vec_r = GetRelations(rt);
+                vector<Relation*> vec_r = GetRelationsByType(rt);
                 if(vec_r.size() > 0)
                 {
                     DeleteRelation(vec_r[0]);
@@ -796,7 +796,7 @@ void sys_sage::Component::Delete(bool withSubtree)
         DeleteSubtree();
     }
 
-    DeleteAllRelations();
+    DeleteRelations();
     
     //Free all the children
     if(GetParent()!= NULL) 
@@ -846,5 +846,5 @@ sys_sage::Component::Component(Component * parent, int _id, std::string _name, C
         parent->InsertChild(this);
     }
 }
-sys_sage::Component::Component(int _id, std::string _name): Component(_id, _name, sys_sage::ComponentType::None) {}
-sys_sage::Component::Component(Component * parent, int _id, std::string _name): Component(parent, _id, _name, sys_sage::ComponentType::None) {}
+sys_sage::Component::Component(int _id, std::string _name): Component(_id, _name, sys_sage::ComponentType::Generic) {}
+sys_sage::Component::Component(Component * parent, int _id, std::string _name): Component(parent, _id, _name, sys_sage::ComponentType::Generic) {}

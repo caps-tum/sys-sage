@@ -20,22 +20,22 @@ static suite<"caps-numa-benchmark"> _ = []
         << "Parse benchmark CSV file";
 
     std::vector<Component *> numas;
-    node.GetSubcomponentsByType(&numas, ComponentType::Numa);
+    node.FindDescendantsByType(&numas, ComponentType::Numa);
     expect(that % (4 == numas.size()) >> fatal);
 
     "Number, type, and orientation of data paths"_test = [&]
     {
         for (const auto &numa : numas)
         {
-            expect(that % (4 == numa->GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming).size()) >> fatal);
-            for (const auto &dp : numa->GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming))
+            expect(that % (4 == numa->FindDataPaths(DataPathType::Any, DataPathDirection::Incoming).size()) >> fatal);
+            for (const auto &dp : numa->FindDataPaths(DataPathType::Any, DataPathDirection::Incoming))
             {
                 expect(that % DataPathType::Datatransfer == dp->GetDataPathType());
                 expect(that % DataPathOrientation::Oriented == dp->GetOrientation());
             }
 
-            expect(that % (4 == numa->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing).size()) >> fatal);
-            for (const auto &dp : numa->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing))
+            expect(that % (4 == numa->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing).size()) >> fatal);
+            for (const auto &dp : numa->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing))
             {
                 expect(that % DataPathType::Datatransfer == dp->GetDataPathType());
                 expect(that % DataPathOrientation::Oriented == dp->GetOrientation());
@@ -49,8 +49,8 @@ static suite<"caps-numa-benchmark"> _ = []
         {
             for (size_t k = 0; k < 4; ++k)
             {
-                auto dp1 = (numas[i]->GetAllDataPaths(DataPathType::Any, DataPathDirection::Incoming))[k];
-                auto dp2 = (numas[k]->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing))[i];
+                auto dp1 = (numas[i]->FindDataPaths(DataPathType::Any, DataPathDirection::Incoming))[k];
+                auto dp2 = (numas[k]->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing))[i];
                 expect(that % dp1->GetBandwidth() == dp2->GetBandwidth());
                 expect(that % dp1->GetLatency() == dp2->GetLatency());
             }
@@ -61,7 +61,7 @@ static suite<"caps-numa-benchmark"> _ = []
     {
         auto dp = [&numas](size_t i, size_t k)
         {
-            return (numas[i]->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing))[k];
+            return (numas[i]->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing))[k];
         };
 
         expect(that % 8621 == dp(0, 0)->GetBandwidth());
