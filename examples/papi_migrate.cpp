@@ -46,8 +46,6 @@ int main(int argc, char **argv)
   auto *c = new double[n];
   double alpha = 3.14159;
 
-  long long tmp;
-
   int numCpus = get_nprocs();
   int cpu = sched_getcpu();
   int targetCpu = (cpu + 1) % numCpus;
@@ -77,7 +75,7 @@ int main(int argc, char **argv)
   saxpy(a, b, c, n, alpha);
   SS_PAPI_read(eventSet, metrics, &node);
 
-  PAPI_stop(eventSet, &tmp);
+  PAPI_stop(eventSet, nullptr);
 
   assert(metrics->GetComponents().size() == 3);
 

@@ -104,7 +104,7 @@ int main(int argc, char **argv)
   if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
     FATAL("expected child process to stop right before exit\n", pid);
 
-  rval = SS_PAPI_read<true>(eventSet, metrics, &node);
+  rval = SS_PAPI_stop(eventSet, metrics, &node);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 

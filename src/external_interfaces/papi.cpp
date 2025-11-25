@@ -371,7 +371,6 @@ int sys_sage::SS_PAPI_reset(int eventSet, PAPIMetrics *metrics)
   return PAPI_OK;
 }
 
-template <bool stop>
 int sys_sage::SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
                            bool permanent, unsigned long long *timestamp)
 {
@@ -387,12 +386,7 @@ int sys_sage::SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
     return rval;
 
   long long counters[numEvents];
-
-  if (stop)
-    rval = PAPI_stop(eventSet, counters);
-  else
-    rval = PAPI_read(eventSet, counters);
-
+  rval = PAPI_read(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -438,6 +432,38 @@ int sys_sage::SS_PAPI_accum(int eventSet, PAPIMetrics *metrics, Component *root,
     return PAPI_EINVAL; // TODO: better error handling
 
   return AccumPerfCounters(metrics, events.get(), numEvents, counters, cpu,
+                           permanent, timestamp);
+}
+
+int sys_sage::SS_PAPI_stop(int eventSet, PAPIMetrics *metrics, Component *root,
+                           bool permanent, unsigned long long *timestamp)
+{
+  if (!metrics || !root)
+    return PAPI_EINVAL;
+
+  int rval;
+
+  std::unique_ptr<int[]> events;
+  int numEvents;
+  rval = GetEvents(eventSet, events, &numEvents);
+  if (rval != PAPI_OK)
+    return rval;
+
+  long long counters[numEvents];
+  rval = PAPI_stop(eventSet, counters);
+  if (rval != PAPI_OK)
+    return rval;
+
+  unsigned int cpuNum;
+  rval = GetCpuNum(eventSet, &cpuNum);
+  if (rval != PAPI_OK)
+    return rval;
+
+  Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+  if (!cpu)
+    return PAPI_EINVAL; // TODO: better error handling
+
+  return StorePerfCounters(metrics, events.get(), numEvents, counters, cpu,
                            permanent, timestamp);
 }
 
@@ -530,14 +556,5 @@ CpuPerf *sys_sage::PAPIMetrics::GetCpuPerf(int event, int cpuNum)
 
 std::ostream &operator<<(std::ostream &stream, const PerfEntry &perfEntry)
 {
-  return stream << "{ " << perfEntry.timestamp << ", " << perfEntry.value << ", " << perfEntry.permanent << " }";
+  return stream << "{ .timestamp = " << perfEntry.timestamp << ", .value = " << perfEntry.value << " }";
 }
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////////////////// TEMPLATE INSTANTIATION ////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-template int sys_sage::SS_PAPI_read<false>(int, PAPIMetrics *, Component *,
-                                           bool, unsigned long long *);
-template int sys_sage::SS_PAPI_read<true>(int, PAPIMetrics *, Component *, bool,
-                                          unsigned long long *);

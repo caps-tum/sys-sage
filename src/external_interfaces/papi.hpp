@@ -1,4 +1,6 @@
 #ifdef PAPI_METRICS
+#ifndef SRC_EXTERNAL_INTERFACES_PAPI_HPP
+#define SRC_EXTERNAL_INTERFACES_PAPI_HPP
 
 #include <unordered_map>
 #include <vector>
@@ -6,31 +8,57 @@
 
 namespace sys_sage {
 
+  /*
+   * @brief An object representing a single perf counter value.
+   */
   struct PerfEntry {
     unsigned long long timestamp;
     long long value;
     bool permanent;
   };
   
+  /*
+   * @brief An object representing multiple perf counter values of a single CPU.
+   */
   struct CpuPerf {
     std::vector<PerfEntry> perfEntries;
     int cpuNum;
   };
 
-  // the relation class doesn't perfectly fit my needs:
-  //   - it would be better to use an `attrib` map that uses integer keys
-  //     for the event codes instead of `std::string`
-  //   - the `components` vector needs to support reference counting
-  //
-  //   -> maybe make `PAPIMetrics` its own thing?
-
+  /*
+   * @brief A sys-sage relation used to capture PAPI metrics.
+   */
   class PAPIMetrics : public Relation {
   public:
     PAPIMetrics();
 
+    /*
+     * @brief Get the perf counter value of a specific event.
+     *
+     * @param event The event of interest.
+     * @param cpuNum An optional parameter used to filter out the perf counter
+     *               value of a single CPU. If the value is -1, the perf
+     *               counter value of all CPUs combined is provided.
+     * @param timestamp An optional parameter used to filter out the perf
+     *        counter value belonging to a specific perf counter reading.
+     *
+     * @return > 0 if a perf counter value exists for the given paramters,
+     *         0 otherwise.
+     */
     long long GetCpuPerfVal(int event, int cpuNum = -1, unsigned long long timestamp = 0);
 
+    /*
+     * @brief Get all perf counter values of a specific event and CPU.
+     *
+     * @param event The event of interest.
+     * @param cpuNum The CPU of interest.
+     *
+     * @return A valid pointer to an object containing the perf counter values,
+     *         if such an object can exists for the given paramters, nullptr otherwise.
+     */
     CpuPerf *GetCpuPerf(int event, int cpuNum);
+
+    // TODO: make the members below private
 
     void RemoveCpu(int cpuNum);
 
@@ -39,20 +67,91 @@ namespace sys_sage {
     bool reset;
   };
 
+  /*
+   * @brief sys-sage wrapper around `PAPI_start`.
+   *
+   * @param eventSet The event set to be started.
+   * @param metrics An output parameter that can point to a PAPIMetrics
+   *                relation. The pointer must not be nullptr. If the pointer
+   *                that is being pointed to is nullptr, a new PAPIMetrics
+   *                relation is created and `*metrics` is set accordingly.
+   *                Otherwise, the `*metrics` is reused.
+   *
+   * @return The same as with `PAPI_start`, with the addition that if `metrics == nullptr`,
+   *         `PAPI_EINVAL` is returned.
+   */
   int SS_PAPI_start(int eventSet, PAPIMetrics **metrics);
 
+  /*
+   * @brief sys-sage wrapper around `PAPI_reset`.
+   *
+   * @param eventSet The event set to be resetted.
+   * @param metrics The PAPIMetrics relation.
+   *
+   * @return The same as with `PAPI_reset`, with the addition that if `metrics == nullptr`,
+   *         `PAPI_EINVAL` is returned.
+   */
   int SS_PAPI_reset(int eventSet, PAPIMetrics *metrics);
 
-  template <bool stop = false>
+  /*
+   * @brief sys-sage wrapper around `PAPI_read`.
+   *
+   * @param eventSet The event set to read from.
+   * @param metrics The PAPIMetrics relation used to capture the perf counter values.
+   * @param root The root of the hardware topology.
+   * @param permanent An optional flag indicating whether the perf counter
+   *                  values should be stored permanently or treated as
+   *                  temporary (i.e. can be overwritten).
+   * @param timestamp An optional output paramter containing the timestamp of the
+   *                  perf counter reading.
+   *
+   * @return The return-codes of PAPI have been used. For more info, have a look at PAPI's documentation.
+   */
   int SS_PAPI_read(int eventSet, PAPIMetrics *metrics, Component *root,
                    bool permanent = false,
                    unsigned long long *timestamp = nullptr);
 
+  /*
+   * @brief sys-sage wrapper around `PAPI_accum`.
+   *
+   * @param eventSet The event set to read from.
+   * @param metrics The PAPIMetrics relation used to capture the perf counter values.
+   * @param root The root of the hardware topology.
+   * @param permanent An optional flag indicating whether the perf counter
+   *                  values should be stored permanently or treated as
+   *                  temporary (i.e. can be overwritten).
+   * @param timestamp An optional output paramter containing the timestamp of the
+   *                  perf counter reading.
+   *
+   * @return The return-codes of PAPI have been used. For more info, have a look at PAPI's documentation.
+   */
   int SS_PAPI_accum(int eventSet, PAPIMetrics *metrics, Component *root,
                     bool permanent = false,
                     unsigned long long *timestamp = nullptr);
+
+  /*
+   * @brief sys-sage wrapper around `PAPI_stop`.
+   *
+   * @param eventSet The event set to read from.
+   * @param metrics The PAPIMetrics relation used to capture the perf counter values.
+   * @param root The root of the hardware topology.
+   * @param permanent An optional flag indicating whether the perf counter
+   *                  values should be stored permanently or treated as
+   *                  temporary (i.e. can be overwritten).
+   * @param timestamp An optional output paramter containing the timestamp of the
+   *                  perf counter reading.
+   *
+   * @return The return-codes of PAPI have been used. For more info, have a look at PAPI's documentation.
+   */
+  int SS_PAPI_stop(int eventSet, PAPIMetrics *metrics, Component *root,
+                   bool permanent = false,
+                   unsigned long long *timestamp = nullptr);
 }
 
+/*
+ * @brief Enables easy printing for objects of type `PerfEntry`.
+ */
 std::ostream &operator<<(std::ostream &stream, const sys_sage::PerfEntry &perfEntry);
 
-#endif
+#endif // SRC_EXTERNAL_INTERFACES_PAPI_HPP
+#endif // PAPI_METRICS

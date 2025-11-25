@@ -69,8 +69,7 @@ void *work(void *arg)
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = SS_PAPI_read<true>(wargs->eventSet, wargs->metrics,
-                                   wargs->topoRoot);
+  wargs->rval = SS_PAPI_stop(wargs->eventSet, wargs->metrics, wargs->topoRoot);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
