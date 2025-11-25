@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     Node* n = new Node(topo,1);
 
     cout << "-- Parsing mt4g output from file " << gpuTopoPath << endl;
-    if(parseMt4gTopo((Component*)n, gpuTopoPath, 0, ";") != 0) { //adds topo to a next node
+    if(ParseMt4g_v0_1((Component*)n, gpuTopoPath, 0, ";") != 0) { //adds topo to a next node
         return 1;
     }
     cout << "-- End parseGpuTopo" << endl;

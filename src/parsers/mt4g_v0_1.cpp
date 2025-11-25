@@ -1,5 +1,4 @@
-
-#include "mt4g_csv.hpp"
+#include "mt4g.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -10,11 +9,43 @@
 #include <string>
 #include <algorithm>
 
+using namespace sys_sage;
+
 using std::cout;
 using std::cerr;
 using std::endl;
 
-int sys_sage::parseMt4gTopo(Node* parent, std::string dataSourcePath, int gpuId, std::string delim)
+class Mt4gParser
+{
+public:
+    Mt4gParser(Chip* gpu, std::string dataSourcePath, std::string delim = ";");
+
+    int ParseBenchmarkData();
+private:
+    int ReadBenchmarkFile();
+    std::map<std::string,std::vector<std::string> > benchmarkData;
+    std::string dataSourcePath;
+    std::string delim;
+    Chip* root;
+    const bool latency_in_cycles;
+    bool L2_shared_on_gpu;
+    double Memory_Clock_Frequency;
+    int Memory_Bus_Width;
+
+    int parseGPU_INFORMATION();
+    int parseCOMPUTE_RESOURCE_INFORMATION();
+    int parseREGISTER_INFORMATION();
+    int parseADDITIONAL_INFORMATION();
+    int parseMemory(std::string header_name, std::string memory_name);
+    int parseCaches(std::string header_name, std::string cache_type);
+};
+
+const std::string whiteSpaces( " \f\n\r\t\v" );
+void trimRight( std::string& str,const std::string& trimChars = whiteSpaces );
+void trimLeft( std::string& str,const std::string& trimChars = whiteSpaces );
+void trim( std::string& str, const std::string& trimChars = whiteSpaces );
+
+int sys_sage::ParseMt4g_v0_1(Component* parent, const std::string &path, int gpuId, const std::string delim)
 {
     if(parent == NULL){
         std::cerr << "parseMt4gTopo: parent is null" << std::endl;
@@ -22,31 +53,19 @@ int sys_sage::parseMt4gTopo(Node* parent, std::string dataSourcePath, int gpuId,
     }
     Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipType::Gpu);
 
-    return parseMt4gTopo(gpu, dataSourcePath, delim);
+    return ParseMt4g_v0_1(gpu, path, delim);
 }
 
-int sys_sage::parseMt4gTopo(Component* parent, std::string dataSourcePath, int gpuId, std::string delim)
+int sys_sage::ParseMt4g_v0_1(Chip* gpu, const std::string &path, const std::string delim)
 {
-    if(parent == NULL){
-        std::cerr << "parseMt4gTopo: parent is null" << std::endl;
-        return 1;
-    }
-    Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipType::Gpu);
-
-    return parseMt4gTopo(gpu, dataSourcePath, delim);
-}
-
-int sys_sage::parseMt4gTopo(Chip* gpu, std::string dataSourcePath, std::string delim)
-{
-    Mt4gParser gpuT(gpu, dataSourcePath, delim);
+    Mt4gParser gpuT(gpu, path, delim);
     int ret = gpuT.ParseBenchmarkData();
     return ret;
-
 }
 
-sys_sage::Mt4gParser::Mt4gParser(Chip* gpu, std::string dataSourcePath, std::string delim) : dataSourcePath(dataSourcePath), delim(delim), root(gpu), latency_in_cycles(true), Memory_Clock_Frequency(-1), Memory_Bus_Width(-1) { }
+Mt4gParser::Mt4gParser(Chip* gpu, std::string dataSourcePath, std::string delim) : dataSourcePath(dataSourcePath), delim(delim), root(gpu), latency_in_cycles(true), Memory_Clock_Frequency(-1), Memory_Bus_Width(-1) { }
 
-int sys_sage::Mt4gParser::ReadBenchmarkFile()
+int Mt4gParser::ReadBenchmarkFile()
 {
     std::ifstream file(dataSourcePath);
     if (!file.good()){
@@ -80,7 +99,7 @@ int sys_sage::Mt4gParser::ReadBenchmarkFile()
     return 0;
 }
 
-int sys_sage::Mt4gParser::ParseBenchmarkData()
+int Mt4gParser::ParseBenchmarkData()
 {
     int ret = ReadBenchmarkFile();
     if(ret != 0)
@@ -200,7 +219,7 @@ int sys_sage::Mt4gParser::ParseBenchmarkData()
     return ret;
 }
 
-int sys_sage::Mt4gParser::parseGPU_INFORMATION()
+int Mt4gParser::parseGPU_INFORMATION()
 {
     std::vector<std::string> data = benchmarkData["GPU_INFORMATION"];
     data.erase(data.begin());
@@ -229,7 +248,7 @@ int sys_sage::Mt4gParser::parseGPU_INFORMATION()
     return 0;
 }
 
-int sys_sage::Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
+int Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
 {
     std::vector<std::string> data = benchmarkData["COMPUTE_RESOURCE_INFORMATION"];
     data.erase(data.begin());
@@ -275,12 +294,12 @@ int sys_sage::Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
     return 0;
 }
 
-int sys_sage::Mt4gParser::parseREGISTER_INFORMATION()
+int Mt4gParser::parseREGISTER_INFORMATION()
 {
     //TODO
     return 0;
 }
-int sys_sage::Mt4gParser::parseADDITIONAL_INFORMATION()
+int Mt4gParser::parseADDITIONAL_INFORMATION()
 {
     std::vector<std::string> data = benchmarkData["ADDITIONAL_INFORMATION"];
     data.erase(data.begin());
@@ -332,7 +351,7 @@ int sys_sage::Mt4gParser::parseADDITIONAL_INFORMATION()
     }
     return 0;
 }
-int sys_sage::Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
+int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
 {
     std::vector<std::string> data = benchmarkData[header_name];
     data.erase(data.begin());
@@ -469,7 +488,7 @@ int sys_sage::Mt4gParser::parseMemory(std::string header_name, std::string memor
     return 0;
 }
 
-int sys_sage::Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
+int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
 {
     std::vector<std::string> data = benchmarkData[header_name];
     data.erase(data.begin());
@@ -746,19 +765,19 @@ int sys_sage::Mt4gParser::parseCaches(std::string header_name, std::string cache
     return 0;
 }
 
-void sys_sage::trimRight( std::string& str, const std::string& trimChars)
+void trimRight( std::string& str, const std::string& trimChars)
 {
    std::string::size_type pos = str.find_last_not_of( trimChars );
    str.erase( pos + 1 );
 }
 
-void sys_sage::trimLeft( std::string& str, const std::string& trimChars)
+void trimLeft( std::string& str, const std::string& trimChars)
 {
    std::string::size_type pos = str.find_first_not_of( trimChars );
    str.erase( 0, pos );
 }
 
-void sys_sage::trim( std::string& str, const std::string& trimChars)
+void trim( std::string& str, const std::string& trimChars)
 {
    trimRight( str, trimChars );
    trimLeft( str, trimChars );
