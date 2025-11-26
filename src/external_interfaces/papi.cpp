@@ -415,6 +415,7 @@ int sys_sage::PAPI_Metrics::StorePerfCounters(const int *events, int numEvents,
       cpuPerfs = new std::vector<CpuPerf>;
       AppendNewCpuPerf(cpuPerfs, cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
       attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
+
       continue;
     }
     
@@ -486,8 +487,10 @@ int sys_sage::PAPI_Metrics::AccumPerfCounters(const int *events, int numEvents,
 
     auto eventIt = attrib.find(buf);
     if (eventIt == attrib.end()) {
+      cpuPerfs = new std::vector<CpuPerf>;
       AppendNewCpuPerf(cpuPerfs, cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
       attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
+
       continue;
     }
     

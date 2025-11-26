@@ -98,7 +98,8 @@ namespace sys_sage {
      *               value of a single CPU. If the value is -1, the perf
      *               counter value of all CPUs combined is provided.
      * @param timestamp An optional parameter used to filter out the perf
-     *        counter value belonging to a specific perf counter reading.
+     *        counter value belonging to a specific perf counter reading. A
+     *        value of 0 refers to the latest reading.
      *
      * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
      */
