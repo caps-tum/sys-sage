@@ -4,8 +4,6 @@
 #include <memory>
 #include <stdlib.h>
 
-using namespace sys_sage;
-
 static constexpr int ITER = 5;
 
 #define FATAL(errMsg) do {\
@@ -14,20 +12,20 @@ static constexpr int ITER = 5;
 } while (false)
 
 void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, PAPIMetrics *metrics)
+                  int numEvents, sys_sage::PAPI_Metrics *metrics)
 {
   std::cout << "total perf counter vals:\n";
   for (int i = 0; i < numEvents; i++)
     std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
 
   std::cout << "\nperf counters per CPUs:\n";
-  for (const Component *cpu : metrics->GetComponents()) {
+  for (const sys_sage::Component *cpu : metrics->GetComponents()) {
     int cpuNum = cpu->GetId();
     std::cout << "  CPU " << cpuNum << ":\n";
 
     for (int i = 0; i < numEvents; i++) {
       std::cout << "    " << eventNames[i] << ":\n";
-      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+      for (const sys_sage::PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
         std::cout << "      " << perfEntry << '\n';
     }
   }
@@ -46,8 +44,8 @@ int main(int argc, const char **argv)
     return EXIT_FAILURE;
   }
 
-  Node node;
-  if (parseHwlocOutput(&node, argv[1]) != 0)
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   int rval;
@@ -83,15 +81,15 @@ int main(int argc, const char **argv)
       FATAL(PAPI_strerror(rval));
   }
 
-  PAPIMetrics *metrics = nullptr;
-  rval = SS_PAPI_start(eventSet, &metrics);
+  sys_sage::PAPI_Metrics *metrics = nullptr;
+  rval = sys_sage::PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
   for (int i = 0; i < ITER; i++) {
     saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-    rval = SS_PAPI_read(eventSet, metrics, &node, true);
+    rval = metrics->PAPI_read(eventSet, &node, true);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
   }

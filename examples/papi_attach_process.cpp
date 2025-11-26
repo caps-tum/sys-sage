@@ -9,8 +9,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-using namespace sys_sage;
-
 #define FATAL(errMsg, pid) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   kill(pid, SIGKILL);\
@@ -18,20 +16,20 @@ using namespace sys_sage;
 } while(false)
 
 void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, PAPIMetrics *metrics)
+                  int numEvents, sys_sage::PAPI_Metrics *metrics)
 {
   std::cout << "total perf counter vals:\n";
   for (int i = 0; i < numEvents; i++)
     std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
 
   std::cout << "\nperf counters per CPUs:\n";
-  for (const Component *cpu : metrics->GetComponents()) {
+  for (const sys_sage::Component *cpu : metrics->GetComponents()) {
     int cpuNum = cpu->GetId();
     std::cout << "  CPU " << cpuNum << ":\n";
 
     for (int i = 0; i < numEvents; i++) {
       std::cout << "    " << eventNames[i] << ":\n";
-      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+      for (const sys_sage::PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
         std::cout << "      " << perfEntry << '\n';
     }
   }
@@ -44,8 +42,8 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  Node node;
-  if (parseHwlocOutput(&node, argv[1]) != 0)
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   pid_t pid = fork();
@@ -92,8 +90,8 @@ int main(int argc, char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
-  PAPIMetrics *metrics = nullptr;
-  rval = SS_PAPI_start(eventSet, &metrics);
+  sys_sage::PAPI_Metrics *metrics = nullptr;
+  rval = sys_sage::PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
@@ -104,7 +102,7 @@ int main(int argc, char **argv)
   if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
     FATAL("expected child process to stop right before exit\n", pid);
 
-  rval = SS_PAPI_stop(eventSet, metrics, &node);
+  rval = metrics->PAPI_stop(eventSet, &node);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 

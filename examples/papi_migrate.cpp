@@ -6,8 +6,6 @@
 #include <sched.h>
 #include <sys/sysinfo.h>
 
-using namespace sys_sage;
-
 void migrate(int targetCpu)
 {
   cpu_set_t cpuSet;
@@ -36,8 +34,8 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  Node node;
-  if (parseHwlocOutput(&node, argv[1]) != 0)
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   size_t n = 1'000'000;
@@ -57,37 +55,37 @@ int main(int argc, char **argv)
   PAPI_create_eventset(&eventSet);
   PAPI_add_event(eventSet, PAPI_TOT_INS);
 
-  PAPIMetrics *metrics = nullptr;
-  SS_PAPI_start(eventSet, &metrics);
+  sys_sage::PAPI_Metrics *metrics = nullptr;
+  sys_sage::PAPI_start(eventSet, &metrics);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node);
+  metrics->PAPI_read(eventSet, &node);
   migrate(targetCpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node);
+  metrics->PAPI_read(eventSet, &node);
   migrate(targetTargetCpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node);
+  metrics->PAPI_read(eventSet, &node);
   migrate(cpu);
 
   saxpy(a, b, c, n, alpha);
-  SS_PAPI_read(eventSet, metrics, &node);
+  metrics->PAPI_read(eventSet, &node);
 
   PAPI_stop(eventSet, nullptr);
 
   assert(metrics->GetComponents().size() == 3);
 
-  CpuPerf *cpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, cpu);
+  sys_sage::CpuPerf *cpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, cpu);
   assert(cpuPerf->perfEntries.size() == 1);
   std::cout << "CPU " << cpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, cpu) << '\n';
 
-  CpuPerf *targetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetCpu);
+  sys_sage::CpuPerf *targetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetCpu);
   assert(targetCpuPerf->perfEntries.size() == 1);
   std::cout << "CPU " << targetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetCpu) << '\n';
 
-  CpuPerf *targetTargetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetTargetCpu);
+  sys_sage::CpuPerf *targetTargetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetTargetCpu);
   assert(targetTargetCpuPerf->perfEntries.size() == 1);
   std::cout << "CPU " << targetTargetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetTargetCpu) << '\n';
 

@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <sched.h>
 
-using namespace sys_sage;
-
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
   return EXIT_FAILURE;\
@@ -17,27 +15,27 @@ using namespace sys_sage;
 static constexpr int hwThreadId = 3;
 
 struct worker_args {
-  Component *topoRoot;
-  PAPIMetrics *metrics = nullptr;
+  sys_sage::Component *topoRoot;
+  sys_sage::PAPI_Metrics *metrics = nullptr;
   int eventSet;
   int rval;
 };
 
 void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, PAPIMetrics *metrics)
+                  int numEvents, sys_sage::PAPI_Metrics *metrics)
 {
   std::cout << "total perf counter vals:\n";
   for (int i = 0; i < numEvents; i++)
     std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
 
   std::cout << "\nperf counters per CPUs:\n";
-  for (const Component *cpu : metrics->GetComponents()) {
+  for (const sys_sage::Component *cpu : metrics->GetComponents()) {
     int cpuNum = cpu->GetId();
     std::cout << "  CPU " << cpuNum << ":\n";
 
     for (int i = 0; i < numEvents; i++) {
       std::cout << "    " << eventNames[i] << ":\n";
-      for (const PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+      for (const sys_sage::PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
         std::cout << "      " << perfEntry << '\n';
     }
   }
@@ -63,13 +61,13 @@ void *work(void *arg)
   auto c = std::make_unique<double[]>(n);
   double alpha = 3.14159;
 
-  wargs->rval = SS_PAPI_start(wargs->eventSet, &wargs->metrics);
+  wargs->rval = sys_sage::PAPI_start(wargs->eventSet, &wargs->metrics);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = SS_PAPI_stop(wargs->eventSet, wargs->metrics, wargs->topoRoot);
+  wargs->rval = wargs->metrics->PAPI_stop(wargs->eventSet, wargs->topoRoot);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
@@ -85,8 +83,8 @@ int main(int argc, const char **argv)
     return EXIT_FAILURE;
   }
 
-  Node node;
-  if (parseHwlocOutput(&node, argv[1]) != 0)
+  sys_sage::Node node;
+  if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
   int rval;
