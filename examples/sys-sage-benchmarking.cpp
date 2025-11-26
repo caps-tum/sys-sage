@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
     uint64_t time_parseMt4g = UINT64_MAX;
 
     t_start = high_resolution_clock::now();
-    ret = parseMt4gTopo(gpu, mt4gPath, ";");
+    ret = ParseMt4g_v0_1(gpu, mt4gPath, ";");
     t_end = high_resolution_clock::now();
     time_parseMt4g = t_end.time_since_epoch().count() -
                     t_start.time_since_epoch().count() - timer_overhead;

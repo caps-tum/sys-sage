@@ -1,765 +1,707 @@
-
 #include "mt4g.hpp"
-
-#include <iostream>
+#include <nlohmann/json.hpp>
 #include <fstream>
-#include <vector>
-#include <map>
-#include <algorithm>
-#include <tuple>
+#include <stddef.h>
+#include <stdint.h>
 #include <string>
-#include <algorithm>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-using std::cout;
-using std::cerr;
-using std::endl;
+using namespace sys_sage;
+using json = nlohmann::json;
 
-int sys_sage::parseMt4gTopo(Node* parent, std::string dataSourcePath, int gpuId, std::string delim)
+static inline long long kHz_to_Hz(long long kHz)
 {
-    if(parent == NULL){
-        std::cerr << "parseMt4gTopo: parent is null" << std::endl;
-        return 1;
-    }
-    Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipType::Gpu);
-
-    return parseMt4gTopo(gpu, dataSourcePath, delim);
+  return kHz * 1000;
 }
 
-int sys_sage::parseMt4gTopo(Component* parent, std::string dataSourcePath, int gpuId, std::string delim)
+static inline double GiBs_to_Bs(double GiBs)
 {
-    if(parent == NULL){
-        std::cerr << "parseMt4gTopo: parent is null" << std::endl;
-        return 1;
-    }
-    Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipType::Gpu);
-
-    return parseMt4gTopo(gpu, dataSourcePath, delim);
+  return GiBs * (1 << 30);
 }
 
-int sys_sage::parseMt4gTopo(Chip* gpu, std::string dataSourcePath, std::string delim)
+static void ParseGeneral(const json &general, Chip *gpu)
 {
-    Mt4gParser gpuT(gpu, dataSourcePath, delim);
-    int ret = gpuT.ParseBenchmarkData();
-    return ret;
+  gpu->SetModel(general["name"].get<std::string>());
+  gpu->SetVendor(general["vendor"].get<std::string>());
 
+  gpu->attrib["computeCapability"] = reinterpret_cast<void *>(
+    new std::pair<int, int> {
+          general["computeCapability"]["major"].get<int>(),
+          general["computeCapability"]["minor"].get<int>()
+        }
+  );
+
+  gpu->attrib["clockRate"] = reinterpret_cast<void *>(
+    // the clockRate field is actually of type `int`, but due to the conversion
+    // from [kHz] to [Hz], it might be better to use `long long` to avoid
+    // overflows
+    new long long( kHz_to_Hz(general["clockRate"]["value"].get<int>()) )
+  );
 }
 
-sys_sage::Mt4gParser::Mt4gParser(Chip* gpu, std::string dataSourcePath, std::string delim) : dataSourcePath(dataSourcePath), delim(delim), root(gpu), latency_in_cycles(true), Memory_Clock_Frequency(-1), Memory_Bus_Width(-1) { }
-
-int sys_sage::Mt4gParser::ReadBenchmarkFile()
+static std::tuple<int, uint32_t> ParseCompute(const json &compute, Chip *gpu)
 {
-    std::ifstream file(dataSourcePath);
-    if (!file.good()){
-        std::cerr << "parseMt4gTopo: could not open data source output file " << dataSourcePath << std::endl;
-        return 1;
-    }
+  auto multiProcessorCount = new int( compute["multiProcessorCount"].get<int>() );
+  gpu->attrib["multiProcessorCount"] = reinterpret_cast<void *>( multiProcessorCount );
 
-    std::string line = "";
-    while (getline(file, line))
-    {
-        std::vector<std::string> vec;
-        size_t pos = 0;
-        bool cont = true;
-        std::string s;
-        while (cont) {
-            cont = ((pos = line.find(delim)) != std::string::npos);
-            if(cont)
-                s = line.substr(0, pos); // trim whitespaces
-            else
-                s = line.substr(0, line.length());
-            trim(s);
-            s.erase(std::remove(s.begin(), s.end(), '\"'), s.end());    //remove "" where present
-            //std::cout << "adding " << s << std::endl;
-            vec.push_back(s);
-            line.erase(0, pos + delim.length());
-        }
-        if(!vec.empty()) {
-            benchmarkData.insert({vec[0], vec});
-        }
-    }
-    return 0;
+  auto numberOfCoresPerMultiProcessor = new uint32_t( compute["numberOfCoresPerMultiProcessor"].get<uint32_t>() );
+  gpu->attrib["numberOfCoresPerMultiProcessor"] = reinterpret_cast<void *>( numberOfCoresPerMultiProcessor );
+
+  gpu->attrib["maxThreadsPerBlock"] = reinterpret_cast<void *>(
+    new int( compute["maxThreadsPerBlock"].get<int>() )
+  );
+
+  // TODO: maybe parse register info?
+
+  gpu->attrib["warpSize"] = reinterpret_cast<void *>(
+    new int( compute["warpSize"].get<int>() )
+  );
+  gpu->attrib["maxThreadsPerMultiProcessor"] = reinterpret_cast<void *>(
+    new int( compute["maxThreadsPerMultiProcessor"].get<int>() )
+  );
+  gpu->attrib["maxBlocksPerMultiProcessor"] = reinterpret_cast<void *>(
+    new int( compute["maxBlocksPerMultiProcessor"].get<int>() )
+  );
+
+  if (auto it = compute.find("numXDCDs"); it != compute.end())
+    gpu->attrib["numXDCDs"] = reinterpret_cast<void *>( new uint32_t(it->get<uint32_t>()) );
+
+  if (auto it = compute.find("computeUnitsPerDie"); it != compute.end())
+    gpu->attrib["computeUnitsPerDie"] = reinterpret_cast<void *>( new uint32_t(it->get<uint32_t>()) );
+
+  if (auto it = compute.find("numSIMDsPerCu"); it != compute.end())
+    gpu->attrib["numSIMDsPerCu"] = reinterpret_cast<void *>( new uint32_t(it->get<uint32_t>()) );
+
+
+  return { *multiProcessorCount, *numberOfCoresPerMultiProcessor };
 }
 
-int sys_sage::Mt4gParser::ParseBenchmarkData()
+// assumes `leafs` only contains the GPU
+static void ParseMainMemory(const json &main, std::vector<Component *> &cores,
+                            std::vector<Component *> &leafs)
 {
-    int ret = ReadBenchmarkFile();
-    if(ret != 0)
-        return ret;
+  size_t size = main["totalGlobalMem"]["value"].get<size_t>();
 
-    if(benchmarkData.find("GPU_INFORMATION") == benchmarkData.end()){
-        cerr << "parseMt4gTopo: Could not find GPU_INFORMATION in file " << dataSourcePath << endl;
-        return 1;
-    } else {
-        if((ret=parseGPU_INFORMATION()) != 0){
-            cerr << "parseMt4gTopo: parseGPU_INFORMATION failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
+  auto mainMem = new Memory(leafs[0], 0, "GPU Main Memory", size);
+
+  mainMem->attrib["clockRate"] = reinterpret_cast<void *>(
+    new long long ( kHz_to_Hz(main["memoryClockRate"]["value"].get<int>()) )
+  );
+  mainMem->attrib["busWidth"] = reinterpret_cast<void *>(
+    new int ( main["memoryBusWidth"]["value"].get<int>() )
+  );
+
+  // the existence of `latency` implies the existence of `readBandwidth` and `writeBandwidth`
+  if (auto it = main.find("latency"); it != main.end()) {
+    double latency = (*it)["mean"].get<double>();
+    double readBandwidth = GiBs_to_Bs( main["readBandwidth"]["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( main["writeBandwidth"]["value"].get<double>() );
+
+    for (auto core : cores) {
+      // bidirectional, because we have read & write bandwidth
+      auto dp = new DataPath(mainMem, core, DataPathOrientation::Bidirectional,
+                             DataPathType::Logical, -1, latency);
+      dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+      dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
     }
+  }
 
-    if(benchmarkData.find("COMPUTE_RESOURCE_INFORMATION") == benchmarkData.end()){
-        cerr << "parseMt4gTopo: Could not find COMPUTE_RESOURCE_INFORMATION in file " << dataSourcePath << endl;
-        return 1;
-    } else {
-        if((ret=parseCOMPUTE_RESOURCE_INFORMATION()) != 0){
-            cerr << "parseMt4gTopo: parseCOMPUTE_RESOURCE_INFORMATION failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("REGISTER_INFORMATION") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find REGISTER_INFORMATION in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseREGISTER_INFORMATION()) != 0){
-            cerr << "parseMt4gTopo: parseREGISTER_INFORMATION failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("ADDITIONAL_INFORMATION") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find ADDITIONAL_INFORMATION in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseADDITIONAL_INFORMATION()) != 0){
-            cerr << "parseMt4gTopo: parseADDITIONAL_INFORMATION failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("MAIN_MEMORY") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find MAIN_MEMORY in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseMemory("MAIN_MEMORY", "GPU Global memory")) != 0){
-            cerr << "parseMt4gTopo: parseMAIN_MEMORY failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("L2_DATA_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find L2_DATA_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("L2_DATA_CACHE", "L2")) != 0){
-            cerr << "parseMt4gTopo: parseCaches on L2_DATA_CACHE failed when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("L1_DATA_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find L1_DATA_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("L1_DATA_CACHE", "L1")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on L1_DATA_CACHE when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("SHARED_MEMORY") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find SHARED_MEMORY in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseMemory("SHARED_MEMORY", "Shared memory")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on SHARED_MEMORY when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("TEXTURE_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find TEXTURE_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("TEXTURE_CACHE", "Texture")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on TEXTURE_CACHE when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("READ-ONLY_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find READ-ONLY_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("READ-ONLY_CACHE", "ReadOnly")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on READ-ONLY_CACHE when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("CONST_L1_5_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find CONST_L1_5_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("CONST_L1_5_CACHE", "Constant_L1.5")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on CONST_L1_5_CACHE when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    if(benchmarkData.find("CONSTANT_L1_CACHE") == benchmarkData.end()){
-        cerr << "WARNING: parseMt4gTopo: Could not find CONSTANT_L1_CACHE in file " << dataSourcePath <<". Will skip."<< endl;
-    } else {
-        if((ret=parseCaches("CONSTANT_L1_CACHE", "Constant_L1")) != 0){
-            cerr << "parseMt4gTopo: parseCaches failed on CONSTANT_L1_CACHE when parsing " << dataSourcePath << endl;
-            return ret;
-        }
-    }
-
-    ret = root->CheckComponentTreeConsistency();
-    return ret;
+  // update `leafs` to only contain the main memory
+  leafs[0] = mainMem;
 }
 
-int sys_sage::Mt4gParser::parseGPU_INFORMATION()
+static void ParseL3Caches(const json &l3, std::vector<Component *> &cores,
+                          std::vector<Component *> &leafs)
 {
-    std::vector<std::string> data = benchmarkData["GPU_INFORMATION"];
-    data.erase(data.begin());
+  long long size = -1;
+  if (auto it = l3.find("size"); it != l3.end())
+    size = (*it)["value"].get<size_t>();
 
-    for(size_t i = 0; i<data.size(); i++)
-    {
-        if(data[i] == "GPU_vendor")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseGPU_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            root->SetVendor(data[i+1]);
-            i++;
-        }
-        else if(data[i] == "GPU_name")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseGPU_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            root->SetModel(data[i+1]);
-            i++;
-        }
+  size_t amount = l3.value("amount", 1);
+  std::vector<Component *> l3Caches (amount);
+
+  size_t amountPerLeaf = amount / leafs.size();
+
+  int lineSize = -1;
+  if (auto it = l3.find("lineSize"); it != l3.end())
+    lineSize = (*it)["value"].get<size_t>();
+
+  size_t id = 0;
+
+  for (auto leaf : leafs)
+    for (size_t i = 0; i < amountPerLeaf; i++, id++)
+      l3Caches[id] = new Cache(leaf, id, "L3", size, -1, lineSize);
+
+  // the existence of `readBandwidth` implies the existence of `writeBandwidth`
+  if (auto it = l3.find("readBandwidth"); it != l3.end()) {
+    double readBandwidth = GiBs_to_Bs( (*it)["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( l3["writeBandwidth"]["value"].get<double>() );
+
+    for (auto l3Cache : l3Caches) {
+      for (auto core : cores) {
+        auto dp = new DataPath(l3Cache, core, DataPathOrientation::Bidirectional,
+                               DataPathType::Logical, -1, -1);
+        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+      }
     }
-    return 0;
+  }
+
+  leafs = std::move(l3Caches);
 }
 
-int sys_sage::Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
+static void ParseL2Caches(const json &l2, std::vector<Component *> &cores,
+                          std::vector<Component *> &leafs)
 {
-    std::vector<std::string> data = benchmarkData["COMPUTE_RESOURCE_INFORMATION"];
-    data.erase(data.begin());
+  long long size = l2["size"]["value"].get<int>();
 
-    for(size_t i = 0; i<data.size(); i++)
-    {
-        //cout << i << " " << data[i] << std::endl;
-        if(data[i]== "CUDA_compute_capability")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCOMPUTE_RESOURCE_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            std::string * val = new std::string(data[i+1]);
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
-            i++;
-        }
-        else if(data[i]== "Number_of_streaming_multiprocessors" ||
-            data[i]== "Number_of_cores_in_GPU" ||
-            data[i]== "Number_of_cores_per_SM")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCOMPUTE_RESOURCE_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            int * val = new int(std::stoi(data[i+1]));
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
+  size_t amount = l2.value("amount", 1);
+  std::vector<Component *> l2Caches (amount);
 
-            i++;
-        }
+  size_t amountPerLeaf = amount / leafs.size();
+
+  int lineSize = -1;
+  if (auto it = l2.find("lineSize"); it != l2.end()) {
+    auto valueIt = it->find("value");
+    lineSize = valueIt != it->end() ? valueIt->get<size_t>() : (*it)["size"].get<size_t>();
+  }
+
+  size_t fetchGranularity = 0;
+  if (auto it = l2.find("fetchGranularity"); it != l2.end())
+    fetchGranularity = (*it)["size"].get<size_t>();
+
+  size_t segmentSize = 0;
+  if (auto it = l2.find("segmentSize"); it != l2.end())
+    segmentSize = (*it)["size"].get<size_t>();
+
+  size_t id = 0;
+
+  for (auto leaf : leafs) {
+    for (size_t i = 0; i < amountPerLeaf; i++, id++) {
+      l2Caches[id] = new Cache(leaf, id, "L2", size, -1, lineSize);
+
+      if (fetchGranularity > 0)
+        l2Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new size_t(fetchGranularity) );
+      if (segmentSize > 0)
+        l2Caches[id]->attrib["segmentSize"] = reinterpret_cast<void *>( new size_t(segmentSize) );
     }
+  }
 
-    for(int i = 0; i < *reinterpret_cast<int*>(root->attrib["Number_of_streaming_multiprocessors"]); i++)
-    {
-        //cout << "adding SM " << i << std::endl;
-        Subdivision * sm = new Subdivision(root, i, "SM (Streaming Multiprocessor)");
-        sm->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
-        for(int j = 0; j<*reinterpret_cast<int*>(root->attrib["Number_of_cores_per_SM"]); j++)
-        {
-            new Thread(sm, j, "GPU Core");
-        }
+  if (auto it = l2.find("latency"); it != l2.end()) {
+    double latency = (*it)["mean"].get<double>();
+    double readBandwidth = GiBs_to_Bs( l2["readBandwidth"]["value"].get<double>() );
+    double writeBandwidth = GiBs_to_Bs( l2["writeBandwidth"]["value"].get<double>() );
+    double missPenalty = -1;
+    if (auto missPenaltyIt = l2.find("missPenalty"); missPenaltyIt != l2.end())
+      missPenalty = (*missPenaltyIt)["value"].get<double>();
+
+    for (auto l2Cache : l2Caches) {
+      for (auto core : cores) {
+        auto dp = new DataPath(l2Cache, core, DataPathOrientation::Bidirectional,
+                               DataPathType::Logical, -1, latency);
+        dp->attrib["readBandwidth"] = reinterpret_cast<void *>( new double (readBandwidth) );
+        dp->attrib["writeBandwidth"] = reinterpret_cast<void *>( new double (writeBandwidth) );
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+      }
     }
-    return 0;
+  }
+
+  leafs = std::move(l2Caches);
 }
 
-int sys_sage::Mt4gParser::parseREGISTER_INFORMATION()
+static bool ParseScalarL1Caches(const json &scalarL1,
+                                std::vector<Component *> &mps,
+                                std::vector<Component *> &cores,
+                                std::vector<Component *> &leafs)
 {
-    //TODO
-    return 0;
-}
-int sys_sage::Mt4gParser::parseADDITIONAL_INFORMATION()
-{
-    std::vector<std::string> data = benchmarkData["ADDITIONAL_INFORMATION"];
-    data.erase(data.begin());
+  size_t fetchGranularity = scalarL1["fetchGranularity"]["size"].get<size_t>();
 
-    for(size_t i = 0; i<data.size(); i++)
-    {
-        if(data[i]== "Memory_Clock_Frequency")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseADDITIONAL_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 2 additional values." << endl;
-                return 1;
-            }
-            Memory_Clock_Frequency = stod(data[i+1]);
-            std::string unit = data[i+2];
-            if(unit == "KHz")
-                Memory_Clock_Frequency *= 1000;
-            else if(unit == "MHz")
-                Memory_Clock_Frequency *= 1000*1000;
-            else if(unit == "GHz")
-                Memory_Clock_Frequency *= 1000*1000*1000;
-            i+=2;
+  size_t size = scalarL1["size"]["size"].get<size_t>();
+
+  int lineSize = -1;
+  if (auto it = scalarL1.find("lineSize"); it != scalarL1.end())
+    lineSize = (*it)["size"].get<size_t>();
+
+  auto sharedBetweenIt = scalarL1.find("sharedBetween");
+  bool insertMPs = sharedBetweenIt != scalarL1.end() && sharedBetweenIt->size() > 0;
+
+  size_t uniqueAmount = scalarL1.value("uniqueAmount", 1);
+  std::vector<Component *> scalarL1Caches (uniqueAmount);
+
+  size_t amountPerLeaf = uniqueAmount / leafs.size();
+
+  auto mpIt = mps.begin();
+  size_t id = 0;
+
+  for (auto leaf : leafs) {
+    for (size_t i = 0; i < amountPerLeaf; i++, id++) {
+      scalarL1Caches[id] = new Cache(leaf, id, "Scalar L1", size, -1, lineSize);
+
+      scalarL1Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>(
+        new size_t (fetchGranularity)
+      );
+
+      if (insertMPs) {
+        for (const auto &elem : (*sharedBetweenIt)[id]) {
+          (*mpIt)->SetId(elem.get<int>());
+          scalarL1Caches[id]->InsertChild(*mpIt);
+          mpIt++;
         }
-        else if(data[i]== "Memory_Bus_Width")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseADDITIONAL_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 2 additional values." << endl;
-                return 1;
-            }
-            Memory_Bus_Width = std::stoi(data[i + 1]);
-            i+=2;
-        }
-        else if(data[i]== "GPU_Clock_Rate")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseADDITIONAL_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 2 additional values." << endl;
-                return 1;
-            }
-            double * val = new double(std::stod(data[i+1]));
-            std::string unit = data[i+2];
-            if(unit == "KHz")
-                *val *= 1000;
-            else if(unit == "MHz")
-                *val *= 1000*1000;
-            else if(unit == "GHz")
-                *val *= 1000*1000*1000;
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
-            i+=2;
-        }
+      }
     }
-    return 0;
-}
-int sys_sage::Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
-{
-    std::vector<std::string> data = benchmarkData[header_name];
-    data.erase(data.begin());
+  }
 
-    int shared_on = -1; //0=GPU, 1=SM
-    double size = -1;
-    double latency = -1;
-    int ret;
-    //parse_args
-    for(size_t i = 0; i<data.size(); i++)
-    {
-        if(data[i]== "Size")
-        {
-            if(i>=data.size()-3){
-                cerr << "parseMemory: \"" << data[i] << "\" is supposed to be followed by 3 additional values." << endl;
-                return 1;
-            }
-            size = stod(data[i+1]);
-            std::string unit = data[i+2];
-            if(unit == "KiB")
-                size *= 1024;
-            else if(unit == "MiB")
-                size *= 1024*1024;
-            else if(unit == "GiB")
-                size *= 1024*1024*1024;
-            i+=3;
-        }
-        else if(data[i]== "Load_Latency")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseMemory: \"" << data[i] << "\" is supposed to be followed by 2 additional values." << endl;
-                return 1;
-            }
-            if((data[i+2] == "cycles" && latency_in_cycles) || (data[i+2] == "nanoseconds" && !latency_in_cycles))
-            {
-                latency = stod(data[i+1]);
-            }
-            i+=2;
-        }
-        else if(data[i]== "Shared_On")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseMemory: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            if(data[i+1] == "GPU-level")
-                shared_on = 0;
-            else if(data[i+1] == "SM-level")
-                shared_on = 1;
-            else{
-                cerr << "parseMemory: \"" << data[i] << "\" is supposed to be GPU-level or SM-level." << endl;
-                return 1;
-            }
-            i+=1;
-        }
+  double latency = scalarL1["latency"]["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = scalarL1.find("missPenalty"); it != scalarL1.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  size_t defaultAmountMPsPerScalarL1Cache = mps.size() / uniqueAmount;
+  size_t numCoresPerMP = cores.size() / mps.size();
+
+  auto coreIt = cores.begin();
+
+  for (auto scalarL1Cache : scalarL1Caches) {
+    size_t numMPs = insertMPs ? scalarL1Cache->GetChildren().size() : defaultAmountMPsPerScalarL1Cache;
+    size_t numCores = numMPs * numCoresPerMP;
+
+    for (size_t i = 0; i < numCores; i++, coreIt++) {
+      auto dp = new DataPath(scalarL1Cache, *coreIt, DataPathOrientation::Oriented,
+                             DataPathType::Logical, -1, latency);
+      if (missPenalty > 0)
+        dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
     }
+  }
 
-    if(header_name == "MAIN_MEMORY")
-    {
-        if(shared_on != 0){
-            std::cerr << "Mt4gParser::parseMemory, shared_on == 1 --> this should not happen...if yes, the implementation needs to be extended." << std::endl;
-            return 1;
-        }
+  leafs = std::move(scalarL1Caches);
 
-        Memory * mem = new Memory(root, 0, memory_name, (long long)size);
-        if(Memory_Clock_Frequency > -1){
-            double * mfreq = new double(Memory_Clock_Frequency);
-            mem->attrib.insert({"Clock_Frequency", reinterpret_cast<void*>(mfreq)});
-        }
-        if(Memory_Bus_Width > -1){
-            int * busW = new int(Memory_Bus_Width);
-            mem->attrib.insert({"Bus_Width", reinterpret_cast<void*>(busW)});
-        }
-          
-        //make SMs as main memory's children and insert DP with latency
-        std::vector<Component*> memory_children;
-        for(Component* sm : root->GetChildren())
-            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
-                memory_children.push_back(sm);
-
-        if((ret = mem->InsertBetweenParentAndChildren(root, memory_children, true)) != 0)
-        {
-            cerr << "parseMemory:InsertBetweenParentAndChildren failed with return code " << ret << endl;
-        }
-        
-        if(latency != -1)
-            for(Component* sm: memory_children)
-                for(Component * c : sm->GetChildren())
-                    if(c->GetComponentType() == sys_sage::ComponentType::Thread)
-                        new DataPath(mem, c, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency); 
-    }
-    else if(header_name == "SHARED_MEMORY") //very similar to parseCaches
-    {   //shared memory is shared on an SM level
-        if(shared_on != 1){
-            std::cerr << "Mt4gParser::parseMemory, shared_on == 0 --> this should not happen...if yes, the implementation needs to be extended." << std::endl;
-            return 1;
-        }
-
-        std::vector<Component*> parents;
-        root->GetAllSubcomponentsByType(&parents, sys_sage::ComponentType::Subdivision);
-        for(Component * parent : parents)
-        {
-            if(static_cast<Subdivision*>(parent)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
-            {
-                if(!L2_shared_on_gpu)
-                {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
-                    for(Component * cache: caches){
-                        if(static_cast<Cache*>(cache)->GetCacheName() == "L2"){
-                            parent = cache;
-                            break;
-                        }
-                    }
-                }
-
-                Memory * mem = new Memory(parent, 0, memory_name, (long long)size);
-
-                //insert DP with latency
-                if(latency != -1)
-                {
-                    std::vector<Component*> threads = parent->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
-                    for(Component* t: threads)
-                        new DataPath(mem, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
-                }
-            }
-        }
-    }
-    else
-    {
-        std::cerr << "Mt4gParser::parseMemory, shared_on == 1 --> this should not happen...if yes, the implementation needs to be extended." << std::endl;
-        return 1;
-    }
-
-    return 0;
+  return insertMPs;
 }
 
-int sys_sage::Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
+static void ParseConstantCaches(const json &constant,
+                               std::vector<Component *> &mps,
+                               std::vector<Component *> &cores)
 {
-    std::vector<std::string> data = benchmarkData[header_name];
-    data.erase(data.begin());
+  size_t numCoresPerMP = cores.size() / mps.size();
 
-    //parse_args
-    int shared_on = -1; //0=GPU, 1=SM
-    int caches_per_sm = 1;
-    double size = -1;
-    int cache_line_size = -1;
-    double latency = -1;
-    int share_l1 = 0, share_texture = 0, share_ro = 0, share_constant = 0;
-    int ret;
-    for(size_t i = 0; i<data.size(); i++)
-    {
-        if(data[i]== "Size")
-        {
-            if(i>=data.size()-3){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            size = stod(data[i+1]);
-            std::string unit = data[i+2];
-            if(unit == "KiB")
-                size *= 1024;
-            else if(unit == "MiB")
-                size *= 1024*1024;
-            else if(unit == "GiB")
-                size *= 1024*1024*1024;
-            i+=3;
-        }
-        else if(data[i]== "Cache_Line_Size")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            cache_line_size = stoi(data[i+1]);
-            std::string unit = data[i+2];
-            if(unit == "KiB")
-                size *= 1024;
-            else if(unit == "MiB")
-                size *= 1024*1024;
-            else if(unit == "GiB")
-                size *= 1024*1024*1024;
-            i+=2;
-        }
-        else if(data[i]== "Load_Latency")
-        {
-            if(i>=data.size()-2){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            if((data[i+2] == "cycles" && latency_in_cycles) || (data[i+2] == "nanoseconds" && !latency_in_cycles))
-            {
-                latency = stod(data[i+1]);
-            }
-            i+=2;
-        }
-        else if(data[i]== "Shared_On")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            if(data[i+1] == "GPU-level")
-                shared_on = 0;
-            else if(data[i+1] == "SM-level")
-                shared_on = 1;
-            else
-            {
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be GPU-level or SM-level." << endl;
-                return 1;
-            }
-            i+=1;
-        }
-        else if(data[i]== "Caches_Per_SM")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            caches_per_sm = stoi(data[i+1]);
-        }
-        else if(data[i]== "Share_Cache_With_L1_Data")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            share_l1 = stoi(data[i+1]);
-        }
-        else if(data[i]== "Share_Cache_With_Texture")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            share_texture = stoi(data[i+1]);
-        }
-        else if(data[i]== "Share_Cache_With_Read-Only")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            share_ro = stoi(data[i+1]);
-        }
-        else if(data[i]== "Share_Cache_With_ConstantL1")
-        {
-            if(i>=data.size()-1){
-                cerr << "parseCaches: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
-                return 1;
-            }
-            share_constant = stoi(data[i+1]);
-        }
+  if (constant.size() == 1) {
+    std::vector<Component *> constantCaches (mps.size());
+
+    size_t totalConstMem = constant["totalConstMem"]["value"].get<size_t>();
+
+    size_t id = 0;
+
+    for (auto mp : mps) {
+      constantCaches[id] = new Cache(mp, id, "Constant", totalConstMem);
+      id++;
     }
 
-    if(cache_type == "L2")
-    {
-        if(shared_on == 0)
-            L2_shared_on_gpu = true;
-        else
-            L2_shared_on_gpu = false;
-    }
+    auto coreIt = cores.begin();
 
-    //if caches are shared, add process only the first one and add names of the others
-    if(cache_type == "L1")
-    {
-        if(share_texture == 1)
-            cache_type.append("+Texture");
-        if(share_ro == 1)
-            cache_type.append("+ReadOnly");
-        if(share_constant == 1)
-            cache_type.append("+Constant_L1");
-    }
-    else if(cache_type == "Texture")
-    {
-        if(share_l1 == 1)
-            return 0;//already added in L1
-        if(share_ro == 1)
-            cache_type.append("+ReadOnly");
-        if(share_constant == 1)
-            cache_type.append("+Constant_L1");
-    }
-    else if(cache_type == "ReadOnly")
-    {
-        if(share_l1 == 1 || share_texture == 1)
-            return 0;//already added in L1 or RO
-        if(share_constant == 1)
-            cache_type.append("+Constant_L1");
-    }
-    else if(cache_type == "Constant_L1")
-    {
-        if(share_l1 == 1  || share_texture == 1 || share_ro == 1)
-            return 0;//already added in L1 or texture or RO
-    }
+    for (auto constantCache : constantCaches)
+      for (size_t i = 0; i < numCoresPerMP; i++, coreIt++)
+        new DataPath(constantCache, *coreIt, DataPathOrientation::Oriented, DataPathType::Logical);
 
-    Component* parent = root;
-    if(shared_on == 0)
-    { //shared on GPU level, place under main memory or L2(if no L2 available)
-        Component * mem = root->GetChildByType(sys_sage::ComponentType::Memory);
-        if(mem != NULL)
-        {
-            parent = mem;
-            if(cache_type != "L2")
-            {
-                Component * l2 = mem->GetChildByType(sys_sage::ComponentType::Cache);
-                if(static_cast<Cache*>(l2)->GetCacheName() == "L2")
-                    parent = l2;
-            }
-        }
-        Cache * cache = new Cache(parent, 0, cache_type);
-        if(size != -1)
-            cache->SetCacheSize(size);
-        if(cache_line_size != -1)
-            cache->SetCacheLineSize(cache_line_size);
+    return;
+  }
 
-        std::vector<Component*> sms;
-        for(Component* sm : parent->GetChildren())
-            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
-                sms.push_back(sm);
-        
-        if((ret = cache->InsertBetweenParentAndChildren(parent, sms, true)) != 0)
-        {
-            cerr << "parseCaches:InsertBetweenParentAndChildren 1 failed with return code " << ret << endl;
-        }
-        
-        //insert DP with latency
-        if(latency != -1)
-        {
-            std::vector<Component*> threads = parent->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
-            for(Component* t: threads)
-                new DataPath(cache, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
-        }
+  const json &cL1_5 = constant["l1.5"];
+
+  size_t cL1_5FetchGranularity = cL1_5["fetchGranularity"]["size"].get<size_t>();
+
+  size_t cL1_5Size = cL1_5["size"]["size"].get<size_t>();
+
+  int cL1_5LineSize = -1;
+  if (auto it = cL1_5.find("lineSize"); it != cL1_5.end())
+    cL1_5LineSize = (*it)["size"].get<size_t>();
+
+  // create one constant cache per MP
+  std::vector<Component *> cL1_5Caches (mps.size());
+
+  size_t cL1_5Id = 0;
+
+  for (auto mp : mps) {
+    cL1_5Caches[cL1_5Id] = new Cache(mp, cL1_5Id, "Constant L1.5", cL1_5Size, -1, cL1_5LineSize);
+
+    cL1_5Caches[cL1_5Id]->attrib["fetchGranularity"] = reinterpret_cast<void *>(
+      new size_t (cL1_5FetchGranularity)
+    );
+
+    cL1_5Id++;
+  }
+
+  if (auto it = cL1_5.find("latency"); it != cL1_5.end()) {
+    double cL1_5Latency = (*it)["mean"].get<double>();
+
+    auto coreIt = cores.begin();
+
+    for (auto cL1_5Cache : cL1_5Caches)
+      for (size_t i = 0; i < numCoresPerMP; i++, coreIt++)
+        new DataPath(cL1_5Cache, *coreIt, DataPathOrientation::Oriented, DataPathType::Logical, -1, cL1_5Latency);
+  }
+
+  const json &cL1 = constant["l1"];
+
+  if (auto it = cL1.find("sharedWith"); it != cL1.end())
+    return; // contained in either L1, Texture or ReadOnly
+
+  size_t cL1FetchGranularity = cL1["fetchGranularity"]["size"].get<size_t>();
+
+  size_t cL1Size = cL1["size"]["size"].get<size_t>();
+
+  int cL1LineSize = -1;
+  if (auto it = cL1.find("lineSize"); it != cL1.end())
+    cL1LineSize = (*it)["size"].get<size_t>();
+
+  uint32_t amountPerMP = cL1.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> cL1Caches ( mps.size() * amountPerMP );
+
+  size_t cL1Id = 0;
+
+  for (auto cL1_5Cache : cL1_5Caches) {
+    for (uint32_t i = 0; i < amountPerMP; i++, cL1Id++) {
+      cL1Caches[cL1Id] = new Cache(cL1_5Cache, cL1Id, "Constant L1", cL1LineSize, -1, cL1Size);
+      cL1Caches[cL1Id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new size_t (cL1FetchGranularity) );
     }
-    else if(shared_on == 1) //shared on SM
-    {
-        std::vector<Component*> sms = root->GetAllSubcomponentsByType(sys_sage::ComponentType::Subdivision);
-        cout << endl << endl << endl << "=====      ===== ENTERING elseif for  - " << header_name << "sms (size=:" << sms.size() << endl << endl << endl;
-        for(Component * sm : sms)
-        {
-            if(static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
-            {
-                Component* parent = sm;
-                //if L2 is not shared on GPU, it will be the parent
-                if(cache_type != "L2" && !L2_shared_on_gpu)
-                {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
-                    for(Component * cache: caches){
-                        if(static_cast<Cache*>(cache)->GetCacheName() == "L2"){
-                            parent = cache;
-                            break;
-                        }
-                    }
-                }
-                //constant L1 is child of constant L1.5
-                if(cache_type == "Constant_L1")
-                {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
-                    for(Component * cache: caches){
-                        if(static_cast<Cache*>(cache)->GetCacheName() == "Constant_L1.5"){
-                            parent = cache;
-                            break;
-                        }
-                    }
-                }
+  }
 
-                std::vector<Component*> threads = sm->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
-                for(int i=0; i<caches_per_sm; i++)
-                {
-                    Cache * cache = new Cache(parent, i, cache_type);
-                    if(size != -1)
-                        cache->SetCacheSize(size);
-                    if(cache_line_size != -1)
-                        cache->SetCacheLineSize(cache_line_size);
+  double cL1Latency = cL1["latency"]["mean"].get<double>();
 
-                    int cores_per_cache = (*reinterpret_cast<int*>(root->attrib["Number_of_cores_per_SM"]))/caches_per_sm;
+  double cL1MissPenalty = -1;
+  if (auto it = cL1.find("missPenalty"); it != cL1.end())
+    cL1MissPenalty = (*it)["value"].get<double>();
 
-                    for(Component * thread : threads)
-                    {
-                        //if multiple caches per SM, move 1/n-th of threads (by their ID) under each cache
-                        int core_id = thread->GetId();
-                        if(core_id >= cores_per_cache*(i) && core_id < cores_per_cache*(i+1))
-                        {
-                            //for L1 and L2 caches, insert them between them and their cores as children
-                            if((cache_type.find("L1") != std::string::npos && cache_type.find("Constant") == std::string::npos) || cache_type == "L2")
-                            {
-                                // cout << "   processing " << header_name << endl;
-                                // cout << "cache_type=" << cache_type << ", Parent = " << parent->GetComponentTypeStr() << " " << parent->GetId() << endl; 
-                                // for(Component * tc: parent->GetChildren())
-                                // {
-                                //     if(tc->GetComponentType() == ComponentType::Thread)
-                                //         cout << ", " << tc->GetComponentTypeStr() << "(parent " << tc->GetParent()->GetComponentTypeStr() << ")";
-                                // }
-                                // cout << endl;
-                                if((ret = cache->InsertBetweenParentAndChild(parent, thread, true)) != 0)
-                                {
-                                    //cerr << "parseCaches:InsertBetweenParentAndChild 2 failed with return code " << ret << endl;
-                                }
-                            }
+  for (size_t i = 0; i < mps.size(); i++) {
+    for (size_t j = 0; j < numCoresPerMP; j++) {
+      for (uint32_t k = 0; k < amountPerMP; k++) {
+        auto dp = new DataPath(cL1Caches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, cL1Latency);
 
-                            if(latency != -1)
-                                new DataPath(cache, thread, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
-                        }
-                    }
-                    cout << threads.size() << " - threads.size()" << ",   processing " << header_name << " == exited the (Component * thread : threads) " << endl;
-                }
-                //cout << "finished iterating over caches_per_sm:" << caches_per_sm << endl;
-            }
-        }
-        cout << "=====      ===== FINISHED iterating over sms (size=:" << sms.size() << endl;
+        if (cL1MissPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (cL1MissPenalty) );
+      }
     }
-    cout << endl << endl << endl << "FINISHING FUNCTION  - " << header_name << endl << endl << endl;
-    return 0;
+  }
 }
 
-void sys_sage::trimRight( std::string& str, const std::string& trimChars)
+static void ParseSharedMemory(const json &shared, std::vector<Component *> &mps,
+                              std::vector<Component *> &cores)
 {
-   std::string::size_type pos = str.find_last_not_of( trimChars );
-   str.erase( pos + 1 );
+  size_t numCoresPerMP = cores.size() / mps.size();
+
+  size_t memPerBlock = shared["sharedMemPerBlock"]["value"].get<size_t>();
+
+  size_t memPerMultiProcessor = shared["sharedMemPerMultiProcessor"]["value"].get<size_t>();
+
+  double latency = -1;
+  if (auto it = shared.find("latency"); it != shared.end())
+    latency = (*it)["mean"].get<double>();
+
+  auto coreIt = cores.begin();
+
+  size_t id = 0;
+
+  for (auto mp : mps) {
+    auto sharedMem = new Memory(mp, id++, "Shared Memory", memPerMultiProcessor);
+
+    sharedMem->attrib["memPerBlock"] = reinterpret_cast<void *>( new long long (memPerBlock) );
+
+    if (latency > 0)
+      for (size_t i = 0; i < numCoresPerMP; i++, coreIt++)
+        new DataPath(sharedMem, *coreIt, DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+  }
 }
 
-void sys_sage::trimLeft( std::string& str, const std::string& trimChars)
+static std::tuple<bool, bool>
+ParseL1Caches(const json &l1, std::vector<Component *> &mps,
+             std::vector<Component *> &cores)
 {
-   std::string::size_type pos = str.find_first_not_of( trimChars );
-   str.erase( 0, pos );
+  size_t numCoresPerMP = cores.size() / mps.size();
+
+  size_t fetchGranularity = 0;
+  if (auto it = l1.find("fetchGranularity"); it != l1.end())
+    fetchGranularity = (*it)["size"].get<size_t>();
+
+  long long size = -1;
+  if (auto it = l1.find("size"); it != l1.end()) {
+    size = (*it)["size"].get<size_t>();
+  }
+
+  int lineSize = -1;
+  if (auto it = l1.find("lineSize"); it != l1.end()) {
+    lineSize = (*it)["size"].get<size_t>();
+  }
+
+  uint32_t amountPerMP = l1.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> l1Caches ( amountPerMP * mps.size() );
+
+  bool sharedWithTexture = false;
+  bool sharedWithReadOnly = false;
+  std::string name ( "L1" );
+
+  if (auto it = l1.find("sharedWith"); it != l1.end()) {
+    for (const auto &elem : *it) {
+      const std::string elemName = elem.get<std::string>();
+
+      if (elemName == "Texture")
+        sharedWithTexture = true;
+      else if (elemName == "Read Only")
+        sharedWithReadOnly = true;
+
+      name += "+" + elemName;
+    }
+  }
+
+  size_t id = 0;
+
+  for (auto mp : mps) {
+    for (uint32_t i = 0; i < amountPerMP; i++, id++) {
+      l1Caches[id] = new Cache(mp, id, name, size, -1, lineSize);
+
+      if (fetchGranularity > 0)
+        l1Caches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new double(fetchGranularity) );
+    }
+  }
+
+  size_t amountCoresPerL1Cache = numCoresPerMP / amountPerMP;
+  auto coreIt = cores.begin();
+
+  for (auto l1Cache : l1Caches) {
+    for (size_t i = 0; i < amountCoresPerL1Cache; i++, coreIt++)
+      l1Cache->InsertChild(*coreIt);
+  }
+
+  if (auto it = l1.find("latency"); it != l1.end()) {
+    double latency = (*it)["mean"].get<double>();
+    
+    double missPenalty = -1;
+    if (auto missPenaltyIt = l1.find("missPenalty"); missPenaltyIt != l1.end())
+      missPenalty = (*missPenaltyIt)["value"].get<double>();
+
+    for (size_t i = 0; i < mps.size(); i++) {
+      for (size_t j = 0; j < numCoresPerMP; j++) {
+        for (uint32_t k = 0; k < amountPerMP; k++) {
+          auto dp = new DataPath(l1Caches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+          if (missPenalty > 0)
+            dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+        }
+      }
+    }
+  }
+
+  return { sharedWithTexture, sharedWithReadOnly };
 }
 
-void sys_sage::trim( std::string& str, const std::string& trimChars)
+static bool ParseTextureCaches(const json &texture, std::vector<Component *> &mps,
+                               std::vector<Component *> &cores)
 {
-   trimRight( str, trimChars );
-   trimLeft( str, trimChars );
+  size_t numCoresPerMP = cores.size() / mps.size();
+
+  size_t fetchGranularity = texture["fetchGranularity"]["size"].get<size_t>();
+
+  size_t size = texture["size"]["size"].get<size_t>();
+
+  int lineSize = -1;
+  if (auto it = texture.find("lineSize"); it != texture.end())
+    lineSize = (*it)["size"].get<size_t>();
+
+  uint32_t amountPerMP = texture.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> textureCaches ( amountPerMP * mps.size() );
+
+  bool sharedWithReadOnly = false;
+  std::string name ( "Texture" );
+
+  if (auto it = texture.find("sharedWith"); it != texture.end()) {
+    for (const auto &elem : *it) {
+      const std::string elemName = elem.get<std::string>();
+
+      if (elemName == "Read Only")
+        sharedWithReadOnly = true;
+
+      name += "+" + elemName;
+    }
+  }
+
+  size_t id = 0;
+
+  for (auto mp : mps) {
+    for (uint32_t i = 0; i < amountPerMP; i++, id++) {
+      textureCaches[id] = new Cache(mp, id, name, size, -1, lineSize);
+      textureCaches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new int(fetchGranularity) );
+    }
+  }
+
+  double latency = texture["latency"]["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = texture.find("missPenalty"); it != texture.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  for (size_t i = 0; i < mps.size(); i++) {
+    for (size_t j = 0; j < numCoresPerMP; j++) {
+      for (uint32_t k = 0; k < amountPerMP; k++) {
+        auto dp = new DataPath(textureCaches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+      }
+    }
+  }
+
+  return sharedWithReadOnly;
+}
+
+static void ParseReadOnlyCaches(const json &readOnly, std::vector<Component *> &mps,
+                                std::vector<Component *> &cores)
+{
+  size_t numCoresPerMP = cores.size() / mps.size();
+
+  size_t fetchGranularity = readOnly["fetchGranularity"]["size"].get<size_t>();
+
+  size_t size = readOnly["size"]["size"].get<size_t>();
+
+  int lineSize = -1;
+  if (auto it = readOnly.find("lineSize"); it != readOnly.end())
+    lineSize = (*it)["size"].get<size_t>();
+
+  uint32_t amountPerMP = readOnly.value("amountPerMultiprocessor", 1);
+  std::vector<Component *> readOnlyCaches ( amountPerMP * mps.size() );
+
+  // no need to inspect the "sharedWith" entry, since it would be empty anyways
+  // in this case
+
+  size_t id = 0;
+
+  for (auto mp : mps) {
+    for (uint32_t i = 0; i < amountPerMP; i++, id++) {
+      readOnlyCaches[id] = new Cache(mp, id, "Read Only", size, -1, lineSize);
+      readOnlyCaches[id]->attrib["fetchGranularity"] = reinterpret_cast<void *>( new int(fetchGranularity) );
+    }
+  }
+
+  double latency = readOnly["latency"]["mean"].get<double>();
+
+  double missPenalty = -1;
+  if (auto it = readOnly.find("missPenalty"); it != readOnly.end())
+    missPenalty = (*it)["value"].get<double>();
+
+  for (size_t i = 0; i < mps.size(); i++) {
+    for (size_t j = 0; j < numCoresPerMP; j++) {
+      for (uint32_t k = 0; k < amountPerMP; k++) {
+        auto dp = new DataPath(readOnlyCaches[k + i * amountPerMP], cores[j + i * numCoresPerMP], DataPathOrientation::Oriented, DataPathType::Logical, -1, latency);
+
+        if (missPenalty > 0)
+          dp->attrib["missPenalty"] = reinterpret_cast<void *>( new double (missPenalty) );
+      }
+    }
+  }
+}
+
+static void ParseGlobalMemory(const json &memory, Chip *gpu,
+                              std::vector<Component *> &mps,
+                              std::vector<Component *> &cores)
+{
+  std::vector<Component *> leafs { gpu };
+
+  ParseMainMemory(memory["main"], cores, leafs);
+
+  if (auto it = memory.find("l3"); it != memory.end())
+    ParseL3Caches(*it, cores, leafs);
+
+  ParseL2Caches(memory["l2"], cores, leafs);
+
+  if (auto it = memory.find("scalarL1"); it != memory.end() && ParseScalarL1Caches(*it, mps, cores, leafs))
+    return;
+
+  size_t amountPerLeaf = mps.size() / leafs.size();
+  auto mpIt = mps.begin();
+
+  for (auto leaf : leafs)
+    for (size_t i = 0; i < amountPerLeaf; i++, mpIt++)
+      leaf->InsertChild(*mpIt);
+
+  // at the end of the function, the leafs are the lowest level of global
+  // memory/cache and the MPs are inserted as the leafs' children
+}
+
+static void ParseLocalMemory(const json &memory, std::vector<Component *> &mps,
+                             std::vector<Component *> &cores)
+{
+  ParseConstantCaches(memory["constant"], mps, cores);
+
+  ParseSharedMemory(memory["shared"], mps, cores);
+
+  auto [l1SharedWithTexture, l1SharedWithReadOnly] = ParseL1Caches(memory["l1"], mps, cores);
+
+  // at this point, the cores are inserted as the L1 caches' children
+
+  bool textureSharedWithReadOnly = false;
+
+  if (auto it = memory.find("texture"); it != memory.end() && !l1SharedWithTexture)
+    textureSharedWithReadOnly = ParseTextureCaches(*it, mps, cores);
+
+  if (auto it = memory.find("readOnly"); it != memory.end() && !l1SharedWithReadOnly && !textureSharedWithReadOnly)
+    ParseReadOnlyCaches(*it, mps, cores);
+}
+
+int sys_sage::ParseMt4g_v1_x(Component *parent, const std::string &path, int gpuId)
+{
+  if (!parent) {
+    std::cerr << "ParseMt4g: parent is nullptr\n";
+    return 1;
+  }
+
+  auto *gpu = new Chip(parent, gpuId, "GPU", ChipType::Gpu);
+  return ParseMt4g_v1_x(gpu, path);
+}
+
+int sys_sage::ParseMt4g_v1_x(Chip *gpu, const std::string &path)
+{
+  if (!gpu) {
+    std::cerr << "ParseMt4g: gpu is nullptr\n";
+    return 1;
+  }
+
+  std::ifstream file (path);
+  if (file.fail()) {
+    std::cerr << "ParseMt4g: could not open file '" << path << "'\n";
+    return 1;
+  }
+
+  json data = json::parse(file);
+
+  ParseGeneral(data["general"], gpu);
+
+  auto [numMPs, numCoresPerMP] = ParseCompute(data["compute"], gpu);
+  size_t numCores = numMPs * numCoresPerMP;
+
+  std::vector<Component *> mps (numMPs);
+  std::vector<Component *> cores (numCores);
+
+  for (int i = 0; i < numMPs; i++) {
+    mps[i] = new Subdivision(i, "Multiprocessor");
+    static_cast<Subdivision *>(mps[i])->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
+  }
+  for (size_t i = 0; i < numCores; i++)
+    cores[i] = new Thread(i, "GPU Core");
+
+  ParseGlobalMemory(data["memory"], gpu, mps, cores);
+
+  ParseLocalMemory(data["memory"], mps, cores);
+
+  return 0;
+}
+
+int sys_sage::ParseMt4g(Component *parent, const std::string &path, int gpuId)
+{
+  return ParseMt4g_v1_x(parent, path, gpuId);
+}
+
+int sys_sage::ParseMt4g(Chip *gpu, const std::string &path)
+{
+  return ParseMt4g_v1_x(gpu, path);
 }

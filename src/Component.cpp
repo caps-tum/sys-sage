@@ -832,6 +832,7 @@ const std::vector<sys_sage::Component*>& sys_sage::Component::GetChildren() cons
 std::vector<sys_sage::Component*>& sys_sage::Component::_GetChildren() {return children;}
 sys_sage::ComponentType::type sys_sage::Component::GetComponentType() const {return componentType;}
 int sys_sage::Component::GetId() const {return id;}
+void sys_sage::Component::SetId(int _id) { id = _id; }
 
 sys_sage::Component::Component(int _id, std::string _name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
 {

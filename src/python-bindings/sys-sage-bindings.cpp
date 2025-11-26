@@ -639,9 +639,9 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("SetGateProperties", &QuantumGate::SetGateProperties, py::arg("name"), py::arg("fidelity"), py::arg("unitary"), "Sets the name, fidelity, unitary and type of the quantum gate")
         .def("Print", &QuantumGate::Print, "Print basic information about the quantum gate to stdout");
 
-    m.def("parseMt4gTopo", (int (*) (Node*,std::string,int, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"), py::arg("gpuID"), py::arg("delim") = ";");
-    m.def("parseMt4gTopo", (int (*) (Component*,std::string,int, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"), py::arg("gpuID"), py::arg("delim") = ";");
-    m.def("parseMt4gTopo", (int (*) (Chip*,std::string, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"),  py::arg("delim") = ";");
+    m.def("ParseMt4g", (int (*) (Component *, const std::string &, int)) &ParseMt4g, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v1_x", (int (*) (Component *, const std::string &, int)) &ParseMt4g_v1_x, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v0_1", (int (*) (Component *, const std::string &, int, const std::string)) &ParseMt4g_v0_1, py::arg("parent"), py::arg("path"), py::arg("gpuId"), py::arg("delim") = ";", "Construct a complete GPU topology by parsing an mt4g output file.");
 
     m.def("parseHwlocOutput", &parseHwlocOutput, "parseHwlocOutput", py::arg("root"), py::arg("xmlPath"));
 
