@@ -6,14 +6,14 @@
 using std::cout;
 using std::endl;
 
-sys_sage::Relation::Relation(RelationType::type _relation_type): type(_relation_type) {}
-sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type): ordered(_ordered), id(_id), type(_relation_type)
+sys_sage::Relation::Relation(RelationType::type _relation_type, RelationCategory::type _relation_category): type(_relation_type), category(_relation_category) {}
+sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category): ordered(_ordered), id(_id), type(_relation_type), category(_relation_category)
 {
     for (Component* c : components) {
         AddComponent(c);
     }
 }
-sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered): Relation(components, _id, _ordered, sys_sage::RelationType::Relation) {}
+sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationCategory::type _relation_category): Relation(components, _id, _ordered, sys_sage::RelationType::Relation), category(_relation_category) {}
 
 void sys_sage::Relation::SetId(int _id) {id = _id;}
 int sys_sage::Relation::GetId() const{ return id; }
@@ -82,6 +82,7 @@ void sys_sage::Relation::Delete()
     delete this;
 }
 sys_sage::RelationType::type sys_sage::Relation::GetType() const{ return type;}
+sys_sage::RelationCategroy::type sys_sage::Relation::GetCategory() const{ return category;}
 std::string sys_sage::Relation::GetTypeStr() const
 {
     std::string ret(sys_sage::RelationType::ToString(type));

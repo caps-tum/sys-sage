@@ -138,7 +138,7 @@ static inline void AppendNewCpuPerf(std::vector<CpuPerf> *cpuPerfs,
   refCounters[cpuNum]++;
 }
 
-int sys_sage::PAPI_start(int eventSet, PAPI_Metrics **metrics)
+int sys_sage::SS_PAPI_start(int eventSet, Relation **metrics)
 {
   if (!metrics)
     return PAPI_EINVAL;
@@ -149,36 +149,50 @@ int sys_sage::PAPI_start(int eventSet, PAPI_Metrics **metrics)
   if (rval != PAPI_OK)
     return rval;
 
-  if (!(*metrics))
-    *metrics = new PAPI_Metrics;
-  else
-    (*metrics)->S__Reset(); // PAPI_start will reset the counters
+  if (!(*metrics)) {
+    std::vector<Component *> empty {};
+    *metrics = new Relation(empty, 0, false, RelationCategory::PAPI_Metrics);
+
+    (*metrics)->attrib["eventSet"] = reinterpret_cast<void *>( new int(eventSet) );
+  } else {
+    if ((*metrics)->GetCategory() != RelationCategory::PAPI_Metrics)
+      return PAPI_EINVAL;
+
+    *reinterpret_cast<int *>((*metrics)->attrib["eventSet"]) = eventSet;
+    *reinterpret_cast<bool *>((*metrics)->attrib["reset"]) = true; // PAPI_start will reset the counters
+  }
 
   return PAPI_OK;
 }
 
-sys_sage::PAPI_Metrics::PAPI_Metrics() : Relation (RelationType::PAPI_Metrics), latestTimestamp (0), reset (true) {}
+//sys_sage::PAPI_Metrics::PAPI_Metrics() : Relation (RelationType::PAPI_Metrics), latestTimestamp (0), reset (true) {}
 
-int sys_sage::PAPI_Metrics::PAPI_reset(int eventSet)
+int sys_sage::SS_PAPI_reset(Relation *metrics)
 {
-  int rval;
-
-  rval = ::PAPI_reset(eventSet);
-  if (rval != PAPI_OK)
-    return rval;
-
-  reset = true;
-
-  return PAPI_OK;
-}
-
-int sys_sage::PAPI_Metrics::PAPI_read(int eventSet, Component *root, bool permanent,
-                                      unsigned long long *timestamp)
-{
-  if (!root)
+  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics)
     return PAPI_EINVAL;
 
   int rval;
+
+  int eventSet = *reinterpret_cast<int *>(metrics->attrib["eventSet"]);
+  rval = PAPI_reset(eventSet);
+  if (rval != PAPI_OK)
+    return rval;
+
+  *reinterpret_cast<bool *>(metrics->attrib["reset"]) = true;
+
+  return PAPI_OK;
+}
+
+int sys_sage::SS_PAPI_read(Relation *metrics, Component *root, bool permanent,
+                           unsigned long long *timestamp)
+{
+  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics || !root)
+    return PAPI_EINVAL;
+
+  int rval;
+
+  int eventSet = *reinterpret_cast<int *>(metrics->attrib["eventSet"]);
 
   std::unique_ptr<int[]> events;
   int numEvents;
@@ -187,7 +201,7 @@ int sys_sage::PAPI_Metrics::PAPI_read(int eventSet, Component *root, bool perman
     return rval;
 
   long long counters[numEvents];
-  rval = ::PAPI_read(eventSet, counters);
+  rval = PAPI_read(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -200,16 +214,18 @@ int sys_sage::PAPI_Metrics::PAPI_read(int eventSet, Component *root, bool perman
   if (!cpu)
     return PAPI_EINVAL; // TODO: better error handling
 
-  return StorePerfCounters(events.get(), numEvents, counters, cpu, permanent, timestamp);
+  return StorePerfCounters(metrics, events.get(), numEvents, counters, cpu, permanent, timestamp);
 }
 
-int sys_sage::PAPI_Metrics::PAPI_accum(int eventSet, Component *root, bool permanent,
-                                       unsigned long long *timestamp)
+int sys_sage::SS_PAPI_accum(Relation *metrics, Component *root, bool permanent,
+                            unsigned long long *timestamp)
 {
-  if (!root)
+  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics || !root)
     return PAPI_EINVAL;
 
   int rval;
+
+  int eventSet = *reinterpret_cast<int *>(metrics->attrib["eventSet"]);
 
   std::unique_ptr<int[]> events;
   int numEvents;
@@ -218,7 +234,7 @@ int sys_sage::PAPI_Metrics::PAPI_accum(int eventSet, Component *root, bool perma
     return rval;
 
   long long counters[numEvents] = { 0 };
-  rval = ::PAPI_accum(eventSet, counters);
+  rval = PAPI_accum(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -231,16 +247,18 @@ int sys_sage::PAPI_Metrics::PAPI_accum(int eventSet, Component *root, bool perma
   if (!cpu)
     return PAPI_EINVAL; // TODO: better error handling
 
-  return AccumPerfCounters(events.get(), numEvents, counters, cpu, permanent, timestamp);
+  return AccumPerfCounters(metrics, events.get(), numEvents, counters, cpu, permanent, timestamp);
 }
 
-int sys_sage::PAPI_Metrics::PAPI_stop(int eventSet, Component *root, bool permanent,
-                                      unsigned long long *timestamp)
+int sys_sage::SS_PAPI_stop(Relation *metrics, Component *root, bool permanent,
+                           unsigned long long *timestamp)
 {
-  if (!root)
+  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics || !root)
     return PAPI_EINVAL;
 
   int rval;
+
+  int eventSet = *reinterpret_cast<int *>(metrics->attrib["eventSet"]);
 
   std::unique_ptr<int[]> events;
   int numEvents;
@@ -249,7 +267,7 @@ int sys_sage::PAPI_Metrics::PAPI_stop(int eventSet, Component *root, bool perman
     return rval;
 
   long long counters[numEvents];
-  rval = ::PAPI_stop(eventSet, counters);
+  rval = PAPI_stop(eventSet, counters);
   if (rval != PAPI_OK)
     return rval;
 
@@ -262,7 +280,7 @@ int sys_sage::PAPI_Metrics::PAPI_stop(int eventSet, Component *root, bool perman
   if (!cpu)
     return PAPI_EINVAL; // TODO: better error handling
 
-  return StorePerfCounters(events.get(), numEvents, counters, cpu, permanent, timestamp);
+  return StorePerfCounters(metrics, events.get(), numEvents, counters, cpu, permanent, timestamp);
 }
 
 // TODO: maybe use another map instead of `attrib` to use integer keys?

@@ -54,7 +54,8 @@ namespace sys_sage {
          *
          * The type of the relation is set to sys_sage::RelationType::Relation.
          */
-        Relation(const std::vector<Component*>& components, int _id = 0, bool _ordered = true);
+        Relation(const std::vector<Component*>& components, int _id = 0, bool _ordered = true,
+                 RelationCategory::type category = RelationCategory::Uncategorized);
         /**
          * @brief Sets the id of the relationship.
          * @param _id The id of the relationship to set.
@@ -70,6 +71,12 @@ namespace sys_sage {
          * @return The current type of the relation (as sys_sage::RelationType::type).
          */
         RelationType::type GetType() const;
+
+        /**
+         * @brief Get the category of the relation.
+         */
+        RelationCategory::type GetCategory() const;
+
         /**
          * @brief Return a human-readable name of the relation type.
          * @return A string like "DataPath" or "QuantumGate".
@@ -169,7 +176,7 @@ namespace sys_sage {
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(RelationType::type _relation_type);
+        Relation(RelationType::type _relation_type, RelationCategory::type _relation_category = RelationCategory::Uncategorized);
         /**
          * @private
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
@@ -178,7 +185,7 @@ namespace sys_sage {
          * @param _ordered Whether the order of components carries semantic meaning.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type);
+        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category = RelationCategory::Uncategorized);
 
         /**
          * @brief Whether order in the component list is meaningful.
@@ -193,9 +200,15 @@ namespace sys_sage {
         /**
          * @brief The type of the relationship (see RelationType::type).
          *
-         * This member variable stores the type or category of the relationship.
+         * This member variable stores the type of the relationship.
          */
         RelationType::type type;
+
+        /**
+         * @brief The category of the relationship.
+         */
+        RelationCategory::type category;
+
         /**
          * @brief A vector of components associated with the relationship.
          * 
