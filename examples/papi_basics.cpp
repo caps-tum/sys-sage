@@ -4,7 +4,7 @@
 #include <memory>
 #include <stdlib.h>
 
-static constexpr int ITER = 5;
+static constexpr int ITER = 3;
 
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
@@ -12,11 +12,11 @@ static constexpr int ITER = 5;
 } while (false)
 
 void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, sys_sage::PAPI_Metrics *metrics)
+                  int numEvents, sys_sage::Relation *metrics)
 {
   std::cout << "total perf counter vals:\n";
   for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
+    std::cout << "  " << eventNames[i] << ": " << sys_sage::GetCpuPerfVal(metrics, events[i]) << '\n';
 
   std::cout << "\nperf counters per CPUs:\n";
   for (const sys_sage::Component *cpu : metrics->GetComponents()) {
@@ -25,7 +25,7 @@ void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
 
     for (int i = 0; i < numEvents; i++) {
       std::cout << "    " << eventNames[i] << ":\n";
-      for (const sys_sage::PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+      for (const sys_sage::PerfEntry &perfEntry : sys_sage::GetCpuPerf(metrics, events[i], cpuNum)->perfEntries)
         std::cout << "      " << perfEntry << '\n';
     }
   }
@@ -81,15 +81,15 @@ int main(int argc, const char **argv)
       FATAL(PAPI_strerror(rval));
   }
 
-  sys_sage::PAPI_Metrics *metrics = nullptr;
-  rval = sys_sage::PAPI_start(eventSet, &metrics);
+  sys_sage::Relation *metrics = nullptr;
+  rval = sys_sage::SS_PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
   for (int i = 0; i < ITER; i++) {
     saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-    rval = metrics->PAPI_read(eventSet, &node, true);
+    rval = sys_sage::SS_PAPI_read(metrics, &node, true);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
   }

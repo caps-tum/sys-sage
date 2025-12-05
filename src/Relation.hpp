@@ -150,6 +150,15 @@ namespace sys_sage {
          */
         int UpdateComponent(Component* _old_component, Component * _new_component);
 
+        /*
+         * @brief Removes the component at the given index.
+         * 
+         * @param index The index of interest.
+         *
+         * @return 0 on success, -1 otherwise.
+         */
+        int RemoveComponent(size_t index);
+
         /**
          * @private
          * @brief Serialize this relation to XML.
@@ -176,7 +185,7 @@ namespace sys_sage {
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(RelationType::type _relation_type, RelationCategory::type _relation_category = RelationCategory::Uncategorized);
+        Relation(RelationType::type _relation_type, RelationCategory::type _relation_category);
         /**
          * @private
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
@@ -185,7 +194,7 @@ namespace sys_sage {
          * @param _ordered Whether the order of components carries semantic meaning.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category = RelationCategory::Uncategorized);
+        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category);
 
         /**
          * @brief Whether order in the component list is meaningful.

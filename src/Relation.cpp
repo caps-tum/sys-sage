@@ -13,7 +13,7 @@ sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id,
         AddComponent(c);
     }
 }
-sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationCategory::type _relation_category): Relation(components, _id, _ordered, sys_sage::RelationType::Relation), category(_relation_category) {}
+sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationCategory::type _relation_category): Relation(components, _id, _ordered, sys_sage::RelationType::Relation, _relation_category) {}
 
 void sys_sage::Relation::SetId(int _id) {id = _id;}
 int sys_sage::Relation::GetId() const{ return id; }
@@ -82,7 +82,7 @@ void sys_sage::Relation::Delete()
     delete this;
 }
 sys_sage::RelationType::type sys_sage::Relation::GetType() const{ return type;}
-sys_sage::RelationCategroy::type sys_sage::Relation::GetCategory() const{ return category;}
+sys_sage::RelationCategory::type sys_sage::Relation::GetCategory() const{ return category;}
 std::string sys_sage::Relation::GetTypeStr() const
 {
     std::string ret(sys_sage::RelationType::ToString(type));
@@ -115,4 +115,17 @@ int sys_sage::Relation::UpdateComponent(Component* _old_component, Component * _
     }
     int index = it - components.begin();
     return UpdateComponent(index, _new_component);
+}
+
+int sys_sage::Relation::RemoveComponent(size_t index)
+{
+    if (index >= components.size())
+        return -1;
+
+    std::vector<Relation *> &cRelations = components[index]->_GetRelations(type);
+    cRelations.erase(std::remove(cRelations.begin(), cRelations.end(), this), cRelations.end());
+
+    components.erase(components.begin() + index);
+
+    return 0;
 }

@@ -55,41 +55,41 @@ int main(int argc, char **argv)
   PAPI_create_eventset(&eventSet);
   PAPI_add_event(eventSet, PAPI_TOT_INS);
 
-  sys_sage::PAPI_Metrics *metrics = nullptr;
-  sys_sage::PAPI_start(eventSet, &metrics);
+  sys_sage::Relation *metrics = nullptr;
+  sys_sage::SS_PAPI_start(eventSet, &metrics);
 
   saxpy(a, b, c, n, alpha);
-  metrics->PAPI_read(eventSet, &node);
+  sys_sage::SS_PAPI_read(metrics, &node);
   migrate(targetCpu);
 
   saxpy(a, b, c, n, alpha);
-  metrics->PAPI_read(eventSet, &node);
+  sys_sage::SS_PAPI_read(metrics, &node);
   migrate(targetTargetCpu);
 
   saxpy(a, b, c, n, alpha);
-  metrics->PAPI_read(eventSet, &node);
+  sys_sage::SS_PAPI_read(metrics, &node);
   migrate(cpu);
 
   saxpy(a, b, c, n, alpha);
-  metrics->PAPI_read(eventSet, &node);
+  sys_sage::SS_PAPI_read(metrics, &node);
 
   PAPI_stop(eventSet, nullptr);
 
   assert(metrics->GetComponents().size() == 3);
 
-  sys_sage::CpuPerf *cpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, cpu);
+  const sys_sage::CpuPerf *cpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, cpu);
   assert(cpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << cpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, cpu) << '\n';
+  std::cout << "CPU " << cpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, cpu) << '\n';
 
-  sys_sage::CpuPerf *targetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetCpu);
+  const sys_sage::CpuPerf *targetCpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, targetCpu);
   assert(targetCpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << targetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetCpu) << '\n';
+  std::cout << "CPU " << targetCpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, targetCpu) << '\n';
 
-  sys_sage::CpuPerf *targetTargetCpuPerf = metrics->GetCpuPerf(PAPI_TOT_INS, targetTargetCpu);
+  const sys_sage::CpuPerf *targetTargetCpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, targetTargetCpu);
   assert(targetTargetCpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << targetTargetCpu << ": " << metrics->GetCpuPerfVal(PAPI_TOT_INS, targetTargetCpu) << '\n';
+  std::cout << "CPU " << targetTargetCpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, targetTargetCpu) << '\n';
 
-  std::cout << "\ntotal: " << metrics->GetCpuPerfVal(PAPI_TOT_INS) << '\n';
+  std::cout << "\ntotal: " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS) << '\n';
 
   return EXIT_SUCCESS;
 }

@@ -16,17 +16,17 @@ static constexpr int hwThreadId = 3;
 
 struct worker_args {
   sys_sage::Component *topoRoot;
-  sys_sage::PAPI_Metrics *metrics = nullptr;
+  sys_sage::Relation *metrics = nullptr;
   int eventSet;
   int rval;
 };
 
 void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, sys_sage::PAPI_Metrics *metrics)
+                  int numEvents, sys_sage::Relation *metrics)
 {
   std::cout << "total perf counter vals:\n";
   for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << metrics->GetCpuPerfVal(events[i]) << '\n';
+    std::cout << "  " << eventNames[i] << ": " << sys_sage::GetCpuPerfVal(metrics, events[i]) << '\n';
 
   std::cout << "\nperf counters per CPUs:\n";
   for (const sys_sage::Component *cpu : metrics->GetComponents()) {
@@ -35,7 +35,7 @@ void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
 
     for (int i = 0; i < numEvents; i++) {
       std::cout << "    " << eventNames[i] << ":\n";
-      for (const sys_sage::PerfEntry &perfEntry : metrics->GetCpuPerf(events[i], cpuNum)->perfEntries)
+      for (const sys_sage::PerfEntry &perfEntry : sys_sage::GetCpuPerf(metrics, events[i], cpuNum)->perfEntries)
         std::cout << "      " << perfEntry << '\n';
     }
   }
@@ -61,13 +61,13 @@ void *work(void *arg)
   auto c = std::make_unique<double[]>(n);
   double alpha = 3.14159;
 
-  wargs->rval = sys_sage::PAPI_start(wargs->eventSet, &wargs->metrics);
+  wargs->rval = sys_sage::SS_PAPI_start(wargs->eventSet, &wargs->metrics);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
   saxpy(a.get(), b.get(), c.get(), n, alpha);
 
-  wargs->rval = wargs->metrics->PAPI_stop(wargs->eventSet, wargs->topoRoot);
+  wargs->rval = sys_sage::SS_PAPI_stop(wargs->metrics, wargs->topoRoot);
   if (wargs->rval != PAPI_OK)
     return nullptr;
 
