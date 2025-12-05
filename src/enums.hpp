@@ -148,11 +148,11 @@ namespace sys_sage {
      * @brief Enumerates all supported relation categories in sys-sage.
      */
     namespace RelationCategory {
-        using type = int32_t;
+        using type = int32_t; /**< RelationCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
-        constexpr type Any = -1;
-        constexpr type Uncategorized = 0;
-        constexpr type PAPI_Metrics = 1;
+        constexpr type Any = -1; /**< Any category. */
+        constexpr type Uncategorized = 0; /**< An uncategorized relation. */
+        constexpr type PAPI_Metrics = 1; /**< A relation used for capturing PAPI metrics. */
     }
 
     /**
