@@ -150,7 +150,7 @@ namespace sys_sage {
          */
         int UpdateComponent(Component* _old_component, Component * _new_component);
 
-        /*
+        /**
          * @brief Removes the component at the given index.
          * 
          * @param index The index of interest.

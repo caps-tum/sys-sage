@@ -286,6 +286,10 @@ PYBIND11_MODULE(sys_sage, m) {
     m.attr("RELATION_TYPE_QUANTUMGATE") = RelationType::QuantumGate;
     m.attr("RELATION_TYPE_COUPLINGMAP") = RelationType::CouplingMap;
 
+    m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
+    m.attr("RELATION_CATEGORY_UNCATEGORIZED") = RelationCategory::Uncategorized;
+    m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
+
     m.attr("DATAPATH_TYPE_ANY") = DataPathType::Any;
     m.attr("DATAPATH_TYPE_NONE") = DataPathType::None;
     m.attr("DATAPATH_TYPE_LOGICAL") = DataPathType::Logical;
@@ -508,6 +512,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def(py::init<const std::vector<Component*> &, int, bool>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true)
         .def_property("id", &Relation::GetId, &Relation::SetId)
         .def_property_readonly("type", &Relation::GetType)
+        .def_property_readonly("category", &Relation::GetCategory)
         .def_property_readonly("ordered", &Relation::IsOrdered)
         .def_property_readonly("components", &Relation::GetComponents)
         .def("__setitem__", [](Relation& self, const std::string& name, py::object value) {
@@ -594,6 +599,60 @@ PYBIND11_MODULE(sys_sage, m) {
             read_complex_attributes = *search_custom_complex_attrib_key_fcn;
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
+
+#ifdef PAPI_METRICS
+    py::class_<PerfEntry, std::unique_ptr<PerfEntry, py::nodelete>>(m, "PerfEntry")
+      .def_readwrite("timestamp", &PerfEntry::timestamp)
+      .def_readwrite("value", &PerfEntry::value)
+      .def_readwrite("permanent", &PerfEntry::permanent)
+
+      .def("__str__", [](PerfEntry &self){
+        std::string str = "{ .timestamp = ";
+        str += self.timestamp;
+        str += ", .value = ";
+        str += self.value;
+        str += " }";
+
+        return str;
+      });
+
+    py::class_<CpuPerf, std::unique_ptr<CpuPerf, py::nodelete>>(m, "CpuPerf")
+      .def_readwrite("perfEntries", &CpuPerf::perfEntries)
+      .def_readwrite("cpuNum", &CpuPerf::cpuNum);
+
+    m.def("SS_PAPI_start", [](int eventSet, Relation *metrics) {
+      int rval = SS_PAPI_start(eventSet, &metrics);
+      return std::make_tuple(rval, metrics);
+    }, py::arg("eventSet"), py::arg("metrics"));
+
+    m.def("SS_PAPI_reset", &SS_PAPI_reset, py::arg("metrics"));
+
+    m.def("SS_PAPI_read", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_read(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_accum", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_accum(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_stop", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_stop(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("GetCpuPerfVal", &GetCpuPerfVal, py::arg("metrics"), py::arg("event"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0);
+
+    m.def("GetCpuPerf", &GetCpuPerf, py::arg("metrics"), py::arg("event"), py::arg("cpuNum"));
+
+#endif
 }
 
 

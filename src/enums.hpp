@@ -144,6 +144,9 @@ namespace sys_sage {
         }
     }
 
+    /**
+     * @brief Enumerates all supported relation categories in sys-sage.
+     */
     namespace RelationCategory {
         using type = int32_t;
 
