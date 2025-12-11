@@ -152,7 +152,9 @@ namespace sys_sage {
 
         constexpr type Any = -1; /**< Any category. */
         constexpr type Uncategorized = 0; /**< An uncategorized relation. */
+#ifdef PAPI
         constexpr type PAPI_Metrics = 1; /**< A relation used for capturing PAPI metrics. */
+#endif
     }
 
     /**

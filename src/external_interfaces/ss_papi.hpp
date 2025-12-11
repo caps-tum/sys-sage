@@ -1,8 +1,9 @@
-#ifdef PAPI_METRICS
+#ifdef PAPI
 
-#ifndef SRC_EXTERNAL_INTERFACES_PAPI_HPP
-#define SRC_EXTERNAL_INTERFACES_PAPI_HPP
+#ifndef SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
+#define SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
 
+#include <papi.h>
 #include <unordered_map>
 #include <vector>
 #include <ostream>
@@ -146,6 +147,6 @@ namespace sys_sage {
  */
 std::ostream &operator<<(std::ostream &stream, const sys_sage::PerfEntry &perfEntry);
 
-#endif // SRC_EXTERNAL_INTERFACES_PAPI_HPP
+#endif // SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
 
-#endif // PAPI_METRICS
+#endif // PAPI

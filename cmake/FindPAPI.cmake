@@ -1,58 +1,49 @@
-# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
-# file Copyright.txt or https://cmake.org/licensing for details.
+# The content of this file has been taken from LLNL perf-dump.
+#
+# source: https://github.com/LLNL/perf-dump/blob/master/cmake/FindPAPI.cmake (Apache License 2.0)
+# modifications: removed `PAPI_PREFIX_DIRS` variable from the `marked_as_advanced`
 
-#[=======================================================================[.rst:
-FindPAPI
--------
+###############################################################################
 
-Finds the PAPI library.
+# Try to find PAPI headers and libraries.
+#
+# Usage of this module as follows:
+#
+#     find_package(PAPI)
+#
+# Variables used by this module, they can change the default behaviour and need
+# to be set before calling find_package:
+#
+#  PAPI_PREFIX         Set this variable to the root installation of
+#                      libpapi if the module has problems finding the
+#                      proper installation path.
+#
+# Variables defined by this module:
+#
+#  PAPI_FOUND              System has PAPI libraries and headers
+#  PAPI_LIBRARIES          The PAPI library
+#  PAPI_INCLUDE_DIRS       The location of PAPI headers
 
-Result Variables
-^^^^^^^^^^^^^^^^
-
-``PAPI_FOUND``
-  True if the system has the PAPI library.
-``PAPI_INCLUDE_DIRS``
-  Include directories needed to use PAPI.
-``PAPI_LIBRARIES``
-  Libraries needed to link to PAPI.
-
-Cache Variables
-^^^^^^^^^^^^^^^
-
-``PAPI_INCLUDE_DIR``
-  The directory containing ``papi.h``.
-``PAPI_LIBRARY``
-  The path to the PAPI library.
-
-#]=======================================================================]
-
-find_path(PAPI_ROOT_DIR
+find_path(PAPI_PREFIX
     NAMES include/papi.h
-    HINTS ENV PAPI_INSTALL_DIR
 )
 
-find_library(PAPI_LIBRARY
-    NAMES papi
-    HINTS ${PAPI_ROOT_DIR}/lib
+find_library(PAPI_LIBRARIES
+    # Pick the static library first for easier run-time linking.
+    NAMES libpapi.so libpapi.a papi
+    HINTS ${PAPI_PREFIX}/lib ${HILTIDEPS}/lib
 )
 
-find_path(PAPI_INCLUDE_DIR
+find_path(PAPI_INCLUDE_DIRS
     NAMES papi.h
-    HINTS ${PAPI_ROOT_DIR}/include
-    PATH_SUFFIXES include
+    HINTS ${PAPI_PREFIX}/include ${HILTIDEPS}/include
 )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PAPI DEFAULT_MSG
-    PAPI_LIBRARY
-    PAPI_INCLUDE_DIR
+    PAPI_LIBRARIES
+    PAPI_INCLUDE_DIRS
 )
-
-if(PAPI_FOUND)
-  set(PAPI_LIBRARIES ${PAPI_LIBRARY})
-  set(PAPI_INCLUDE_DIRS ${PAPI_INCLUDE_DIR})
-endif()
 
 mark_as_advanced(
     PAPI_LIBRARIES

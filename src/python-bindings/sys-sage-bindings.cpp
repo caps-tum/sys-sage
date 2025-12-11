@@ -288,7 +288,9 @@ PYBIND11_MODULE(sys_sage, m) {
 
     m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
     m.attr("RELATION_CATEGORY_UNCATEGORIZED") = RelationCategory::Uncategorized;
+#ifdef PAPI
     m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
+#endif
 
     m.attr("DATAPATH_TYPE_ANY") = DataPathType::Any;
     m.attr("DATAPATH_TYPE_NONE") = DataPathType::None;
@@ -600,7 +602,7 @@ PYBIND11_MODULE(sys_sage, m) {
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
 
-#ifdef PAPI_METRICS
+#ifdef PAPI
     py::class_<PerfEntry, std::unique_ptr<PerfEntry, py::nodelete>>(m, "PerfEntry")
       .def_readwrite("timestamp", &PerfEntry::timestamp)
       .def_readwrite("value", &PerfEntry::value)

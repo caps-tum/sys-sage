@@ -1,5 +1,4 @@
 #include "sys-sage.hpp"
-#include <papi.h>
 #include <algorithm>
 #include <chrono>
 #include <fstream>

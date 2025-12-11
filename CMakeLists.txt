@@ -85,7 +85,7 @@ option(DS_HWLOC "Build and install data source hwloc (Retrieves hwloc topology i
 option(DS_MT4G "Build and install data source mt4g (Compute and memory topology of NVidia GPUs)" OFF)
 option(DS_NUMA "Build and install data source caps-numa-benchmark" OFF)
 option(QDMI "Build with QDMI for Quantum Systems" OFF)
-option(PAPI_METRICS "Build and install performance metrics functionality using PAPI" OFF)
+option(PAPI "Build and install performance metrics functionality using PAPI" OFF)
 
 option(TEST "Build tests" OFF)
 option(TEST_ASAN "Build tests with enabled address sanitizers" OFF)
@@ -99,7 +99,7 @@ if(DATA_SOURCES)
     set(DS_NUMA ON)
 endif()
 
-if(PAPI_METRICS)
+if(PAPI)
   find_package(PAPI REQUIRED)
   include_directories(${PAPI_INCLUDE_DIRS})
   link_libraries(${PAPI_LIBRARIES})

@@ -1,5 +1,4 @@
 #include "sys-sage.hpp"
-#include <papi.h>
 #include <errno.h>
 #include <errno.h>
 #include <stdlib.h>

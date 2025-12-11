@@ -1,5 +1,9 @@
+/*
+ * Basic example showcasing the usage of the sys-sage PAPI wrapper functions
+ * together with plain PAPI.
+ */
+
 #include "sys-sage.hpp"
-#include <papi.h>
 #include <iostream>
 #include <memory>
 #include <stdlib.h>

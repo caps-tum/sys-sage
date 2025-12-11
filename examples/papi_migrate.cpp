@@ -1,5 +1,4 @@
 #include "sys-sage.hpp"
-#include <papi.h>
 #include <assert.h>
 #include <iostream>
 #include <pthread.h>
