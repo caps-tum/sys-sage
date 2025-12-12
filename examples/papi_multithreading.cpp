@@ -82,7 +82,12 @@ int main(int argc, const char **argv)
   if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
     return EXIT_FAILURE;
 
-  const std::set<int> cpuIds { 1, 3, 5, 7 };
+  const std::set<sys_sage::Component *> cpus {
+    node.GetSubcomponentById(1, sys_sage::ComponentType::Thread), // CPU 1
+    node.GetSubcomponentById(3, sys_sage::ComponentType::Thread), // CPU 3
+    node.GetSubcomponentById(5, sys_sage::ComponentType::Thread), // CPU 5
+    node.GetSubcomponentById(7, sys_sage::ComponentType::Thread), // CPU 7
+  };
 
   int rval;
   size_t s;
@@ -96,7 +101,7 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  int eventSets[cpuIds.size()];
+  int eventSets[cpus.size()];
   for (auto &eventSet : eventSets) {
     eventSet = PAPI_NULL;
     rval = PAPI_create_eventset(&eventSet);
@@ -124,10 +129,10 @@ int main(int argc, const char **argv)
   }
 
   // attach event sets to the CPUs given by `cpuIds`
-  PAPI_option_t opts[cpuIds.size()];
-  for (s = 0; auto cpuId : cpuIds) {
+  PAPI_option_t opts[cpus.size()];
+  for (s = 0; auto cpu : cpus) {
     opts[s].cpu.eventset = eventSets[s];
-    opts[s].cpu.cpu_num = cpuId;
+    opts[s].cpu.cpu_num = cpu->GetId();
     rval = PAPI_set_opt(PAPI_CPU_ATTACH, &opts[s]);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
@@ -136,15 +141,15 @@ int main(int argc, const char **argv)
   }
 
   // pin worker threads to the CPUs
-  pthread_attr_t attrs[cpuIds.size()];
-  cpu_set_t cpuSets[cpuIds.size()];
-  for (s = 0; auto cpuId : cpuIds) {
+  pthread_attr_t attrs[cpus.size()];
+  cpu_set_t cpuSets[cpus.size()];
+  for (s = 0; auto cpu : cpus) {
     rval = pthread_attr_init(&attrs[s]);
     if (rval != 0)
       FATAL(strerror(rval));
 
     CPU_ZERO(&cpuSets[s]);
-    CPU_SET(cpuId, &cpuSets[s]);
+    CPU_SET(cpu->GetId(), &cpuSets[s]);
     rval = pthread_attr_setaffinity_np(&attrs[s], sizeof(cpu_set_t), &cpuSets[s]);
     if (rval != 0)
       FATAL(strerror(rval));
@@ -153,9 +158,9 @@ int main(int argc, const char **argv)
   }
 
   // spawn worker threads
-  pthread_t workers[cpuIds.size()];
-  worker_args wargs[cpuIds.size()];
-  for (s = 0; s < cpuIds.size(); s++) {
+  pthread_t workers[cpus.size()];
+  worker_args wargs[cpus.size()];
+  for (s = 0; s < cpus.size(); s++) {
     wargs[s].root = &node;
     wargs[s].eventSet = eventSets[s];
 
@@ -164,7 +169,7 @@ int main(int argc, const char **argv)
       FATAL(strerror(rval));
   }
 
-  for (s = 0; s < cpuIds.size(); s++) {
+  for (s = 0; s < cpus.size(); s++) {
     pthread_join(workers[s], nullptr);
     pthread_attr_destroy(&attrs[s]);
 
@@ -180,20 +185,20 @@ int main(int argc, const char **argv)
       FATAL(PAPI_strerror(rval));
   }
 
-  PAPI_shutdown();
-
-  for (s = 0; auto cpuId : cpuIds) {
+  for (s = 0; auto cpu : cpus) {
     // make sure that sys-sage captured the correct CPU
     assert(wargs[s].metrics->GetComponents().size() == 1
-           && wargs[s].metrics->GetComponent(0)->GetId() == cpuId);
+           && wargs[s].metrics->GetComponent(0) == cpu);
 
     // print perf counter values
-    std::cout << "perf counters on CPU " << cpuId << ":\n";
+    std::cout << "metrics on CPU " << cpu->GetId() << ":\n";
     for (int i = 0; i < numEvents; i++)
-      std::cout << "  " << eventNames[i] << ": " << sys_sage::GetCpuPerfVal(wargs[s].metrics, events[i], cpuId) << '\n';
+      std::cout << "  " << eventNames[i] << ": " << wargs[s].metrics->GetPAPImetric(events[i], cpu->GetId()) << '\n';
 
     s++;
   }
+
+  PAPI_shutdown();
 
   return EXIT_SUCCESS;
 }

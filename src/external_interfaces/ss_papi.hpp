@@ -108,38 +108,6 @@ namespace sys_sage {
   int SS_PAPI_stop(Relation *metrics, Component *root, bool permanent = false,
                    unsigned long long *timestamp = nullptr);
 
-  /*
-   * @brief Get the perf counter value of a specific event.
-   *
-   * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
-   *                that represents the eventSet.
-   * @param event The event of interest.
-   * @param cpuNum An optional parameter used to filter out the perf counter
-   *               value of a single CPU. If the value is -1, the perf
-   *               counter value of all CPUs combined is provided.
-   * @param timestamp An optional parameter used to filter out the perf
-   *        counter value belonging to a specific perf counter reading. A
-   *        value of 0 refers to the latest reading.
-   *
-   * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
-   */
-  long long GetCpuPerfVal(const Relation *metrics, int event, int cpuNum = -1,
-                          unsigned long long timestamp = 0);
-
-
-  /*
-   * @brief Get all perf counter values of a specific event and CPU.
-   *
-   * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
-   *                that represents the eventSet.
-   * @param event The event of interest.
-   * @param cpuNum The CPU of interest.
-   *
-   * @return A valid pointer to an object containing the perf counter values,
-   *         if such an object exists for the given paramters, nullptr otherwise.
-   */
-  const CpuPerf *GetCpuPerf(const Relation *metrics, int event, int cpuNum);
-
 }
 
 /*

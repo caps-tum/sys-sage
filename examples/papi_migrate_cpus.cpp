@@ -1,3 +1,19 @@
+/*
+ * This example showcases the result of multiple perf counter readings when
+ * the software thread migrates across multiple CPUs.
+ *
+ * In this example, we...
+ *
+ *   - ...let the main thread repeatedly perform calculations and read the
+ *        perf counters on different CPUs.
+ *   - ...make use of sys-sage PAPI to track the different CPUs.
+ *   - ...print the perf counters on each CPU.
+ *
+ * This example can (and should) be modified by using `SS_PAPI_accum` instead
+ * of `SS_PAPI_read` or by using differnt function arguments to see how the
+ * sys-sage PAPI integration would handle these scenarios.
+ */
+
 #include "sys-sage.hpp"
 #include <assert.h>
 #include <iostream>
@@ -76,19 +92,23 @@ int main(int argc, char **argv)
 
   assert(metrics->GetComponents().size() == 3);
 
-  const sys_sage::CpuPerf *cpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, cpu);
-  assert(cpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << cpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, cpu) << '\n';
+  // Depending on what is done above, assert certain properties and print
+  // resultsto validate certain assumptions. Assertions may fail sometimes,
+  // since behavior under thread migration is hard to predict with certainty.
 
-  const sys_sage::CpuPerf *targetCpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, targetCpu);
-  assert(targetCpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << targetCpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, targetCpu) << '\n';
+  const sys_sage::CpuPerf *cpuMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, cpu);
+  assert(cpuMetrics != nullptr && cpuMetrics->perfEntries.size() == 1);
+  std::cout << "CPU " << cpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, cpu) << '\n';
 
-  const sys_sage::CpuPerf *targetTargetCpuPerf = sys_sage::GetCpuPerf(metrics, PAPI_TOT_INS, targetTargetCpu);
-  assert(targetTargetCpuPerf->perfEntries.size() == 1);
-  std::cout << "CPU " << targetTargetCpu << ": " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS, targetTargetCpu) << '\n';
+  const sys_sage::CpuPerf *targetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetCpu);
+  assert(targetMetrics != nullptr && targetMetrics->perfEntries.size() == 1);
+  std::cout << "CPU " << targetCpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, targetCpu) << '\n';
 
-  std::cout << "\ntotal: " << sys_sage::GetCpuPerfVal(metrics, PAPI_TOT_INS) << '\n';
+  const sys_sage::CpuPerf *targetTargetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetTargetCpu);
+  assert(targetTargetMetrics != nullptr && targetTargetMetrics->perfEntries.size() == 1);
+  std::cout << "CPU " << targetTargetCpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, targetTargetCpu) << '\n';
+
+  std::cout << "\ntotal: " << metrics->GetPAPImetric(PAPI_TOT_INS) << '\n';
 
   return EXIT_SUCCESS;
 }

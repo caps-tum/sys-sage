@@ -512,13 +512,13 @@ int sys_sage::SS_PAPI_stop(Relation *metrics, Component *root, bool permanent,
   return StorePerfCounters(metrics, events.get(), numEvents, counters, cpu, permanent, timestamp);
 }
 
-long long sys_sage::GetCpuPerfVal(const Relation *metrics, int event, int cpuNum,
-                                  unsigned long long timestamp)
+long long sys_sage::Relation::GetPAPImetric(int event, int cpuNum,
+                                            unsigned long long timestamp) const
 {
-  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics)
-    return PAPI_EINVAL;
+  if (category != RelationCategory::PAPI_Metrics)
+    return 0;
 
-  auto meta = reinterpret_cast<MetaData *>( metrics->attrib.find(metaKey)->second );
+  auto meta = reinterpret_cast<MetaData *>( attrib.find(metaKey)->second );
 
   int rval;
 
@@ -527,14 +527,14 @@ long long sys_sage::GetCpuPerfVal(const Relation *metrics, int event, int cpuNum
   if (rval != PAPI_OK)
     return 0;
 
-  auto eventIt = metrics->attrib.find(buf);
-  if (eventIt == metrics->attrib.end())
+  auto eventIt = attrib.find(buf);
+  if (eventIt == attrib.end())
     return 0;
 
   auto *cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
   unsigned long long targetTimestamp = timestamp == 0 ? meta->latestTimestamp : timestamp;
   long long value = 0;
-  
+
   for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
     if (cpuNum < 0 || it->cpuNum == cpuNum) {
       auto perfEntryIt = std::find_if(it->perfEntries.rbegin(), it->perfEntries.rend(),
@@ -556,11 +556,10 @@ long long sys_sage::GetCpuPerfVal(const Relation *metrics, int event, int cpuNum
   return value;
 }
 
-const CpuPerf *sys_sage::GetCpuPerf(const Relation *metrics, int event,
-                                    int cpuNum)
+const CpuPerf *sys_sage::Relation::GetAllPAPImetrics(int event, int cpuNum) const
 {
-  if (!metrics || metrics->GetCategory() != RelationCategory::PAPI_Metrics)
-    return nullptr;
+  if (category != RelationCategory::PAPI_Metrics)
+    return 0;
 
   int rval;
 
@@ -569,8 +568,8 @@ const CpuPerf *sys_sage::GetCpuPerf(const Relation *metrics, int event,
   if (rval != PAPI_OK)
     return nullptr;
 
-  auto eventIt = metrics->attrib.find(buf);
-  if (eventIt == metrics->attrib.end())
+  auto eventIt = attrib.find(buf);
+  if (eventIt == attrib.end())
     return nullptr;
 
   auto *cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
@@ -585,6 +584,37 @@ const CpuPerf *sys_sage::GetCpuPerf(const Relation *metrics, int event,
     return nullptr;
 
   return &(*cpuPerfIt);
+}
+
+void sys_sage::Relation::PrintAllPAPImetrics() const
+{
+  if (category != RelationCategory::PAPI_Metrics)
+    return;
+  
+  int code;
+
+  for (auto cpu : components) {
+    int cpuNum = cpu->GetId();
+    std::cout << "metrics on CPU " << cpuNum << ":\n";
+
+    for (auto &[key, val] : attrib) {
+      if (PAPI_event_name_to_code(key.c_str(), &code) != PAPI_OK) // check if attribute is a PAPI event
+        continue;
+
+      std::cout << "  " << key << ":\n";
+      
+      auto cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( val );
+      auto cpuPerfIt = std::find_if(cpuPerfs->begin(), cpuPerfs->end(),
+                                    [cpuNum](const CpuPerf &cpuPerf)
+                                    {
+                                      return cpuPerf.cpuNum == cpuNum;
+                                    }
+                       );
+
+      for (auto &perfEntry : cpuPerfIt->perfEntries)
+        std::cout << "    " << perfEntry << '\n';
+    }
+  }
 }
 
 std::ostream &operator<<(std::ostream &stream, const PerfEntry &perfEntry)

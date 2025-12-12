@@ -23,6 +23,7 @@
 namespace sys_sage { //forward declaration
     class Component;
     class Qubit;
+    struct CpuPerf;
 }
 
 namespace sys_sage {
@@ -179,6 +180,42 @@ namespace sys_sage {
          * This is a virtual destructor to ensure proper cleanup of derived classes.
          */
         virtual ~Relation() = default;
+
+#ifdef PAPI
+        /**
+         * @brief Get the perf counter value of a specific event and CPU. Only
+         *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
+         *
+         * @param event The event of interest.
+         * @param cpuNum An optional parameter used to specify the CPU of interest.
+         *               If the value is -1, the output contains the sum of perf
+         *               counter values of all CPUs in the relation.
+         * @param timestamp An optional parameter used to specify the perf
+         *        counter value belonging to a specific perf counter reading. A
+         *        value of 0 refers to the latest reading.
+         *
+         * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
+         */
+        long long GetPAPImetric(int event, int cpuNum = -1, unsigned long long timestamp = 0) const;
+
+        /**
+         * @brief Get all perf counter values of a specific event and CPU. Only
+         *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
+         *
+         * @param event The event of interest.
+         * @param cpuNum The CPU of interest.
+         *
+         * @return A valid pointer to an object containing the perf counter values,
+         *         if such an object exists for the given paramters, nullptr otherwise.
+         */
+        const CpuPerf *GetAllPAPImetrics(int event, int cpuNum) const;
+
+        /**
+         * @brief Print PAPI metrics of all CPUs stored in this relation.
+         */
+        void PrintAllPAPImetrics() const;
+#endif
+
     protected:
         /**
          * @private

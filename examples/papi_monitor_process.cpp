@@ -1,3 +1,18 @@
+/*
+ * This example showcases performance monitoring of a child process through
+ * sys-sage PAPI.
+ * 
+ * In this example, we...
+ *
+ *   - initialize PAPI in the parent process.
+ *   - attach an event set to the child process.
+ *   - make the child process run the program given by the command line args
+ *     of the parent process.
+ *   - let the parent process repeatedly take performance measurements of the
+ *     child process.
+ *   - print the perf counters.
+ */
+
 #include "sys-sage.hpp"
 #include <errno.h>
 #include <errno.h>
@@ -13,26 +28,6 @@
   kill(pid, SIGKILL);\
   return EXIT_FAILURE;\
 } while(false)
-
-void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, sys_sage::Relation *metrics)
-{
-  std::cout << "total perf counter vals:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << sys_sage::GetCpuPerfVal(metrics, events[i]) << '\n';
-
-  std::cout << "\nperf counters per CPUs:\n";
-  for (const sys_sage::Component *cpu : metrics->GetComponents()) {
-    int cpuNum = cpu->GetId();
-    std::cout << "  CPU " << cpuNum << ":\n";
-
-    for (int i = 0; i < numEvents; i++) {
-      std::cout << "    " << eventNames[i] << ":\n";
-      for (const sys_sage::PerfEntry &perfEntry : sys_sage::GetCpuPerf(metrics, events[i], cpuNum)->perfEntries)
-        std::cout << "      " << perfEntry << '\n';
-    }
-  }
-}
 
 int main(int argc, char **argv)
 {
@@ -78,13 +73,7 @@ int main(int argc, char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
 
-  char eventNames[numEvents][PAPI_MAX_STR_LEN] = { { '\0' } };
-  for (int i = 0; i < numEvents; i++) {
-    rval = PAPI_event_code_to_name(events[i], eventNames[i]);
-    if (rval != PAPI_OK)
-      FATAL(PAPI_strerror(rval), pid);
-  }
-
+  // attach to child process
   rval = PAPI_attach(eventSet, pid);
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval), pid);
@@ -96,18 +85,28 @@ int main(int argc, char **argv)
 
   ptrace(PTRACE_CONT, pid, nullptr, nullptr);
 
-  waitpid(pid, &status, 0);
+  // take repeated measurements
+  while (true) {
+    usleep(100);
 
-  if ( !(WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT) )
-    FATAL("expected child process to stop right before exit\n", pid);
+    waitpid(pid, &status, WNOHANG);
+    if (WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT)
+      break;
 
-  rval = sys_sage::SS_PAPI_stop(metrics, &node);
-  if (rval != PAPI_OK)
-    FATAL(PAPI_strerror(rval), pid);
+    rval = sys_sage::SS_PAPI_read(metrics, &node, true);
+    if (rval != PAPI_OK)
+      FATAL(PAPI_strerror(rval), pid);
+  }
 
   ptrace(PTRACE_CONT, pid, nullptr, nullptr);
 
   waitpid(pid, &status, 0);
+
+  rval = PAPI_stop(eventSet, nullptr);
+  if (rval != PAPI_OK) {
+    std::cerr << "error: " << PAPI_strerror(rval) << '\n';
+    return EXIT_FAILURE;
+  }
 
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK) {
@@ -121,9 +120,9 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  PAPI_shutdown();
+  metrics->PrintAllPAPImetrics();
 
-  printResults(events, eventNames, numEvents, metrics);
+  PAPI_shutdown();
 
   return EXIT_SUCCESS;
 }

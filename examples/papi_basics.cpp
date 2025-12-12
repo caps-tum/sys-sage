@@ -15,26 +15,6 @@ static constexpr int ITER = 3;
   return EXIT_FAILURE;\
 } while (false)
 
-void printResults(int *events, const char (*eventNames)[PAPI_MAX_STR_LEN],
-                  int numEvents, sys_sage::Relation *metrics)
-{
-  std::cout << "total perf counter vals:\n";
-  for (int i = 0; i < numEvents; i++)
-    std::cout << "  " << eventNames[i] << ": " << sys_sage::GetCpuPerfVal(metrics, events[i]) << '\n';
-
-  std::cout << "\nperf counters per CPUs:\n";
-  for (const sys_sage::Component *cpu : metrics->GetComponents()) {
-    int cpuNum = cpu->GetId();
-    std::cout << "  CPU " << cpuNum << ":\n";
-
-    for (int i = 0; i < numEvents; i++) {
-      std::cout << "    " << eventNames[i] << ":\n";
-      for (const sys_sage::PerfEntry &perfEntry : sys_sage::GetCpuPerf(metrics, events[i], cpuNum)->perfEntries)
-        std::cout << "      " << perfEntry << '\n';
-    }
-  }
-}
-
 void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 {
   for (size_t i = 0; i < n; i++)
@@ -78,13 +58,6 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  char eventNames[numEvents][PAPI_MAX_STR_LEN] = { { '\0' } };
-  for (int i = 0; i < numEvents; i++) {
-    rval = PAPI_event_code_to_name(events[i], eventNames[i]);
-    if (rval != PAPI_OK)
-      FATAL(PAPI_strerror(rval));
-  }
-
   sys_sage::Relation *metrics = nullptr;
   rval = sys_sage::SS_PAPI_start(eventSet, &metrics);
   if (rval != PAPI_OK)
@@ -111,9 +84,9 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  PAPI_shutdown();
+  metrics->PrintAllPAPImetrics();
 
-  printResults(events, eventNames, numEvents, metrics);
+  PAPI_shutdown();
 
   return EXIT_SUCCESS;
 }
