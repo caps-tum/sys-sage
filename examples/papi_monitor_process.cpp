@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
   // take repeated measurements
   while (true) {
-    usleep(100);
+    usleep(1000);
 
     waitpid(pid, &status, WNOHANG);
     if (WIFSTOPPED(status) && (status >> 16) == PTRACE_EVENT_EXIT)

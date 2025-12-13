@@ -93,19 +93,19 @@ int main(int argc, char **argv)
   assert(metrics->GetComponents().size() == 3);
 
   // Depending on what is done above, assert certain properties and print
-  // resultsto validate certain assumptions. Assertions may fail sometimes,
+  // results to validate certain assumptions. Assertions may fail sometimes,
   // since behavior under thread migration is hard to predict with certainty.
 
-  const sys_sage::CpuPerf *cpuMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, cpu);
-  assert(cpuMetrics != nullptr && cpuMetrics->perfEntries.size() == 1);
+  const sys_sage::CpuMetrics *cpuMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, cpu);
+  assert(cpuMetrics != nullptr && cpuMetrics->entries.size() == 1);
   std::cout << "CPU " << cpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, cpu) << '\n';
 
-  const sys_sage::CpuPerf *targetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetCpu);
-  assert(targetMetrics != nullptr && targetMetrics->perfEntries.size() == 1);
+  const sys_sage::CpuMetrics *targetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetCpu);
+  assert(targetMetrics != nullptr && targetMetrics->entries.size() == 1);
   std::cout << "CPU " << targetCpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, targetCpu) << '\n';
 
-  const sys_sage::CpuPerf *targetTargetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetTargetCpu);
-  assert(targetTargetMetrics != nullptr && targetTargetMetrics->perfEntries.size() == 1);
+  const sys_sage::CpuMetrics *targetTargetMetrics = metrics->GetAllPAPImetrics(PAPI_TOT_INS, targetTargetCpu);
+  assert(targetTargetMetrics != nullptr && targetTargetMetrics->entries.size() == 1);
   std::cout << "CPU " << targetTargetCpu << ": " << metrics->GetPAPImetric(PAPI_TOT_INS, targetTargetCpu) << '\n';
 
   std::cout << "\ntotal: " << metrics->GetPAPImetric(PAPI_TOT_INS) << '\n';

@@ -23,7 +23,7 @@
 namespace sys_sage { //forward declaration
     class Component;
     class Qubit;
-    struct CpuPerf;
+    struct CpuMetrics;
 }
 
 namespace sys_sage {
@@ -187,28 +187,33 @@ namespace sys_sage {
          *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
          *
          * @param event The event of interest.
-         * @param cpuNum An optional parameter used to specify the CPU of interest.
-         *               If the value is -1, the output contains the sum of perf
-         *               counter values of all CPUs in the relation.
-         * @param timestamp An optional parameter used to specify the perf
-         *        counter value belonging to a specific perf counter reading. A
-         *        value of 0 refers to the latest reading.
+         * @param cpuNum An optional parameter used to distinguish between a
+         *               CPU-centric view and an EventSet-centric view. If the
+         *               value is greater than -1, the perf counter value of
+         *               the CPU with the given `cpuNum` is returned. If it is
+         *               equal to -1, the output contains the sum of perf
+         *               counter values on all CPUs in the relation.
+         * @param timestamp An optional parameter used to select a perf counter
+         *                  value from a specific perf counter reading. A value
+         *                  of 0 refers to the latest reading.
          *
          * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
          */
         long long GetPAPImetric(int event, int cpuNum = -1, unsigned long long timestamp = 0) const;
 
         /**
-         * @brief Get all perf counter values of a specific event and CPU. Only
-         *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
+         * @brief Get all the perf counter values of a specific event that are
+         *        collected on a specific CPU. Only works if this relation is
+         *        of category `RelationCategory::PAPI_Metrics`.
          *
          * @param event The event of interest.
          * @param cpuNum The CPU of interest.
          *
-         * @return A valid pointer to an object containing the perf counter values,
-         *         if such an object exists for the given paramters, nullptr otherwise.
+         * @return A valid pointer to an object containing the perf counter
+         *         values. If such an object doesn't exist for the given
+         *         paramters, `nullptr` is returned.
          */
-        const CpuPerf *GetAllPAPImetrics(int event, int cpuNum) const;
+        const CpuMetrics *GetAllPAPImetrics(int event, int cpuNum) const;
 
         /**
          * @brief Print PAPI metrics of all CPUs stored in this relation.

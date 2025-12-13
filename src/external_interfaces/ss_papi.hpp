@@ -13,17 +13,17 @@ namespace sys_sage {
   /*
    * @brief An object representing a single perf counter value.
    */
-  struct PerfEntry {
+  struct Metric {
     unsigned long long timestamp;
     long long value;
     bool permanent;
   };
-  
+
   /*
-   * @brief An object representing multiple perf counter values of a single CPU.
+   * @brief An object collecting multiple performance metrics of a single CPU.
    */
-  struct CpuPerf {
-    std::vector<PerfEntry> perfEntries;
+  struct CpuMetrics {
+    std::vector<Metric> entries;
     int cpuNum;
   };
 
@@ -48,8 +48,8 @@ namespace sys_sage {
   /*
    * @brief sys-sage wrapper around `PAPI_reset`.
    *
-   * @param metrics The relation of category `PAPI_Metrics` that represents the
-   *                eventSet.
+   * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
+   *                that represents the eventSet.
    *
    * @return If `metrics == nullptr` or `metrics` is not of category
    *         `RelationCategory::PAPI_Metrics`, then `PAPI_EINVAL` is returned,
@@ -111,9 +111,9 @@ namespace sys_sage {
 }
 
 /*
- * @brief Enables easy printing for objects of type `PerfEntry`.
+ * @brief Enables easy printing for objects of type `Metric`.
  */
-std::ostream &operator<<(std::ostream &stream, const sys_sage::PerfEntry &perfEntry);
+std::ostream &operator<<(std::ostream &stream, const sys_sage::Metric &metric);
 
 #endif // SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
 

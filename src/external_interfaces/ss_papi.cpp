@@ -28,7 +28,7 @@ static const char *metaKey = "meta";
 
 static std::optional<int> GetCpuNumFromTid(unsigned long tid)
 {
-  static constexpr unsigned hwThreadIdField = 39;
+  static constexpr unsigned cpuNumField = 39;
 
   std::ifstream procStat ("/proc/" + std::to_string(tid) + "/stat");
   if (!procStat.is_open())
@@ -46,7 +46,7 @@ static std::optional<int> GetCpuNumFromTid(unsigned long tid)
 
   // iterate until the white space before `hwThreadIdField` is found
   pos++;
-  for (unsigned field = 2; field < hwThreadIdField - 1; field++) {
+  for (unsigned field = 2; field < cpuNumField - 1; field++) {
     pos = line.find_first_of(' ', pos + 1);
     if (pos == std::string::npos)
       return std::nullopt;
@@ -125,20 +125,20 @@ static int GetEvents(int eventSet, std::unique_ptr<int[]> &events,
 }
 
 // hope the compiler is smart enough to inline this and to create the objects in-place
-static inline void AppendNewCpuPerf(std::vector<CpuPerf> *cpuPerfs,
-                                    std::unordered_map<int, int> &refCounters,
-                                    unsigned long long timestamp,
-                                    long long value, bool permanent, int cpuNum)
+static inline void AppendNewCpuMetrics(std::vector<CpuMetrics> *eventMetrics,
+                                       std::unordered_map<int, int> &refCounters,
+                                       unsigned long long timestamp,
+                                       long long value, bool permanent, int cpuNum)
 {
-  PerfEntry perfEntry {
+  Metric metric {
     .timestamp = timestamp,
     .value = value,
     .permanent = permanent
   };
 
-  cpuPerfs->push_back(
+  eventMetrics->push_back(
     {
-      .perfEntries = std::vector<PerfEntry> { std::move(perfEntry) },
+      .entries = std::vector<Metric> { std::move(metric) },
       .cpuNum = cpuNum
     }
   );
@@ -160,7 +160,7 @@ static inline void RemoveCpu(Relation *metrics, int cpuNum)
   metrics->RemoveComponent(cpuIt - components.begin());
 }
 
-static void DeletePerfEntries(Relation *metrics)
+static void DeleteEntries(Relation *metrics)
 {
   auto meta = reinterpret_cast<MetaData *>( metrics->attrib[metaKey] );
 
@@ -173,32 +173,33 @@ static void DeletePerfEntries(Relation *metrics)
       continue;
     }
 
-    auto *cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( it->second );
+    auto *eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( it->second );
 
-    auto cpuPerfIt = cpuPerfs->begin();
-    while (cpuPerfIt != cpuPerfs->end()) { // iterate over the CPUs
-      PerfEntry &lastEntry = cpuPerfIt->perfEntries.back();
+    auto cpuMetricsIt = eventMetrics->begin();
+    while (cpuMetricsIt != eventMetrics->end()) { // iterate over the CPUs
+      Metric &lastEntry = cpuMetricsIt->entries.back();
 
       if (!lastEntry.permanent) {
-        cpuPerfIt->perfEntries.pop_back();
-        if (cpuPerfIt->perfEntries.size() == 0) {
-          auto refCountIt = meta->cpuReferenceCounters.find(cpuPerfIt->cpuNum);
+        cpuMetricsIt->entries.pop_back();
+
+        if (cpuMetricsIt->entries.size() == 0) {
+          auto refCountIt = meta->cpuReferenceCounters.find(cpuMetricsIt->cpuNum);
           if (refCountIt->second == 1) {
             meta->cpuReferenceCounters.erase(refCountIt);
-            RemoveCpu(metrics, cpuPerfIt->cpuNum);
+            RemoveCpu(metrics, cpuMetricsIt->cpuNum);
           } else {
             refCountIt->second--;
           }
 
-          cpuPerfIt = cpuPerfs->erase(cpuPerfIt);
+          cpuMetricsIt = eventMetrics->erase(cpuMetricsIt);
           continue;
         }
       }
-      cpuPerfIt++;
+      cpuMetricsIt++;
     }
 
-    if (cpuPerfs->size() == 0) { // no entries left for the event
-      delete cpuPerfs;
+    if (eventMetrics->size() == 0) { // no entries left for the event
+      delete eventMetrics;
       it = metrics->attrib.erase(it);
     } else {
       it++;
@@ -215,7 +216,7 @@ static int StorePerfCounters(Relation *metrics, const int *events, int numEvents
   int rval;
 
   if (meta->reset) {
-    DeletePerfEntries(metrics);
+    DeleteEntries(metrics);
     meta->reset = false;
   }
 
@@ -232,28 +233,28 @@ static int StorePerfCounters(Relation *metrics, const int *events, int numEvents
     if (rval != PAPI_OK)
       return rval;
 
-    std::vector<CpuPerf> *cpuPerfs;
+    std::vector<CpuMetrics> *eventMetrics;
 
-    auto eventIt = metrics->attrib.find(buf);
-    if (eventIt == metrics->attrib.end()) {
-      cpuPerfs = new std::vector<CpuPerf>;
-      AppendNewCpuPerf(cpuPerfs, meta->cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
-      metrics->attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
+    auto eventMetricsIt = metrics->attrib.find(buf);
+    if (eventMetricsIt == metrics->attrib.end()) {
+      eventMetrics = new std::vector<CpuMetrics>;
+      AppendNewCpuMetrics(eventMetrics, meta->cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
+      metrics->attrib[buf] = reinterpret_cast<void *>( eventMetrics );
 
       continue;
     }
     
-    cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
+    eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( eventMetricsIt->second );
 
     long long sum = 0;
-    auto cpuPerfIt = cpuPerfs->end();
-    for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
+    auto cpuMetricsIt = eventMetrics->end();
+    for (auto it = eventMetrics->begin(); it != eventMetrics->end(); it++) {
       if (it->cpuNum == cpu->GetId()) {
-        cpuPerfIt = it;
+        cpuMetricsIt = it;
         continue;
       }
 
-      PerfEntry &lastEntry = it->perfEntries.back();
+      Metric &lastEntry = it->entries.back();
 
       if (lastEntry.timestamp == meta->latestTimestamp && !lastEntry.permanent) {
         sum += lastEntry.value;
@@ -263,13 +264,13 @@ static int StorePerfCounters(Relation *metrics, const int *events, int numEvents
 
     long long value = counters[i] - sum;
 
-    if (cpuPerfIt == cpuPerfs->end()) {
-      AppendNewCpuPerf(cpuPerfs, meta->cpuReferenceCounters, ts, value, permanent, cpu->GetId());
+    if (cpuMetricsIt == eventMetrics->end()) {
+      AppendNewCpuMetrics(eventMetrics, meta->cpuReferenceCounters, ts, value, permanent, cpu->GetId());
     } else {
-      PerfEntry &lastEntry = cpuPerfIt->perfEntries.back();
+      Metric &lastEntry = cpuMetricsIt->entries.back();
 
       if (lastEntry.permanent) {
-        cpuPerfIt->perfEntries.emplace_back(ts, value, permanent);
+        cpuMetricsIt->entries.emplace_back(ts, value, permanent);
       } else {
         lastEntry.timestamp = ts;
         lastEntry.value = value;
@@ -309,28 +310,28 @@ static int AccumPerfCounters(Relation *metrics, const int *events, int numEvents
     if (rval != PAPI_OK)
       return rval;
 
-    std::vector<CpuPerf> *cpuPerfs;
+    std::vector<CpuMetrics> *eventMetrics;
 
-    auto eventIt = metrics->attrib.find(buf);
-    if (eventIt == metrics->attrib.end()) {
-      cpuPerfs = new std::vector<CpuPerf>;
-      AppendNewCpuPerf(cpuPerfs, meta->cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
-      metrics->attrib[buf] = reinterpret_cast<void *>( cpuPerfs );
+    auto eventMetricsIt = metrics->attrib.find(buf);
+    if (eventMetricsIt == metrics->attrib.end()) {
+      eventMetrics = new std::vector<CpuMetrics>;
+      AppendNewCpuMetrics(eventMetrics, meta->cpuReferenceCounters, ts, counters[i], permanent, cpu->GetId());
+      metrics->attrib[buf] = reinterpret_cast<void *>( eventMetrics );
 
       continue;
     }
     
-    cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
+    eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( eventMetricsIt->second );
 
     long long sum = 0;
-    auto cpuPerfIt = cpuPerfs->end();
-    for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
+    auto cpuMetricsIt = eventMetrics->end();
+    for (auto it = eventMetrics->begin(); it != eventMetrics->end(); it++) {
       if (it->cpuNum == cpu->GetId()) {
-        cpuPerfIt = it;
+        cpuMetricsIt = it;
         continue;
       }
 
-      PerfEntry &lastEntry = it->perfEntries.back();
+      Metric &lastEntry = it->entries.back();
 
       if (lastEntry.timestamp == meta->latestTimestamp) {
         if (lastEntry.permanent)
@@ -342,15 +343,15 @@ static int AccumPerfCounters(Relation *metrics, const int *events, int numEvents
 
     long long value = counters[i] + sum;
 
-    if (cpuPerfIt == cpuPerfs->end()) {
-      AppendNewCpuPerf(cpuPerfs, meta->cpuReferenceCounters, ts, value, permanent, cpu->GetId());
+    if (cpuMetricsIt == eventMetrics->end()) {
+      AppendNewCpuMetrics(eventMetrics, meta->cpuReferenceCounters, ts, value, permanent, cpu->GetId());
     } else {
-      PerfEntry &lastEntry = cpuPerfIt->perfEntries.back();
+      Metric &lastEntry = cpuMetricsIt->entries.back();
 
       if (lastEntry.permanent) {
         if (lastEntry.timestamp == meta->latestTimestamp)
           value += lastEntry.value;
-        cpuPerfIt->perfEntries.emplace_back(ts, value, permanent);
+        cpuMetricsIt->entries.emplace_back(ts, value, permanent);
       } else {
         lastEntry.timestamp = ts;
         lastEntry.value += value;
@@ -527,26 +528,26 @@ long long sys_sage::Relation::GetPAPImetric(int event, int cpuNum,
   if (rval != PAPI_OK)
     return 0;
 
-  auto eventIt = attrib.find(buf);
-  if (eventIt == attrib.end())
+  auto eventMetricsIt = attrib.find(buf);
+  if (eventMetricsIt == attrib.end())
     return 0;
 
-  auto *cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
+  auto *eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( eventMetricsIt->second );
   unsigned long long targetTimestamp = timestamp == 0 ? meta->latestTimestamp : timestamp;
   long long value = 0;
 
-  for (auto it = cpuPerfs->begin(); it != cpuPerfs->end(); it++) {
+  for (auto it = eventMetrics->begin(); it != eventMetrics->end(); it++) {
     if (cpuNum < 0 || it->cpuNum == cpuNum) {
-      auto perfEntryIt = std::find_if(it->perfEntries.rbegin(), it->perfEntries.rend(),
-                                      [targetTimestamp](const PerfEntry &perfEntry)
-                                      {
-                                        return perfEntry.timestamp == targetTimestamp;
-                                      }
-                         );
-      if (perfEntryIt == it->perfEntries.rend())
+      auto entryIt = std::find_if(it->entries.rbegin(), it->entries.rend(),
+                                  [targetTimestamp](const Metric &metric)
+                                  {
+                                    return metric.timestamp == targetTimestamp;
+                                  }
+                     );
+      if (entryIt == it->entries.rend())
         continue;
 
-      value += perfEntryIt->value;
+      value += entryIt->value;
 
       if (it->cpuNum == cpuNum)
         break;
@@ -556,7 +557,7 @@ long long sys_sage::Relation::GetPAPImetric(int event, int cpuNum,
   return value;
 }
 
-const CpuPerf *sys_sage::Relation::GetAllPAPImetrics(int event, int cpuNum) const
+const CpuMetrics *sys_sage::Relation::GetAllPAPImetrics(int event, int cpuNum) const
 {
   if (category != RelationCategory::PAPI_Metrics)
     return 0;
@@ -568,22 +569,23 @@ const CpuPerf *sys_sage::Relation::GetAllPAPImetrics(int event, int cpuNum) cons
   if (rval != PAPI_OK)
     return nullptr;
 
-  auto eventIt = attrib.find(buf);
-  if (eventIt == attrib.end())
+  auto eventMetricsIt = attrib.find(buf);
+  if (eventMetricsIt == attrib.end())
     return nullptr;
 
-  auto *cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( eventIt->second );
-  auto cpuPerfIt = std::find_if(cpuPerfs->begin(), cpuPerfs->end(),
-                                [cpuNum](const CpuPerf &cpuPerf)
-                                {
-                                  return cpuPerf.cpuNum == cpuNum;
-                                }
-                   );
+  auto *eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( eventMetricsIt->second );
 
-  if (cpuPerfIt == cpuPerfs->end())
+  auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
+                                   [cpuNum](const CpuMetrics &cpuMetrics)
+                                   {
+                                     return cpuMetrics.cpuNum == cpuNum;
+                                   }
+                      );
+
+  if (cpuMetricsIt == eventMetrics->end())
     return nullptr;
 
-  return &(*cpuPerfIt);
+  return &(*cpuMetricsIt);
 }
 
 void sys_sage::Relation::PrintAllPAPImetrics() const
@@ -603,21 +605,21 @@ void sys_sage::Relation::PrintAllPAPImetrics() const
 
       std::cout << "  " << key << ":\n";
       
-      auto cpuPerfs = reinterpret_cast<std::vector<CpuPerf> *>( val );
-      auto cpuPerfIt = std::find_if(cpuPerfs->begin(), cpuPerfs->end(),
-                                    [cpuNum](const CpuPerf &cpuPerf)
-                                    {
-                                      return cpuPerf.cpuNum == cpuNum;
-                                    }
-                       );
+      auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( val );
+      auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
+                                       [cpuNum](const CpuMetrics &cpuMetrics)
+                                       {
+                                         return cpuMetrics.cpuNum == cpuNum;
+                                       }
+                          );
 
-      for (auto &perfEntry : cpuPerfIt->perfEntries)
-        std::cout << "    " << perfEntry << '\n';
+      for (Metric &metric : cpuMetricsIt->entries)
+        std::cout << "    " << metric << '\n';
     }
   }
 }
 
-std::ostream &operator<<(std::ostream &stream, const PerfEntry &perfEntry)
+std::ostream &operator<<(std::ostream &stream, const Metric &metric)
 {
-  return stream << "{ .timestamp = " << perfEntry.timestamp << ", .value = " << perfEntry.value << " }";
+  return stream << "{ .timestamp = " << metric.timestamp << ", .value = " << metric.value << " }";
 }
