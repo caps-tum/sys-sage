@@ -56,6 +56,26 @@ namespace sys_sage {
             */
             long long GetCATAwareL3Size();
     #endif
+
+#ifdef PAPI
+        /**
+         * @brief Get the perf counter value of a specific event in an event set.
+         *
+         * @param event The event of interest.
+         * @param eventSet The event set to which the event belongs to.
+         * @param timestamp An optional parameter used to select a perf counter
+         *                  value from a specific perf counter reading. A value
+         *                  of 0 refers to the latest reading.
+         *
+         * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
+         */
+        long long GetPAPImetric(int event, int eventSet, unsigned long long timestamp = 0) const;
+
+        /**
+         * @brief Print all PAPI metrics of a CPU in the event set.
+         */
+        void PrintAllPAPImetrics(int eventSet) const;
+#endif
     private:
     };
 

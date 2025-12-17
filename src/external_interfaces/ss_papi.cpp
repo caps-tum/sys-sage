@@ -619,6 +619,100 @@ void sys_sage::Relation::PrintAllPAPImetrics() const
   }
 }
 
+long long sys_sage::Thread::GetPAPImetric(int event, int eventSet, unsigned long long timestamp) const
+{
+  if (!relations || !((*relations)[RelationType::Relation]))
+    return 0;
+
+  char buf[PAPI_MAX_STR_LEN];
+  if (PAPI_event_code_to_name(event, buf) != PAPI_OK)
+    return 0;
+
+  unsigned long long targetTimestamp;
+
+  auto relationIt = (*relations)[RelationType::Relation]->begin();
+  for (; relationIt != (*relations)[RelationType::Relation]->end(); relationIt++) {
+    if ((*relationIt)->GetCategory() != RelationCategory::PAPI_Metrics)
+      continue;
+
+    auto meta = reinterpret_cast<MetaData *>( (*relationIt)->attrib[metaKey] );
+    if (meta->eventSet == eventSet) {
+      targetTimestamp = timestamp == 0 ? meta->latestTimestamp : timestamp;
+      break;
+    }
+  }
+
+  if (relationIt == (*relations)[RelationType::Relation]->end())
+    return 0;
+
+  auto eventMetricsIt = (*relationIt)->attrib.find(buf);
+  if (eventMetricsIt == (*relationIt)->attrib.end())
+    return 0;
+  auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( eventMetricsIt->second );
+
+  auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
+                                   [this](const CpuMetrics &cpuMetrics)
+                                   {
+                                     return cpuMetrics.cpuNum == this->id;
+                                   });
+  if (cpuMetricsIt == eventMetrics->end())
+    return 0;
+
+  auto entryIt = std::find_if(cpuMetricsIt->entries.rbegin(), cpuMetricsIt->entries.rend(),
+                              [targetTimestamp](const Metric &metric)
+                              {
+                                return metric.timestamp == targetTimestamp;
+                              }
+                 );
+
+  return entryIt == cpuMetricsIt->entries.rend() ? 0 : entryIt->value;
+}
+
+void sys_sage::Thread::PrintAllPAPImetrics(int eventSet) const
+{
+  if (!relations || !((*relations)[RelationType::Relation]))
+    return;
+
+  auto relationIt = (*relations)[RelationType::Relation]->begin();
+  for (; relationIt != (*relations)[RelationType::Relation]->end(); relationIt++) {
+    if ((*relationIt)->GetCategory() != RelationCategory::PAPI_Metrics)
+      continue;
+
+    auto meta = reinterpret_cast<MetaData *>( (*relationIt)->attrib[metaKey] );
+    if (meta->eventSet == eventSet)
+      break;
+  }
+
+  if (relationIt == (*relations)[RelationType::Relation]->end())
+    return;
+
+  std::cout << "metrics on CPU " << this->id << " in event set " << eventSet << ".\n";
+
+  int buf;
+  for (auto &[key, value] : (*relationIt)->attrib) {
+    if (PAPI_event_name_to_code(key.c_str(), &buf) != PAPI_OK)
+      continue;
+
+    std::cout << "  " << key << ":\n";
+
+    auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( value );
+
+    auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
+                                     [this](const CpuMetrics &cpuMetrics)
+                                     {
+                                       return cpuMetrics.cpuNum == this->id;
+                                     });
+
+    if (cpuMetricsIt == eventMetrics->end()) {
+      std::cerr << "    Error: Relation with event set " << eventSet << " is corrupted. Expected an entry to exist for CPU " << this->id << '\n';
+      return;
+    }
+
+    for (auto &metric : cpuMetricsIt->entries)
+      std::cout << "    " << metric << '\n';
+  }
+}
+
 std::ostream &operator<<(std::ostream &stream, const Metric &metric)
 {
   return stream << "{ .timestamp = " << metric.timestamp << ", .value = " << metric.value << " }";
