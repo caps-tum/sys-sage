@@ -24,7 +24,7 @@ if (QDMI)
     add_executable(qdmi-test qdmi-test.cpp)
 endif()
 
-if(PAPI)
+if(SS_PAPI)
     add_executable(papi_basics papi_basics.cpp)
     add_executable(papi_multithreading papi_multithreading.cpp)
     add_executable(papi_monitor_process papi_monitor_process.cpp)

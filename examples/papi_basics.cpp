@@ -84,7 +84,7 @@ int main(int argc, const char **argv)
   if (rval != PAPI_OK)
     FATAL(PAPI_strerror(rval));
 
-  metrics->PrintAllPAPImetrics();
+  metrics->PrintPAPImetrics();
 
   PAPI_shutdown();
 

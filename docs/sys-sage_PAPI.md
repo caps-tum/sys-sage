@@ -36,11 +36,11 @@ provided that envelop the underlying PAPI routine. The wrapper functions are
 
 | sys-sage wrapper | corresponding PAPI routine |
 | ---------------- | -------------------------- |
-| ```cpp sys_sage::SS_PAPI_start``` | `PAPI_start` |
-| ```cpp sys_sage::SS_PAPI_reset``` | `PAPI_reset` |
-| ```cpp sys_sage::SS_PAPI_read``` | `PAPI_read` |
-| ```cpp sys_sage::SS_PAPI_accum``` | `PAPI_accum` |
-| ```cpp sys_sage::SS_PAPI_stop``` | `PAPI_stop` |
+| ```sys_sage::SS_PAPI_start``` | `PAPI_start` |
+| ```sys_sage::SS_PAPI_reset``` | `PAPI_reset` |
+| ```sys_sage::SS_PAPI_read``` | `PAPI_read` |
+| ```sys_sage::SS_PAPI_accum``` | `PAPI_accum` |
+| ```sys_sage::SS_PAPI_stop``` | `PAPI_stop` |
 
 In general, the _sys-sage_ wrappers can coexist with plain PAPI and can
 therefore be combined and used next to the PAPI routines. This extends to
@@ -53,11 +53,11 @@ _sys-sage_ topology, the following functions are provided
 
 | Routines to access & display PAPI metrics |
 | ------------------------------------------- |
-| ```cpp sys_sage::Relation::GetPAPImetric``` |
-| ```cpp sys_sage::Relation::GetAllPAPImetrics``` |
-| ```cpp sys_sage::Relation::PrintAllPAPImetrics``` |
-| ```cpp sys_sage::Thread::GetPAPImetric``` |
-| ```cpp sys_sage::Thread::PrintAllPAPImetrics``` |
+| ```sys_sage::Relation::GetPAPImetric``` |
+| ```sys_sage::Relation::GetAllPAPImetrics``` |
+| ```sys_sage::Relation::PrintAllPAPImetrics``` |
+| ```sys_sage::Thread::GetPAPImetric``` |
+| ```sys_sage::Thread::PrintAllPAPImetrics``` |
 
 A minimal example is provided below:
 

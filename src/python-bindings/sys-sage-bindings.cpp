@@ -288,7 +288,7 @@ PYBIND11_MODULE(sys_sage, m) {
 
     m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
     m.attr("RELATION_CATEGORY_UNCATEGORIZED") = RelationCategory::Uncategorized;
-#ifdef PAPI
+#ifdef SS_PAPI
     m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
 #endif
 
@@ -379,6 +379,9 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("DeleteAllRelations", &Component::DeleteAllRelations, py::arg("type") = RelationType::Any,"Delete all relations of that type from the component")
         .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
+#ifdef SS_PAPI
+        .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet"))
+#endif
         .def("__bool__",[](Component& self){
             std::vector<Component*> children = self.GetChildren();
             return !children.empty();
@@ -466,6 +469,12 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("RefreshFreq", &Thread::RefreshFreq,py::arg("keep_history") = false,"Refresh the frequency of the component")
         .def_property_readonly("freq", &Thread::GetFreq, "Get Frequency of this thread")
         #endif
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("event"), py::arg("eventSet"), py::arg("timestamp") = 0)
+        .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet"))
+        .def("GetPAPIrelation", &Thread::PrintPAPImetrics, py::arg("eventSet"))
+        .def("FindPAPIrelations", &Thread::FindPAPIrelations)
+#endif
         .def(py::init<int,std::string>(),py::arg("id") = 0,py::arg("name") = "Thread")
         .def(py::init<Component*,int,std::string>(),py::arg("parent"),py::arg("id") = 0,py::arg("name") = "Thread");
 
@@ -529,6 +538,12 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("__delitem__", [](Relation& self, const std::string& name) {
             remove_attribute<Relation>(self,name);
         })
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("event"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
+        .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("event"), py::arg("cpuNum"))
+        .def("PrintPAPImetrics", &Relation::PrintPAPImetrics, py::arg("cpuNum") = -1)
+        .def("FindPAPIevents", &Relation::FindPAPIevents)
+#endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
         .def("ContainsComponent", &Relation::ContainsComponent, py::arg("component"), "Check if a component is part of this relation")
         .def("GetComponent", &Relation::GetComponent, py::arg("index"), "Get a component at a specific position")
@@ -602,13 +617,13 @@ PYBIND11_MODULE(sys_sage, m) {
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
 
-#ifdef PAPI
-    py::class_<PerfEntry, std::unique_ptr<PerfEntry, py::nodelete>>(m, "PerfEntry")
-      .def_readwrite("timestamp", &PerfEntry::timestamp)
-      .def_readwrite("value", &PerfEntry::value)
-      .def_readwrite("permanent", &PerfEntry::permanent)
+#ifdef SS_PAPI
+    py::class_<Metric, std::unique_ptr<Metric, py::nodelete>>(m, "Metric")
+      .def_readwrite("timestamp", &Metric::timestamp)
+      .def_readwrite("value", &Metric::value)
+      .def_readwrite("permanent", &Metric::permanent)
 
-      .def("__str__", [](PerfEntry &self){
+      .def("__str__", [](Metric &self){
         std::string str = "{ .timestamp = ";
         str += self.timestamp;
         str += ", .value = ";
@@ -618,9 +633,9 @@ PYBIND11_MODULE(sys_sage, m) {
         return str;
       });
 
-    py::class_<CpuPerf, std::unique_ptr<CpuPerf, py::nodelete>>(m, "CpuPerf")
-      .def_readwrite("perfEntries", &CpuPerf::perfEntries)
-      .def_readwrite("cpuNum", &CpuPerf::cpuNum);
+    py::class_<CpuMetrics, std::unique_ptr<CpuMetrics, py::nodelete>>(m, "CpuMetrics")
+      .def_readwrite("entries", &CpuMetrics::entries)
+      .def_readwrite("cpuNum", &CpuMetrics::cpuNum);
 
     m.def("SS_PAPI_start", [](int eventSet, Relation *metrics) {
       int rval = SS_PAPI_start(eventSet, &metrics);
@@ -649,10 +664,6 @@ PYBIND11_MODULE(sys_sage, m) {
 
       return std::make_tuple(rval, timestamp);
     }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
-
-    m.def("GetCpuPerfVal", &GetCpuPerfVal, py::arg("metrics"), py::arg("event"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0);
-
-    m.def("GetCpuPerf", &GetCpuPerf, py::arg("metrics"), py::arg("event"), py::arg("cpuNum"));
 
 #endif
 }

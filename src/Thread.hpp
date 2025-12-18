@@ -57,7 +57,7 @@ namespace sys_sage {
             long long GetCATAwareL3Size();
     #endif
 
-#ifdef PAPI
+#ifdef SS_PAPI
         /**
          * @brief Get the perf counter value of a specific event in an event set.
          *
@@ -72,9 +72,31 @@ namespace sys_sage {
         long long GetPAPImetric(int event, int eventSet, unsigned long long timestamp = 0) const;
 
         /**
-         * @brief Print all PAPI metrics of a CPU in the event set.
+         * @brief Print all PAPI metrics of this CPU in given the event set.
+         *
+         * @param eventSet Specifies the event set of interest. If the value is
+         *        `PAPI_NULL`, then all event sets will be printed.
          */
-        void PrintAllPAPImetrics(int eventSet) const;
+        void PrintPAPImetrics(int eventSet) const;
+
+        /**
+         * @brief Retrieve the relation that involves this component and corresponds to the given event set.
+         *
+         * @param eventSet The event set of interest.
+         *
+         * @return A valid pointer if such a relation exists, `nullptr` otherwise.
+         */
+        Relation *GetPAPIrelation(int eventSet) const;
+
+        /**
+         * @brief Retrieve all relations that associated to this component and
+         *        contain PAPI metrics.
+         *
+         * @return A vector containing the relations. It may be empty if no
+         *         such relations exist.
+         */
+        std::vector<Relation *> FindPAPIrelations() const;
+
 #endif
     private:
     };

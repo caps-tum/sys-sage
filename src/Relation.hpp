@@ -181,7 +181,7 @@ namespace sys_sage {
          */
         virtual ~Relation() = default;
 
-#ifdef PAPI
+#ifdef SS_PAPI
         /**
          * @brief Get the perf counter value of a specific event and CPU. Only
          *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
@@ -218,7 +218,15 @@ namespace sys_sage {
         /**
          * @brief Print PAPI metrics of all CPUs stored in this relation.
          */
-        void PrintAllPAPImetrics() const;
+        void PrintPAPImetrics(int cpuNum = -1) const;
+
+        /**
+         * @brief Retrieve all PAPI events stored in this relation.
+         *
+         * @return A vector containing the event codes. It may be empty if no
+         *         such events exist.
+         */
+        std::vector<int> FindPAPIevents() const;
 #endif
 
     protected:

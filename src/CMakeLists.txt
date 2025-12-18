@@ -73,7 +73,7 @@ set(HEADERS
     parsers/iqm-parser.hpp
     )
 
-if(PAPI)
+if(SS_PAPI)
 	list(APPEND SOURCES ${EXT_INTF}/ss_papi.cpp)
 	list(APPEND HEADERS ${EXT_INTF}/ss_papi.hpp)
 endif()

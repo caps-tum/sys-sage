@@ -1,4 +1,4 @@
-#ifdef PAPI
+#ifdef SS_PAPI
 
 #ifndef SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
 #define SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
@@ -8,9 +8,11 @@
 #include <vector>
 #include <ostream>
 
+/*! \file */
+
 namespace sys_sage {
 
-  /*
+  /**
    * @brief An object representing a single perf counter value.
    */
   struct Metric {
@@ -19,7 +21,7 @@ namespace sys_sage {
     bool permanent;
   };
 
-  /*
+  /**
    * @brief An object collecting multiple performance metrics of a single CPU.
    */
   struct CpuMetrics {
@@ -27,7 +29,7 @@ namespace sys_sage {
     int cpuNum;
   };
 
-  /*
+  /**
    * @brief sys-sage wrapper around `PAPI_start`.
    *
    * @param eventSet The event set to be started.
@@ -45,7 +47,7 @@ namespace sys_sage {
    */
   int SS_PAPI_start(int eventSet, Relation **metrics);
 
-  /*
+  /**
    * @brief sys-sage wrapper around `PAPI_reset`.
    *
    * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
@@ -57,7 +59,7 @@ namespace sys_sage {
    */
   int SS_PAPI_reset(Relation *metrics);
 
-  /*
+  /**
    * @brief sys-sage wrapper around `PAPI_read`.
    *
    * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
@@ -74,7 +76,7 @@ namespace sys_sage {
   int SS_PAPI_read(Relation *metrics, Component *root, bool permanent = false,
                    unsigned long long *timestamp = nullptr);
 
-  /*
+  /**
    * @brief sys-sage wrapper around `PAPI_accum`.
    *
    * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
@@ -91,7 +93,7 @@ namespace sys_sage {
   int SS_PAPI_accum(Relation *metrics, Component *root, bool permanent = false,
                     unsigned long long *timestamp = nullptr);
 
-  /*
+  /**
    * @brief sys-sage wrapper around `PAPI_stop`.
    *
    * @param metrics The relation of category `RelationCategory::PAPI_Metrics`
@@ -110,11 +112,11 @@ namespace sys_sage {
 
 }
 
-/*
+/**
  * @brief Enables easy printing for objects of type `Metric`.
  */
 std::ostream &operator<<(std::ostream &stream, const sys_sage::Metric &metric);
 
 #endif // SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
 
-#endif // PAPI
+#endif // SS_PAPI

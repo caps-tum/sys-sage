@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <queue>
 #include <stddef.h>
 #include <sched.h>
 #include <string>
@@ -588,7 +589,7 @@ const CpuMetrics *sys_sage::Relation::GetAllPAPImetrics(int event, int cpuNum) c
   return &(*cpuMetricsIt);
 }
 
-void sys_sage::Relation::PrintAllPAPImetrics() const
+void sys_sage::Relation::PrintPAPImetrics(int cpuNum) const
 {
   if (category != RelationCategory::PAPI_Metrics)
     return;
@@ -596,8 +597,10 @@ void sys_sage::Relation::PrintAllPAPImetrics() const
   int code;
 
   for (auto cpu : components) {
-    int cpuNum = cpu->GetId();
-    std::cout << "metrics on CPU " << cpuNum << ":\n";
+    if (cpuNum != -1 && cpuNum != cpu->GetId())
+      continue;
+
+    std::cout << "metrics on CPU " << cpu->GetId() << ":\n";
 
     for (auto &[key, val] : attrib) {
       if (PAPI_event_name_to_code(key.c_str(), &code) != PAPI_OK) // check if attribute is a PAPI event
@@ -607,9 +610,9 @@ void sys_sage::Relation::PrintAllPAPImetrics() const
       
       auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( val );
       auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
-                                       [cpuNum](const CpuMetrics &cpuMetrics)
+                                       [cpu](const CpuMetrics &cpuMetrics)
                                        {
-                                         return cpuMetrics.cpuNum == cpuNum;
+                                         return cpuMetrics.cpuNum == cpu->GetId();
                                        }
                           );
 
@@ -617,6 +620,19 @@ void sys_sage::Relation::PrintAllPAPImetrics() const
         std::cout << "    " << metric << '\n';
     }
   }
+}
+
+std::vector<int> sys_sage::Relation::FindPAPIevents() const
+{
+  std::vector<int> events;
+
+  int eventCode;
+  for (auto &[key, _] : attrib) {
+    if (PAPI_event_name_to_code(key.c_str(), &eventCode) == PAPI_OK)
+      events.push_back(eventCode);
+  }
+
+  return events; // rely on return-value-optimization
 }
 
 long long sys_sage::Thread::GetPAPImetric(int event, int eventSet, unsigned long long timestamp) const
@@ -668,49 +684,97 @@ long long sys_sage::Thread::GetPAPImetric(int event, int eventSet, unsigned long
   return entryIt == cpuMetricsIt->entries.rend() ? 0 : entryIt->value;
 }
 
-void sys_sage::Thread::PrintAllPAPImetrics(int eventSet) const
+void sys_sage::Thread::PrintPAPImetrics(int eventSet) const
 {
   if (!relations || !((*relations)[RelationType::Relation]))
     return;
 
-  auto relationIt = (*relations)[RelationType::Relation]->begin();
-  for (; relationIt != (*relations)[RelationType::Relation]->end(); relationIt++) {
-    if ((*relationIt)->GetCategory() != RelationCategory::PAPI_Metrics)
-      continue;
-
-    auto meta = reinterpret_cast<MetaData *>( (*relationIt)->attrib[metaKey] );
-    if (meta->eventSet == eventSet)
-      break;
-  }
-
-  if (relationIt == (*relations)[RelationType::Relation]->end())
-    return;
-
-  std::cout << "metrics on CPU " << this->id << " in event set " << eventSet << ".\n";
-
   int buf;
-  for (auto &[key, value] : (*relationIt)->attrib) {
-    if (PAPI_event_name_to_code(key.c_str(), &buf) != PAPI_OK)
+
+  for (auto relation : *((*relations)[RelationType::Relation])) {
+    if (relation->GetCategory() != RelationCategory::PAPI_Metrics)
       continue;
 
-    std::cout << "  " << key << ":\n";
+    auto meta = reinterpret_cast<MetaData *>( relation->attrib[metaKey] );
 
-    auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( value );
+    if (eventSet != PAPI_NULL && eventSet != meta->eventSet)
+      continue;
 
-    auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
-                                     [this](const CpuMetrics &cpuMetrics)
-                                     {
-                                       return cpuMetrics.cpuNum == this->id;
-                                     });
+    std::cout << "metrics on CPU " << this->id << " of event set " << meta->eventSet << ":\n";
 
-    if (cpuMetricsIt == eventMetrics->end()) {
-      std::cerr << "    Error: Relation with event set " << eventSet << " is corrupted. Expected an entry to exist for CPU " << this->id << '\n';
-      return;
+    for (auto &[key, value] : relation->attrib) {
+      if (PAPI_event_name_to_code(key.c_str(), &buf) != PAPI_OK)
+        continue;
+
+      std::cout << "  " << key << ":\n";
+
+      auto eventMetrics = reinterpret_cast<std::vector<CpuMetrics> *>( value );
+
+      auto cpuMetricsIt = std::find_if(eventMetrics->begin(), eventMetrics->end(),
+                                       [this](const CpuMetrics &cpuMetrics)
+                                       {
+                                         return cpuMetrics.cpuNum == this->id;
+                                       });
+
+      if (cpuMetricsIt == eventMetrics->end()) {
+        std::cerr << "    Error: Relation with event set " << meta->eventSet << " is corrupted. Expected an entry to exist for CPU " << this->id << " but found none.\n";
+        return;
+      }
+
+      for (auto &metric : cpuMetricsIt->entries)
+        std::cout << "    " << metric << '\n';
     }
-
-    for (auto &metric : cpuMetricsIt->entries)
-      std::cout << "    " << metric << '\n';
   }
+}
+
+Relation *sys_sage::Thread::GetPAPIrelation(int eventSet) const
+{
+  if (!relations || !((*relations)[RelationType::Relation]))
+    return nullptr;
+
+  for (auto relation : *((*relations)[RelationType::Relation])) {
+    if (relation->GetCategory() == RelationCategory::PAPI_Metrics)
+      continue;
+
+    auto meta = reinterpret_cast<MetaData *>( relation->attrib[metaKey] );
+    if (meta->eventSet == eventSet)
+      return relation;
+  }
+
+  return nullptr;
+}
+
+std::vector<Relation *> sys_sage::Thread::FindPAPIrelations() const
+{
+  std::vector<Relation *> papiRelations;
+
+  if (!relations || !((*relations)[RelationType::Relation]))
+    return papiRelations;
+
+  for (auto relation : *((*relations)[RelationType::Relation]))
+    if (relation->GetCategory() == RelationCategory::PAPI_Metrics)
+      papiRelations.push_back(relation);
+
+  return papiRelations;
+}
+
+void sys_sage::Component::PrintPAPImetricsInSubtree(int eventSet) const
+{
+  // BFS traversal
+
+  std::queue<const Component *> queue;
+  queue.push(this);
+
+  do {
+    auto component = queue.front();
+    if (component->componentType == ComponentType::Thread)
+      static_cast<const Thread *>(component)->PrintPAPImetrics(eventSet);
+
+    for (auto child : component->children)
+      queue.push(child);
+
+    queue.pop();
+  } while (queue.empty());
 }
 
 std::ostream &operator<<(std::ostream &stream, const Metric &metric)

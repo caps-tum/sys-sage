@@ -496,6 +496,17 @@ namespace sys_sage {
          */
         void Delete(bool withSubtree = true);
 
+#ifdef SS_PAPI
+        /**
+         * @brief Prints all PAPI metrics of the given event set within the
+         *        subtree spanned by this component.
+         *
+         * @param eventSet Specifies the event set of interest. If the value is
+         *        `PAPI_NULL`, then all event sets will be printed.
+         */
+        void PrintPAPImetricsInSubtree(int eventSet) const;
+#endif
+
         /**
         * A map for storing arbitrary pieces of information or data.
         * - The `key` denotes the name of the attribute.

@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  metrics->PrintAllPAPImetrics();
+  metrics->PrintPAPImetrics();
 
   PAPI_shutdown();
 
