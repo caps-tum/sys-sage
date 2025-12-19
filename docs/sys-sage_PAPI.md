@@ -7,8 +7,8 @@ The _sys-sage_ library incorporates the **P**erformance **A**pplication
 hardware performance counters on CPUs into the _sys-sage_ topology. That way,
 the performance metrics gained through PAPI can be attributed directly to the
 relevant hardware components, thus allowing for the examination and
-interpretation of the performance metrics within the the context of the
-hardware topology.
+interpretation of the performance metrics within the context of the hardware
+topology.
 
 To enable this feature, use the `-DPAPI=on` flag when building the _sys-sage_
 library. Apart from PAPI itself, note that `hwloc` is required as a dependency.
@@ -35,7 +35,7 @@ through _sys-sage_.
 To realize the integration of PAPI into _sys-sage_, wrapper functions are
 provided that envelop the underlying PAPI routine. They will be behave
 **exactly** like the underlying PAPI routine, with the added logic of
-automatically managing the storage of the performance counter values into
+automatically managing the storage of the performance counter values within
 _sys-sage_. The wrapper functions are
 
 | sys-sage wrapper | corresponding PAPI routine |
@@ -59,11 +59,15 @@ _sys-sage_ topology, the following functions are provided
 | ------------------------------------------- |
 | ```sys_sage::Relation::GetPAPImetric``` |
 | ```sys_sage::Relation::GetAllPAPImetrics``` |
-| ```sys_sage::Relation::PrintAllPAPImetrics``` |
+| ```sys_sage::Relation::PrintPAPImetrics``` |
+| ```sys_sage::Relation::FindPAPIevents``` |
 | ```sys_sage::Thread::GetPAPImetric``` |
-| ```sys_sage::Thread::PrintAllPAPImetrics``` |
+| ```sys_sage::Thread::PrintPAPImetrics``` |
+| ```sys_sage::Thread::GetPAPIrelation``` |
+| ```sys_sage::Thread::FindPAPIrelations``` |
+| ```sys_sage::Component::PrintPAPImetricsInSubtree``` |
 
-## Going through an Example
+## Going through an example
 
 For more sophisticated examples, please have a look at the `examples/`
 directory of the _sys-sage_ repository. The examples include
@@ -75,8 +79,9 @@ directory of the _sys-sage_ repository. The examples include
 
 A minimal example is provided below. Note that error handling has been left out
 for the sake of simplicity and clarity. All _sys-sage_ PAPI wrappers have
-adopted return error codes of PAPI. Please refer to PAPI's Wiki for the error
-codes and to the documentation of the wrappers themselves for more information.
+adopted the return error codes of PAPI. Please refer to PAPI's Wiki for the
+error codes and to the documentation of the wrappers themselves for more
+information.
 
 ```cpp
 sys_sage::Node *node = new sys_sage::Node;
@@ -110,25 +115,45 @@ usual.
 Now, in order to attribute the performance counter values to the hardware
 components, the _sys-sage_ library uses a relation to naturally link them
 together. For this purpose, a pointer of type `sys_sage::Relation` is provided
-to `sys_sage::SS_PAPI_start`. Since the `metrics` is `nullptr`, the _sys-sage_
-library will create a new relation object, to which `metrics` will point to
-after the call to `sys_sage::SS_PAPI_start`. If it already points to a valid
-relation object, that object will be reused instead. Within the same call, the
-underlying `PAPI_start` routine will be used to start the event set.
+to `sys_sage::SS_PAPI_start`. Since `metrics` is `nullptr`, the _sys-sage_
+library will create a new relation object, which `metrics` will point to after
+the call to `sys_sage::SS_PAPI_start`. If it already points to a valid relation
+object, that object will be reused instead. Within the same call, the
+underlying `PAPI_start` routine will be used to start the event set. This will
+also bind the relation object to an event set. When bound to new event set,
+the relation object does not loose the metrics of the previous event set.
 
 After some computation, the wrapper `sys_sage::SS_PAPI_stop` is called to
 stop the event set and to automatically integrate the performance counter
 values into the topology. Information about the performance counter values and
-the associated hardware components are then printed to `stdout`.
+the associated hardware components can be obtained through the relation object
+or through the component tree. In this case, this information is simply printed
+to `stdout` using the relation object.
 
 At the end, the event set is cleaned up and the PAPI library is shut down. Note
 that the PAPI related functions offered in the _sys-sage_ API will not work if
 the PAPI library is shut down.
 
-## Under the Hood
+## Implementation Details
 
-The routines `sys_sage::SS_PAPI_read`, `sys_sage::SS_PAPI_accum` and
-`sys_sage::SS_PAPI_stop` all follow a very similar strategy:
+This section of the documentation is intended for more specific knowledge about
+the internal structure and functionality.
+
+### Naming Convention
+
+Let's provide some definitions:
+
+- "software thread": a software abstraction of an independant execution stream
+                     within a process.
+
+- "hardware thread": an independant execution unit in hardware.
+
+- "CPU": the same as a hardware thread
+
+### What happens under the hood?
+
+The wrappers `SS_PAPI_read`, `SS_PAPI_accum` and `SS_PAPI_stop` all follow a
+very similar strategy:
 
 1. Based on the given event set, determine the events associated to it and
    store the event codes in a local array called `events`.
@@ -136,11 +161,11 @@ The routines `sys_sage::SS_PAPI_read`, `sys_sage::SS_PAPI_accum` and
 2. Perform the call to the underlying PAPI routine using a local array called
    `counters`.
 
-   - `sys_sage::SS_PAPI_read`  -> `PAPI_read`
+   - `SS_PAPI_read`  -> `PAPI_read`
 
-   - `sys_sage::SS_PAPI_accum` -> `PAPI_accum`
+   - `SS_PAPI_accum` -> `PAPI_accum`
 
-   - `sys_sage::SS_PAPI_stop`  -> `PAPI_stop`
+   - `SS_PAPI_stop`  -> `PAPI_stop`
 
 3. Depending on the event set, figure out to which hardware thread the counters
    belong to and find its ID. Here, we need to make a case destinction:
@@ -160,101 +185,40 @@ The routines `sys_sage::SS_PAPI_read`, `sys_sage::SS_PAPI_accum` and
    `perf_event_open` internally, the Linux kernel will preserve the
    intermediate performance counter values across context switches. To "keep
    track" of these hardware threads and to attribute the performance counter
-   values to them, _sys-sage_ uses a new relation category named
-   `RelationCategory::PAPI_Metrics`.
+   values to them, a relation object with the new relation category
+   `RelationCategory::PAPI_Metrics` is used.
 
 4. Together with the ID of the hardware thread, query for its handle in the
    _sys-sage_ topology. If the hardware thread is not already contained in the
    `Relation` object, it will be added to it.
 
-5. Store the values of `counters` into the `attrib` map of the `Relation`
-   object on a per-event basis, meaning that if the value `counters[i]` at
+5. Store the values of `counters` into the `attrib` map of the relation object
+    on a per-event basis, meaning that if the value `counters[i]` at
    index `i` corresponds to the event `events[i]`, we will have a key-value
    pair similar to `{ events[i], counters[i] }`. Note that the values are
    actually stored as entries of a datastructure and that the string
-   representation of the event code is used as the actual key. This is a
-   simplified overview and more detail is given below.
-
-### Obtaining a `Relation` object
-
-The user may gain access to a `Relation` object via the first call to the
-`sys_sage::SS_PAPI_start` wrapper function. The usage can be described by the
-following code snippet:
-
-```cpp
-// `metrics == nullptr` signals the sys-sage library to create a new `Relation`
-// object of category `RelationCategory::PAPI_Metrics`
-sys_sage::Relation *metrics = nullptr;
-
-sys_sage::SS_PAPI_start(eventSet, &metrics);
-
-// `metrics` points to a valid `Relation` object now
-
-// do some performance monitoring...
-
-// use plain PAPI to stop performance monitoring without caring for the values
-PAPI_stop(eventSet, nullptr);
-
-// do some performance analysis...
-
-// reuse the `Relation` object
-sys_sage::SS_PAPI_start(eventSet, &metrics);
-```
-
-Note that the `Relation` object is only bound to an event set between the calls
-to  `sys_sage::SS_PAPI_start` and `sys_sage::SS_PAPI_stop`. It may be reused
-again with a possible new configuration of the same event set or an entirely
-new one.
+   representation of the event code is used as the actual key. More detail is
+   given below.
 
 ### Multiple Performance Counter Readings
 
 We define a "performance counter reading" to be the act of fetching the current
 values of the performance counters. It may be triggered by a call to either
-`sys_sage::SS_PAPI_read`, `sys_sage::SS_PAPI_accum` or `sys_sage::SS_PAPI_stop`.
+`SS_PAPI_read`, `SS_PAPI_accum` or `SS_PAPI_stop`.
 
 Now, the _sys-sage_ library allows the user to store the results of multiple
 performance counter readings of the same event. To distinguish them from one
-another, timestamps have been introduced which are recorded into `*timestamp`.
-A timestamp is always associated to the entire reading, meaning that
-performance counter values of different events share the same timestamp within
-the same reading. It is important to state that these timestamps are **not**
-guaranteed to be unique for every reading -- although most likely they will --
-and in case of a collision, the value of the latter reading will be returned.
-
-### Accessing Performance Counter Values
-
-Since Linux uses the term "CPU" in terms of a logical processing unit, we use
-"CPU" and "hardware thread" interchangeable in the following.
-
-The `RelationCategory::PAPI_Metrics` category of relations is able to
-distinguish perf counter values of one CPU from another. The functions
-
-```cpp
-long long sys_sage::GetCpuPerfVal(const Relation *metrics, int event,
-                                  int cpuNum = -1, unsigned long long timestamp = 0);
-
-const sys_sage::CpuPerf *sys_sage::GetCpuPerf(const Relation *metrics, int event,
-                                              int cpuNum);
-```
-
-are at the user's disposal for accessing the perf counter values corresponding
-to a specific event.
-
-The `sys_sage::GetCpuPerfVal` function both offers a CPU-centric view and an
-EventSet-centric view. That is, if `cpuNum != -1`, the counter value of the
-desired CPU will be returned. Otherwise, the values of all CPUs in the relation
-will be combined into a single output, offering a EventSet-centric view which
-would be equal to the value that plain PAPI would return. Furthermore, the
-`timestamp` parameter may be used to filter out the perf counter value of a
-specific perf counter reading. A value of 0 refers to the latest reading.
-
-Moreover, the `sys_sage::GetCpuPerf` function returns a datastructure
-containing all perf counter values of the corresponding CPU and event.
+another, timestamps have been introduced. A timestamp is always associated to
+the entire reading, meaning that performance counter values of different events
+share the same timestamp within the same reading. It is important to state that
+these timestamps are **not** guaranteed to be unique for every reading --
+although most likely they will -- and in case of a collision, the value of the
+latter reading will be returned.
 
 ### Rules for the Storage Mechanism of the Performance Counter Values
 
 For the purpose of simplicity, we will focus on single-event event sets in this
-section. Everything described here can be easilly extended on to multiple events.
+section. Everything described here can be easily extended to multiple events.
 
 Let's define the operations _READ_, _RESET_ and _ACCUM_, which correspond to
 the respective PAPI routines. We have
@@ -267,15 +231,15 @@ the respective PAPI routines. We have
            and perform the _RESET_ operation
 
 Furthermore, each entry of the datastructure containing the perf counter values
-can be either in the _permanent_ or _temporary_ mode (indicated by the `permanent`
-parameter). If an entry is temporary, it may be overwritten by some new perf
-counter reading. If it is permanent, it may not be modified again, and
-therefore a new entry must be added to the datastructure.
+can be either in the _permanent_ or _temporary_ mode (indicated by a parameter).
+If an entry is temporary, it may be overwritten by some new perf counter reading.
+If it is permanent, it may not be modified again, and therefore a new entry
+must be added to the datastructure.
 
 Now, the rules are as follows:
 
-1. If a _READ_ operation supersedes a _RESET_ operation, all temporary entries
-   of all CPUs of that specific event will be deleted.
+1. If a _RESET_ operation is followed by a _READ_ operation, all temporary
+   entries on all CPUs of that specific event will be deleted.
 
 2. If there are no more entries in the datastructure of a CPU, that CPU will
    be removed from the relation.
@@ -295,10 +259,6 @@ then the result $z := x - y$ is stored in an entry corresponding to CPU $a$.
 If $x$ is the value gained from an _ACCUM_ operation on CPU $a$ and $y$ is the
 sum of values of all CPUs in the relation that satisfy the above conditions,
 then the result $z := x + y$ is stored in an entry corresponding to CPU $a$.
-
-## Error Handling
-
-The error codes of PAPI have been adopted to maintain consistency.
 
 ## References
 
