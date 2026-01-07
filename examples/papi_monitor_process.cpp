@@ -204,6 +204,7 @@ int main(int argc, char **argv)
     system(cmd.c_str());
   }
 
+  std::cout << "plots written to " << plotDir << '\n';
   std::filesystem::remove(tmpScript);
 
   rval = PAPI_cleanup_eventset(eventSet);

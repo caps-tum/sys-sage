@@ -505,6 +505,22 @@ namespace sys_sage {
          *        `PAPI_NULL`, then all event sets will be printed.
          */
         void PrintPAPImetricsInSubtree(int eventSet) const;
+
+        /**
+         * @brief Retrieves all relations used for collecting PAPI metrics
+         *        within the subtree spanned by this component.
+         *
+         * @return A vector containing said relations.
+         */
+        std::vector<Relation *> FindPAPIrelationsInSubtree() const;
+
+        /**
+         * @brief Retrieves all relations used for collecting PAPI metrics
+         *        within the subtree spanned by this component.
+         *
+         * @param papiRelations A vector used for storing said relations.
+         */
+        void FindPAPIrelationsInSubtree(std::vector<Relation *> &papiRelations) const;
 #endif
 
         /**

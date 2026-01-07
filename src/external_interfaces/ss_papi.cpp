@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#define TIME() ( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() )
+#define TIME() static_cast<unsigned long long>( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() )
 
 using namespace sys_sage;
 
@@ -627,14 +627,17 @@ void sys_sage::Relation::PrintPAPImetrics(int cpuNum) const
 std::vector<int> sys_sage::Relation::FindPAPIevents() const
 {
   std::vector<int> events;
+  FindPAPIevents(events);
+  return events;
+}
 
+void sys_sage::Relation::FindPAPIevents(std::vector<int> &events) const
+{
   int eventCode;
   for (auto &[key, _] : attrib) {
     if (PAPI_event_name_to_code(key.c_str(), &eventCode) == PAPI_OK)
       events.push_back(eventCode);
   }
-
-  return events; // rely on return-value-optimization
 }
 
 unsigned long long sys_sage::Relation::GetElapsedTime(unsigned long long timestamp) const
@@ -759,15 +762,37 @@ Relation *sys_sage::Thread::GetPAPIrelation(int eventSet) const
 std::vector<Relation *> sys_sage::Thread::FindPAPIrelations() const
 {
   std::vector<Relation *> papiRelations;
+  FindPAPIrelations(papiRelations);
+  return papiRelations;
+}
 
+void sys_sage::Thread::FindPAPIrelations(std::vector<Relation *> &papiRelations) const
+{
   if (!relations || !((*relations)[RelationType::Relation]))
-    return papiRelations;
+    return;
 
   for (auto relation : *((*relations)[RelationType::Relation]))
     if (relation->GetCategory() == RelationCategory::PAPI_Metrics)
       papiRelations.push_back(relation);
+}
 
-  return papiRelations;
+std::vector<int> sys_sage::Thread::FindPAPIeventSets() const
+{
+  std::vector<int> eventSets;
+  FindPAPIeventSets(eventSets);
+  return eventSets;
+}
+
+void sys_sage::Thread::FindPAPIeventSets(std::vector<int> &eventSets) const
+{
+  if (!relations || !((*relations)[RelationType::Relation]))
+    return;
+
+  for (auto relation : *((*relations)[RelationType::Relation]))
+    if (relation->GetCategory() == RelationCategory::PAPI_Metrics) {
+      auto meta = reinterpret_cast<MetaData *>( metrics->attrib[metaKey] );
+      eventSets.push_back(meta->eventSet);
+    }
 }
 
 void sys_sage::Component::PrintPAPImetricsInSubtree(int eventSet) const
@@ -781,6 +806,32 @@ void sys_sage::Component::PrintPAPImetricsInSubtree(int eventSet) const
     auto component = queue.front();
     if (component->componentType == ComponentType::Thread)
       static_cast<const Thread *>(component)->PrintPAPImetrics(eventSet);
+
+    for (auto child : component->children)
+      queue.push(child);
+
+    queue.pop();
+  } while (queue.empty());
+}
+
+std::vector<Relation *> sys_sage::Component::FindPAPIrelationsInSubtree() const
+{
+  std::vector<Relation *> papiRelations;
+  FindPAPIrelationsInSubtree(papiRelations);
+  return papiRelations;
+}
+
+void sys_sage::Component::FindPAPIrelationsInSubtree(std::vector<Relation *> &papiRelations) const
+{
+  // BFS traversal
+
+  std::queue<const Component *> queue;
+  queue.push(this);
+
+  do {
+    auto component = queue.front();
+    if (component->componentType == ComponentType::Thread)
+      static_cast<const Thread *>(component)->FindPAPIrelations(papiRelations);
 
     for (auto child : component->children)
       queue.push(child);

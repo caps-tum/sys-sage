@@ -229,6 +229,13 @@ namespace sys_sage {
         std::vector<int> FindPAPIevents() const;
 
         /**
+         * @brief Retrieve all PAPI events stored in this relation.
+         *
+         * @param events A vector used for storing the event codes.
+         */
+         void FindPAPIevents(std::vector<int> &events) const;
+
+        /**
          * @brief Returns the time between the given timestamp and the start of
          *        the event set.
          *

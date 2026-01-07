@@ -89,13 +89,36 @@ namespace sys_sage {
         Relation *GetPAPIrelation(int eventSet) const;
 
         /**
-         * @brief Retrieve all relations that associated to this component and
-         *        contain PAPI metrics.
+         * @brief Retrieve all relations that are associated to this component
+         *        and contain PAPI metrics.
          *
          * @return A vector containing the relations. It may be empty if no
          *         such relations exist.
          */
         std::vector<Relation *> FindPAPIrelations() const;
+
+        /**
+         * @brief Retrieve all relations that are associated to this component
+         *        and contain PAPI metrics.
+         *
+         * @param A vector used for storing the relations.
+         */
+        void FindPAPIrelations(std::vector<Relation *> &) const;
+
+        /**
+         * @brief Retrieve all eventSets that are associated to this component.
+         *
+         * @return A vector containing the relations. It may be empty if no
+         *         such relations exist.
+         */
+        std::vector<int> FindPAPIeventSets() const;
+
+        /**
+         * @brief Retrieve all eventSets that are associated to this component.
+         *
+         * @param A vector used for storing the relations.
+         */
+        void FindPAPIeventSets(std::vector<int> &) const;
 
 #endif
     private:
