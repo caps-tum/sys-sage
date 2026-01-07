@@ -790,7 +790,7 @@ void sys_sage::Thread::FindPAPIeventSets(std::vector<int> &eventSets) const
 
   for (auto relation : *((*relations)[RelationType::Relation]))
     if (relation->GetCategory() == RelationCategory::PAPI_Metrics) {
-      auto meta = reinterpret_cast<MetaData *>( metrics->attrib[metaKey] );
+      auto meta = reinterpret_cast<MetaData *>( relation->attrib[metaKey] );
       eventSets.push_back(meta->eventSet);
     }
 }

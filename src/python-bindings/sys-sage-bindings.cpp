@@ -381,6 +381,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
 #ifdef SS_PAPI
         .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet"))
+        .def("FindPAPIrelationsInSubtree", (std::vector<Relation *> (Component::*)() const) &Component::FindPAPIrelationsInSubtree)
 #endif
         .def("__bool__",[](Component& self){
             std::vector<Component*> children = self.GetChildren();
@@ -473,7 +474,8 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("event"), py::arg("eventSet"), py::arg("timestamp") = 0)
         .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet"))
         .def("GetPAPIrelation", &Thread::PrintPAPImetrics, py::arg("eventSet"))
-        .def("FindPAPIrelations", &Thread::FindPAPIrelations)
+        .def("FindPAPIrelations", (std::vector<Relation *> (Thread::*)() const) &Thread::FindPAPIrelations)
+        .def("FindPAPIeventSets", (std::vector<int> (Thread::*)() const) &Thread::FindPAPIeventSets)
 #endif
         .def(py::init<int,std::string>(),py::arg("id") = 0,py::arg("name") = "Thread")
         .def(py::init<Component*,int,std::string>(),py::arg("parent"),py::arg("id") = 0,py::arg("name") = "Thread");
@@ -542,7 +544,8 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("event"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
         .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("event"), py::arg("cpuNum"))
         .def("PrintPAPImetrics", &Relation::PrintPAPImetrics, py::arg("cpuNum") = -1)
-        .def("FindPAPIevents", &Relation::FindPAPIevents)
+        .def("FindPAPIevents", (std::vector<int> (Relation::*)() const) &Relation::FindPAPIevents)
+        .def("GetElapsedTime", &Relation::GetElapsedTime, py::arg("timestamp"))
 #endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
         .def("ContainsComponent", &Relation::ContainsComponent, py::arg("component"), "Check if a component is part of this relation")
