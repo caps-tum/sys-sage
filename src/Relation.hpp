@@ -227,6 +227,18 @@ namespace sys_sage {
          *         such events exist.
          */
         std::vector<int> FindPAPIevents() const;
+
+        /**
+         * @brief Returns the time between the given timestamp and the start of
+         *        the event set.
+         *
+         * @param timestamp The timestamp of interest.
+         *
+         * @return If this relation is not of category
+         *         `RelationCategory::PAPI_Metrics`, 0 is returned, otherwise
+         *         the elapsed time.
+         */
+        unsigned long long GetElapsedTime(unsigned long long timestamp) const;
 #endif
 
     protected:

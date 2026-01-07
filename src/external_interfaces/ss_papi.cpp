@@ -20,6 +20,7 @@ using namespace sys_sage;
 
 struct MetaData {
   std::unordered_map<int, int> cpuReferenceCounters;
+  unsigned long long startTimestamp;
   unsigned long long latestTimestamp = 0;
   int eventSet;
   bool reset = true;
@@ -384,12 +385,13 @@ int sys_sage::SS_PAPI_start(int eventSet, Relation **metrics)
     std::vector<Component *> empty {};
     *metrics = new Relation(empty, 0, false, RelationCategory::PAPI_Metrics);
 
-    (*metrics)->attrib[metaKey] = reinterpret_cast<void *>( new MetaData{ .eventSet = eventSet } );
+    (*metrics)->attrib[metaKey] = reinterpret_cast<void *>( new MetaData{ .startTimestamp = TIME(), .eventSet = eventSet } );
   } else {
     if ((*metrics)->GetCategory() != RelationCategory::PAPI_Metrics)
       return PAPI_EINVAL;
 
     auto meta = reinterpret_cast<MetaData *>((*metrics)->attrib[metaKey]);
+    meta->startTimestamp = TIME();
     meta->eventSet = eventSet;
     meta->reset = true; // PAPI_start will reset the counters
   }
@@ -633,6 +635,16 @@ std::vector<int> sys_sage::Relation::FindPAPIevents() const
   }
 
   return events; // rely on return-value-optimization
+}
+
+unsigned long long sys_sage::Relation::GetElapsedTime(unsigned long long timestamp) const
+{
+  if (category != RelationCategory::PAPI_Metrics)
+    return 0;
+
+  auto meta = reinterpret_cast<MetaData *>( attrib.find(metaKey)->second );
+
+  return timestamp - meta->startTimestamp;
 }
 
 long long sys_sage::Thread::GetPAPImetric(int event, int eventSet, unsigned long long timestamp) const

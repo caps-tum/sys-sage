@@ -10,19 +10,21 @@
  *   - ...attach event sets to different CPUs.
  *   - ...spawn worker threads that are pinned to their respective CPUs.
  *   - ...do performance monitoring within the worker threads.
- *   - ...assert that sys-sage captured the correct CPUs and print the
- *        respective perf counters in the main thread.
+ *   - ...assert that sys-sage captured the correct CPUs
+ *   - ...compute the IPC on the cores of the CPUs
  */
 
 #include "sys-sage.hpp"
 #include <assert.h>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <pthread.h>
 #include <set>
 #include <stddef.h>
 #include <stdlib.h>
 #include <sched.h>
+#include <utility>
 
 #define FATAL(errMsg) do {\
   std::cerr << "error: " << (errMsg) << '\n';\
@@ -83,10 +85,10 @@ int main(int argc, const char **argv)
     return EXIT_FAILURE;
 
   const std::set<sys_sage::Component *> cpus {
-    node.GetSubcomponentById(1, sys_sage::ComponentType::Thread), // CPU 1
-    node.GetSubcomponentById(3, sys_sage::ComponentType::Thread), // CPU 3
-    node.GetSubcomponentById(5, sys_sage::ComponentType::Thread), // CPU 5
-    node.GetSubcomponentById(7, sys_sage::ComponentType::Thread), // CPU 7
+    node.GetSubcomponentById(0, sys_sage::ComponentType::Thread),
+    node.GetSubcomponentById(1, sys_sage::ComponentType::Thread),
+    node.GetSubcomponentById(5, sys_sage::ComponentType::Thread),
+    node.GetSubcomponentById(7, sys_sage::ComponentType::Thread),
   };
 
   int rval;
@@ -175,7 +177,41 @@ int main(int argc, const char **argv)
 
     if (wargs[s].rval != PAPI_OK)
       FATAL(PAPI_strerror(wargs[s].rval));
+  }
 
+  for (s = 0; auto cpu : cpus) {
+    // make sure that sys-sage captured the correct CPUs
+    assert(wargs[s].metrics->GetComponents().size() == 1
+           && wargs[s].metrics->GetComponent(0) == cpu);
+    s++;
+  }
+
+  // assuming at most two CPUs per core
+  std::map<int, std::pair<double, double>> core_IPC;
+  for (s = 0; s < cpus.size(); s++) {
+    auto cpu = wargs[s].metrics->GetComponent(0);
+    auto core = cpu->GetAncestorByType(sys_sage::ComponentType::Core);
+
+    std::cout << "CPU " << cpu->GetId() << " -> core " << core->GetId() << '\n';
+
+    long long instructionCount = wargs[s].metrics->GetPAPImetric(PAPI_TOT_INS, cpu->GetId());
+    long long cycleCount = wargs[s].metrics->GetPAPImetric(PAPI_TOT_CYC, cpu->GetId());
+
+    auto [it, inserted] = core_IPC.try_emplace(core->GetId(), instructionCount, cycleCount);
+    if (!inserted) {
+      auto &ipc = it->second;
+      ipc.first += instructionCount;
+      ipc.second += cycleCount;
+      ipc.second /= 2; // take the average
+    }
+  }
+
+  std::cout << "\nIPC per core\n";
+
+  for (auto &[coreId, ipc] : core_IPC)
+    std::cout << "  core " << coreId << ": " << ipc.first / ipc.second << '\n';
+
+  for (s = 0; s < cpus.size(); s++) {
     rval = PAPI_cleanup_eventset(eventSets[s]);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
@@ -183,19 +219,6 @@ int main(int argc, const char **argv)
     rval = PAPI_destroy_eventset(&eventSets[s]);
     if (rval != PAPI_OK)
       FATAL(PAPI_strerror(rval));
-  }
-
-  for (s = 0; auto cpu : cpus) {
-    // make sure that sys-sage captured the correct CPU
-    assert(wargs[s].metrics->GetComponents().size() == 1
-           && wargs[s].metrics->GetComponent(0) == cpu);
-
-    // print perf counter values
-    std::cout << "metrics on CPU " << cpu->GetId() << ":\n";
-    for (int i = 0; i < numEvents; i++)
-      std::cout << "  " << eventNames[i] << ": " << wargs[s].metrics->GetPAPImetric(events[i], cpu->GetId()) << '\n';
-
-    s++;
   }
 
   PAPI_shutdown();
