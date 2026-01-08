@@ -186,7 +186,7 @@ namespace sys_sage {
          * @brief Get the perf counter value of a specific event and CPU. Only
          *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
          *
-         * @param event The event of interest.
+         * @param eventCode The event of interest.
          * @param cpuNum An optional parameter used to distinguish between a
          *               CPU-centric view and an EventSet-centric view. If the
          *               value is greater than -1, the perf counter value of
@@ -195,25 +195,31 @@ namespace sys_sage {
          *               counter values on all CPUs in the relation.
          * @param timestamp An optional parameter used to select a perf counter
          *                  value from a specific perf counter reading. A value
-         *                  of 0 refers to the latest reading.
+         *                  of 0 refers to the latest reading. Note that the
+         *                  last recorded metrics entry of a CPU does not have
+         *                  to belong to the latest perf counter reading. This
+         *                  discrepency can happen when the last entry is set
+         *                  to "permanent mode" (see documentation of
+         *                  `sys_sage::SS_PAPI_read`) and this CPU was not
+         *                  involved in the latest reading.
          *
          * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
          */
-        long long GetPAPImetric(int event, int cpuNum = -1, unsigned long long timestamp = 0) const;
+        long long GetPAPImetric(int eventCode, int cpuNum = -1, unsigned long long timestamp = 0) const;
 
         /**
          * @brief Get all the perf counter values of a specific event that are
          *        collected on a specific CPU. Only works if this relation is
          *        of category `RelationCategory::PAPI_Metrics`.
          *
-         * @param event The event of interest.
+         * @param eventCode The event of interest.
          * @param cpuNum The CPU of interest.
          *
          * @return A valid pointer to an object containing the perf counter
          *         values. If such an object doesn't exist for the given
          *         paramters, `nullptr` is returned.
          */
-        const CpuMetrics *GetAllPAPImetrics(int event, int cpuNum) const;
+        const CpuMetrics *GetAllPAPImetrics(int eventCode, int cpuNum) const;
 
         /**
          * @brief Print PAPI metrics of all CPUs stored in this relation.
@@ -234,6 +240,16 @@ namespace sys_sage {
          * @param events A vector used for storing the event codes.
          */
          void FindPAPIevents(std::vector<int> &events) const;
+
+         /**
+          * @brief Retrieve the event set to which this relation is currently
+          *        (or was previously) bound to.
+          *
+          * @return The corresponding event set. If this relation is not of
+          *         category `RelationCategory::PAPI_Metrics`, then `PAPI_NULL`
+          *         will be returned instead.
+          */
+         int GetCurrentEventSet() const;
 
         /**
          * @brief Returns the time between the given timestamp and the start of

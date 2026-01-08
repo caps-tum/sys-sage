@@ -31,11 +31,14 @@ through _sys-sage_.
 
 ## API overview
 
-To realize the integration of PAPI into _sys-sage_, wrapper functions are
-provided that envelop the underlying PAPI routine. They will behave **exactly**
-like the underlying PAPI routine, with the added logic of automatically
-managing the storage of the performance counter values within _sys-sage_. The
-wrapper functions are
+In principle, _sys-sage_ uses a `sys_sage::Relation` object to capture the
+performance counter values and to simultaneously relate them to the hardware
+threads, which are of type `sys_sage::Thread`, on which they have been
+monitored on. To realize the PAPI integration, wrapper functions are provided
+that envelop the underlying PAPI routine. They will behave **exactly** like the
+underlying PAPI routine, with the added logic of automatically handling the
+storage of the performance counter values within the _sys-sage_ topology via
+relation management. The wrapper functions are
 
 | sys-sage wrapper | corresponding PAPI routine |
 | ---------------- | -------------------------- |
@@ -60,6 +63,7 @@ _sys-sage_ topology, the following functions are provided
 | ```sys_sage::Relation::GetAllPAPImetrics``` |
 | ```sys_sage::Relation::PrintPAPImetrics``` |
 | ```sys_sage::Relation::FindPAPIevents``` |
+| ```sys_sage::Relation::GetCurrentEventSet``` |
 | ```sys_sage::Relation::GetElapsedTime``` |
 | ```sys_sage::Thread::GetPAPImetric``` |
 | ```sys_sage::Thread::PrintPAPImetrics``` |
@@ -127,10 +131,11 @@ the relation object does not loose the metrics of the previous event set.
 
 After some computation, the wrapper `sys_sage::SS_PAPI_stop` is called to
 stop the event set and to automatically integrate the performance counter
-values into the topology. Information about the performance counter values and
-the associated hardware components can be obtained through the relation object
-or through the component tree. In this case, this information is simply printed
-to `stdout` using the relation object.
+values into the topology. After this call, the relation object is also unbinded
+from the event set. Information about the performance counter values and the
+associated hardware components can be obtained through the relation object or
+through the component tree. In this case, this information is simply printed to
+`stdout` using the relation object.
 
 At the end, the event set is cleaned up and the PAPI library is shut down. Note
 that the PAPI related functions offered in the _sys-sage_ API will not work if

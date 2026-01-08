@@ -65,11 +65,17 @@ namespace sys_sage {
          * @param eventSet The event set to which the event belongs to.
          * @param timestamp An optional parameter used to select a perf counter
          *                  value from a specific perf counter reading. A value
-         *                  of 0 refers to the latest reading.
+         *                  of 0 refers to the latest reading. Note that the
+         *                  last recorded metrics entry of a CPU does not have
+         *                  to belong to the latest perf counter reading. This
+         *                  discrepency can happen when the last entry is set
+         *                  to "permanent mode" (see documentation of
+         *                  `sys_sage::SS_PAPI_read`) and this CPU was not
+         *                  involved in the latest reading.
          *
          * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
          */
-        long long GetPAPImetric(int event, int eventSet, unsigned long long timestamp = 0) const;
+        long long GetPAPImetric(int eventCode, int eventSet, unsigned long long timestamp = 0) const;
 
         /**
          * @brief Print all PAPI metrics of this CPU in given the event set.
@@ -77,7 +83,7 @@ namespace sys_sage {
          * @param eventSet Specifies the event set of interest. If the value is
          *        `PAPI_NULL`, then all event sets will be printed.
          */
-        void PrintPAPImetrics(int eventSet) const;
+        void PrintPAPImetrics(int eventSet = -1) const;
 
         /**
          * @brief Retrieve the relation that involves this component and corresponds to the given event set.

@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 
   // plot the measurements taken on each CPU
 
-  std::filesystem::path plotDir = std::filesystem::weakly_canonical(std::filesystem::absolute(argv[0]).parent_path() / ".." / "..") / "plots";
+  std::filesystem::path plotDir = std::filesystem::weakly_canonical(std::filesystem::absolute(argv[0]).parent_path()) / "plots";
   std::error_code err;
   bool created = std::filesystem::create_directory(plotDir, err);
   if (err) {

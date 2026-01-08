@@ -504,7 +504,7 @@ namespace sys_sage {
          * @param eventSet Specifies the event set of interest. If the value is
          *        `PAPI_NULL`, then all event sets will be printed.
          */
-        void PrintPAPImetricsInSubtree(int eventSet) const;
+        void PrintPAPImetricsInSubtree(int eventSet = -1) const;
 
         /**
          * @brief Retrieves all relations used for collecting PAPI metrics

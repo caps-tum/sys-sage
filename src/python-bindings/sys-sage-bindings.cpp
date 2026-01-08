@@ -380,7 +380,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
 #ifdef SS_PAPI
-        .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet"))
+        .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet") = PAPI_NULL)
         .def("FindPAPIrelationsInSubtree", (std::vector<Relation *> (Component::*)() const) &Component::FindPAPIrelationsInSubtree)
 #endif
         .def("__bool__",[](Component& self){
@@ -471,8 +471,8 @@ PYBIND11_MODULE(sys_sage, m) {
         .def_property_readonly("freq", &Thread::GetFreq, "Get Frequency of this thread")
         #endif
 #ifdef SS_PAPI
-        .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("event"), py::arg("eventSet"), py::arg("timestamp") = 0)
-        .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet"))
+        .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("eventCode"), py::arg("eventSet"), py::arg("timestamp") = 0)
+        .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet") = PAPI_NULL)
         .def("GetPAPIrelation", &Thread::PrintPAPImetrics, py::arg("eventSet"))
         .def("FindPAPIrelations", (std::vector<Relation *> (Thread::*)() const) &Thread::FindPAPIrelations)
         .def("FindPAPIeventSets", (std::vector<int> (Thread::*)() const) &Thread::FindPAPIeventSets)
@@ -541,10 +541,11 @@ PYBIND11_MODULE(sys_sage, m) {
             remove_attribute<Relation>(self,name);
         })
 #ifdef SS_PAPI
-        .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("event"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
-        .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("event"), py::arg("cpuNum"))
+        .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("eventCode"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
+        .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("eventCode"), py::arg("cpuNum"))
         .def("PrintPAPImetrics", &Relation::PrintPAPImetrics, py::arg("cpuNum") = -1)
         .def("FindPAPIevents", (std::vector<int> (Relation::*)() const) &Relation::FindPAPIevents)
+        .def("GetCurrentEventSet", &Relation::GetCurrentEventSet)
         .def("GetElapsedTime", &Relation::GetElapsedTime, py::arg("timestamp"))
 #endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
