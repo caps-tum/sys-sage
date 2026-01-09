@@ -547,6 +547,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("FindPAPIevents", (std::vector<int> (Relation::*)() const) &Relation::FindPAPIevents)
         .def("GetCurrentEventSet", &Relation::GetCurrentEventSet)
         .def("GetElapsedTime", &Relation::GetElapsedTime, py::arg("timestamp"))
+        .def("GetLatestCpuNum", &Relation::GetLatestCpuNum)
 #endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
         .def("ContainsComponent", &Relation::ContainsComponent, py::arg("component"), "Check if a component is part of this relation")

@@ -222,7 +222,14 @@ namespace sys_sage {
         const CpuMetrics *GetAllPAPImetrics(int eventCode, int cpuNum) const;
 
         /**
-         * @brief Print PAPI metrics of all CPUs stored in this relation.
+         * @brief Print PAPI metrics measured on the CPUs stored in this
+         *        relation. If this relation is not of category
+         *        `RelationCategory::PAPI_Metrics`, nothing will be done.
+         *
+         * @param cpuNum Optional parameter used to decide whether all CPUs
+         *        should be printed or only a specific one. If the value is -1,
+         *        the former will be done. Otherwise, the value is interpreted
+         *        as the target CPUs ID.
          */
         void PrintPAPImetrics(int cpuNum = -1) const;
 
@@ -239,7 +246,7 @@ namespace sys_sage {
          *
          * @param events A vector used for storing the event codes.
          */
-         void FindPAPIevents(std::vector<int> &events) const;
+        void FindPAPIevents(std::vector<int> &events) const;
 
          /**
           * @brief Retrieve the event set to which this relation is currently
@@ -249,7 +256,7 @@ namespace sys_sage {
           *         category `RelationCategory::PAPI_Metrics`, then `PAPI_NULL`
           *         will be returned instead.
           */
-         int GetCurrentEventSet() const;
+        int GetCurrentEventSet() const;
 
         /**
          * @brief Returns the time between the given timestamp and the start of
@@ -262,6 +269,17 @@ namespace sys_sage {
          *         the elapsed time.
          */
         unsigned long long GetElapsedTime(unsigned long long timestamp) const;
+
+        /**
+         * @brief Retrieve the ID of the CPU on which the latest perf counter
+         *        reading was conducted on.
+         *
+         * @return If this relation is not of category
+         *         `RelationCategory::PAPI_Metrics` or no measurements have yet
+         *         been taken, -1 is returned. Otherwise, the ID of the
+         *         described CPU.
+         */
+        int GetLatestCpuNum() const;
 #endif
 
     protected:

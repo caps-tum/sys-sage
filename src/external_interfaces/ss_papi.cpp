@@ -23,6 +23,7 @@ struct MetaData {
     unsigned long long startTimestamp;
     unsigned long long latestTimestamp = 0;
     int eventSet;
+    int latestCpuNum = -1;
     bool reset = true;
 };
 
@@ -283,6 +284,7 @@ static int StorePerfCounters(Relation *metrics, const int *events, int numEvents
     }
 
     meta->latestTimestamp = ts;
+    meta->latestCpuNum = cpu->GetId();
 
     if (timestamp)
         *timestamp = ts;
@@ -364,6 +366,7 @@ static int AccumPerfCounters(Relation *metrics, const int *events, int numEvents
     }
 
     meta->latestTimestamp = ts;
+    meta->latestCpuNum = cpu->GetId();
 
     if (timestamp)
         *timestamp = ts;
@@ -659,6 +662,16 @@ unsigned long long sys_sage::Relation::GetElapsedTime(unsigned long long timesta
     auto meta = reinterpret_cast<MetaData *>( attrib.find(metaKey)->second );
 
     return timestamp - meta->startTimestamp;
+}
+
+int sys_sage::Relation::GetLatestCpuNum() const
+{
+    if (category != RelationCategory::PAPI_Metrics)
+        return -1;
+
+    auto meta = reinterpret_cast<MetaData *>( attrib.find(metaKey)->second );
+
+    return meta->latestCpuNum;
 }
 
 long long sys_sage::Thread::GetPAPImetric(int eventCode, int eventSet, unsigned long long timestamp) const
