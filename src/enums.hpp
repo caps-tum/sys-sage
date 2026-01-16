@@ -151,7 +151,7 @@ namespace sys_sage {
         using type = int32_t; /**< RelationCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
         constexpr type Any = -1; /**< Any category. */
-        constexpr type Uncategorized = 0; /**< An uncategorized relation. */
+        constexpr type Default = 0; /**< The default category. */
 #ifdef SS_PAPI
         constexpr type PAPI_Metrics = 1; /**< A relation used for capturing PAPI metrics. */
 #endif

@@ -56,7 +56,7 @@ namespace sys_sage {
          * The type of the relation is set to sys_sage::RelationType::Relation.
          */
         Relation(const std::vector<Component*>& components, int _id = 0, bool _ordered = true,
-                 RelationCategory::type category = RelationCategory::Uncategorized);
+                 RelationCategory::type category = RelationCategory::Default);
         /**
          * @brief Sets the id of the relationship.
          * @param _id The id of the relationship to set.

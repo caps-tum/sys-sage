@@ -287,7 +287,7 @@ PYBIND11_MODULE(sys_sage, m) {
     m.attr("RELATION_TYPE_COUPLINGMAP") = RelationType::CouplingMap;
 
     m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
-    m.attr("RELATION_CATEGORY_UNCATEGORIZED") = RelationCategory::Uncategorized;
+    m.attr("RELATION_CATEGORY_DEFAULT") = RelationCategory::Default;
 #ifdef SS_PAPI
     m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
 #endif

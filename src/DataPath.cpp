@@ -30,7 +30,7 @@ int sys_sage::DataPath::UpdateTarget(Component * _new_target)
 
 sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type): DataPath(_source, _target, _oriented, _dp_type, -1, -1) {}
 sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, double _bw, double _latency): DataPath(_source, _target, _oriented, sys_sage::DataPathType::None, _bw, _latency) {}
-sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type, double _bw, double _latency) : Relation(sys_sage::RelationType::DataPath, sys_sage::RelationCategory::Uncategorized), dp_type(_dp_type), bw(_bw), latency(_latency)
+sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type, double _bw, double _latency) : Relation(sys_sage::RelationType::DataPath, sys_sage::RelationCategory::Default), dp_type(_dp_type), bw(_bw), latency(_latency)
 {
     if(_oriented == sys_sage::DataPathOrientation::Bidirectional)
         ordered = false;
