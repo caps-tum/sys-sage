@@ -121,7 +121,7 @@ namespace sys_sage {
             Relation, 
             DataPath, 
             QuantumGate, 
-            CouplingMap
+            CouplingMap,
         };
 
         //SVTODO this should remain private???
@@ -145,6 +145,19 @@ namespace sys_sage {
             if (it != names.end()) return it->second;
             return "Unknown";
         }
+    }
+
+    /**
+     * @brief Enumerates all supported relation categories in sys-sage.
+     */
+    namespace RelationCategory {
+        using type = int32_t; /**< RelationCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+
+        constexpr type Any = -1; /**< Any category. */
+        constexpr type Default = 0; /**< The default category. */
+#ifdef SS_PAPI
+        constexpr type PAPI_Metrics = 1; /**< A relation used for capturing PAPI metrics. */
+#endif
     }
 
     /**

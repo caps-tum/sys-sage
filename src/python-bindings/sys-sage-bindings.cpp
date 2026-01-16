@@ -287,6 +287,12 @@ PYBIND11_MODULE(sys_sage, m) {
     m.attr("RELATION_TYPE_QUANTUMGATE") = RelationType::QuantumGate;
     m.attr("RELATION_TYPE_COUPLINGMAP") = RelationType::CouplingMap;
 
+    m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
+    m.attr("RELATION_CATEGORY_DEFAULT") = RelationCategory::Default;
+#ifdef SS_PAPI
+    m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
+#endif
+
     m.attr("DATAPATH_TYPE_ANY") = DataPathType::Any;
     m.attr("DATAPATH_TYPE_NONE") = DataPathType::None;
     m.attr("DATAPATH_TYPE_LOGICAL") = DataPathType::Logical;
@@ -435,6 +441,10 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("DeleteRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any, "Delete the relations of that type from the component")
         .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
+#ifdef SS_PAPI
+        .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet") = PAPI_NULL)
+        .def("FindPAPIrelationsInSubtree", (std::vector<Relation *> (Component::*)() const) &Component::FindPAPIrelationsInSubtree)
+#endif
         .def("__bool__",[](Component& self){
             std::vector<Component*> children = self.GetChildren();
             return !children.empty();
@@ -522,6 +532,13 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("RefreshFreq", &Thread::RefreshFreq,py::arg("keep_history") = false,"Refresh the frequency of the component")
         .def_property_readonly("freq", &Thread::GetFreq, "Get Frequency of this thread")
         #endif
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("eventCode"), py::arg("eventSet"), py::arg("timestamp") = 0)
+        .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet") = PAPI_NULL)
+        .def("GetPAPIrelation", &Thread::PrintPAPImetrics, py::arg("eventSet"))
+        .def("FindPAPIrelations", (std::vector<Relation *> (Thread::*)() const) &Thread::FindPAPIrelations)
+        .def("FindPAPIeventSets", (std::vector<int> (Thread::*)() const) &Thread::FindPAPIeventSets)
+#endif
         .def(py::init<int,std::string>(),py::arg("id") = 0,py::arg("name") = "Thread")
         .def(py::init<Component*,int,std::string>(),py::arg("parent"),py::arg("id") = 0,py::arg("name") = "Thread");
 
@@ -583,6 +600,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def(py::init<const std::vector<Component*> &, int, bool>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true)
         .def_property("id", &Relation::GetId, &Relation::SetId)
         .def_property_readonly("type", &Relation::GetType)
+        .def_property_readonly("category", &Relation::GetCategory)
         .def_property_readonly("ordered", &Relation::IsOrdered)
         .def_property_readonly("components", &Relation::GetComponents)
         .def("__setitem__", [](Relation& self, const std::string& name, py::object value) {
@@ -597,6 +615,15 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("__delitem__", [](Relation& self, const std::string& name) {
             remove_attribute<Relation>(self,name);
         })
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("eventCode"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
+        .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("eventCode"), py::arg("cpuNum"))
+        .def("PrintPAPImetrics", &Relation::PrintPAPImetrics, py::arg("cpuNum") = -1)
+        .def("FindPAPIevents", (std::vector<int> (Relation::*)() const) &Relation::FindPAPIevents)
+        .def("GetCurrentEventSet", &Relation::GetCurrentEventSet)
+        .def("GetElapsedTime", &Relation::GetElapsedTime, py::arg("timestamp"))
+        .def("GetLatestCpuNum", &Relation::GetLatestCpuNum)
+#endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
         .def("ContainsComponent", &Relation::ContainsComponent, py::arg("component"), "Check if a component is part of this relation")
         .def("GetComponent", &Relation::GetComponent, py::arg("index"), "Get a component at a specific position")
@@ -669,6 +696,56 @@ PYBIND11_MODULE(sys_sage, m) {
             read_complex_attributes = *search_custom_complex_attrib_key_fcn;
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
+
+#ifdef SS_PAPI
+    py::class_<Metric, std::unique_ptr<Metric, py::nodelete>>(m, "Metric")
+      .def_readwrite("timestamp", &Metric::timestamp)
+      .def_readwrite("value", &Metric::value)
+      .def_readwrite("permanent", &Metric::permanent)
+
+      .def("__str__", [](Metric &self){
+        std::string str = "{ .timestamp = ";
+        str += self.timestamp;
+        str += ", .value = ";
+        str += self.value;
+        str += " }";
+
+        return str;
+      });
+
+    py::class_<CpuMetrics, std::unique_ptr<CpuMetrics, py::nodelete>>(m, "CpuMetrics")
+      .def_readwrite("entries", &CpuMetrics::entries)
+      .def_readwrite("cpuNum", &CpuMetrics::cpuNum);
+
+    m.def("SS_PAPI_start", [](int eventSet, Relation *metrics) {
+      int rval = SS_PAPI_start(eventSet, &metrics);
+      return std::make_tuple(rval, metrics);
+    }, py::arg("eventSet"), py::arg("metrics"));
+
+    m.def("SS_PAPI_reset", &SS_PAPI_reset, py::arg("metrics"));
+
+    m.def("SS_PAPI_read", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_read(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_accum", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_accum(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_stop", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_stop(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+#endif
 }
 
 

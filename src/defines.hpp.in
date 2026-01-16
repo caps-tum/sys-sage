@@ -6,5 +6,6 @@
 #cmakedefine INTEL_PQOS      //in cmake, add -DINTEL_PQOS=ON to turn on
 #cmakedefine NVIDIA_MIG     //in cmake, add -DNVIDIA_MIG=ON to turn on
 #cmakedefine PY_SYS_SAGE    //in cmake, add -PY_SYS_SAGE=ON to turn on
+#cmakedefine SS_PAPI   //in cmake, add -DPAPI=ON to turn on
 
 #endif
