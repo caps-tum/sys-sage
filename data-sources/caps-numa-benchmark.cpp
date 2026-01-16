@@ -167,7 +167,7 @@ void run_caps_numa_benchmark() {
     if (numa_available() == -1)
         return;
 
-    int measure_numa_only = 1;
+    [[ maybe_unused ]]int measure_numa_only = 1;
     #ifdef MEASURE_EACH_CPU
     measure_numa_only = 0;
     #endif

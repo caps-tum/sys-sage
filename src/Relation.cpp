@@ -123,7 +123,7 @@ int sys_sage::Relation::RemoveComponent(size_t index)
     if (index >= components.size())
         return -1;
 
-    std::vector<Relation *> &cRelations = components[index]->_GetRelations(type);
+    std::vector<Relation *> &cRelations = components[index]->_GetRelationsByType(type);
     cRelations.erase(std::remove(cRelations.begin(), cRelations.end(), this), cRelations.end());
 
     components.erase(components.begin() + index);

@@ -25,7 +25,7 @@ static suite<"mt4g"> _ = []
          })
     {
         std::vector<Component *> components;
-        topo.GetSubcomponentsByType(&components, type);
+        topo.FindDescendantsByType(&components, type);
         expect(that % _u(count) == components.size());
     }
 
@@ -35,7 +35,7 @@ static suite<"mt4g"> _ = []
     auto memory = dynamic_cast<Memory *>(gpu.GetChildByType(ComponentType::Memory));
     expect(that % (nullptr != memory) >> fatal);
     expect(that % 25637224578 == memory->GetSize());
-    expect(that % 3840_u == memory->GetAllDataPaths(DataPathType::Any, DataPathDirection::Outgoing).size());
+    expect(that % 3840_u == memory->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing).size());
 
     auto cacheL2 = dynamic_cast<Cache *>(memory->GetChildByType(ComponentType::Cache));
     expect(that % (nullptr != cacheL2) >> fatal);

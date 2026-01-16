@@ -85,10 +85,10 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
 
     const std::set<sys_sage::Component *> cpus {
-        node.GetSubcomponentById(0, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(1, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(5, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(7, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(0, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(1, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(5, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(7, sys_sage::ComponentType::Thread),
     };
 
     int rval;

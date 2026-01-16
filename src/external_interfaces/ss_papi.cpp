@@ -447,7 +447,7 @@ int sys_sage::SS_PAPI_read(Relation *metrics, Component *root, bool permanent,
     if (rval != PAPI_OK)
         return rval;
 
-    Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+    Thread *cpu = static_cast<Thread *>( root->GetDescendantById(cpuNum, ComponentType::Thread) );
     if (!cpu)
         return PAPI_EINVAL; // TODO: better error handling
 
@@ -480,7 +480,7 @@ int sys_sage::SS_PAPI_accum(Relation *metrics, Component *root, bool permanent,
     if (rval != PAPI_OK)
         return rval;
 
-    Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+    Thread *cpu = static_cast<Thread *>( root->GetDescendantById(cpuNum, ComponentType::Thread) );
     if (!cpu)
         return PAPI_EINVAL; // TODO: better error handling
 
@@ -513,7 +513,7 @@ int sys_sage::SS_PAPI_stop(Relation *metrics, Component *root, bool permanent,
     if (rval != PAPI_OK)
         return rval;
 
-    Thread *cpu = static_cast<Thread *>( root->GetSubcomponentById(cpuNum, ComponentType::Thread) );
+    Thread *cpu = static_cast<Thread *>( root->GetDescendantById(cpuNum, ComponentType::Thread) );
     if (!cpu)
         return PAPI_EINVAL; // TODO: better error handling
 

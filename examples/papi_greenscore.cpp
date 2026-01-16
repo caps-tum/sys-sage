@@ -97,7 +97,7 @@ int main(int argc, char **argv)
             FATAL(PAPI_strerror(rval), pid);
 
         int cpuNum = metrics->GetLatestCpuNum();
-        auto cpu = static_cast<sys_sage::Thread *>( node.GetSubcomponentById(cpuNum, sys_sage::ComponentType::Thread) );
+        auto cpu = static_cast<sys_sage::Thread *>( node.GetDescendantById(cpuNum, sys_sage::ComponentType::Thread) );
         double frequency = cpu->GetFreq();
 
         greenScores.emplace_back(timestamp, frequency, cpuNum);
