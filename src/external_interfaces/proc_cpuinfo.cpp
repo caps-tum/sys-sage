@@ -108,12 +108,12 @@ int _readCpuinfoFreq(std::vector<sys_sage::Thread*> threads, bool keep_history =
 
 int sys_sage::Node::RefreshCpuCoreFrequency(bool keep_history)
 {
-    std::vector<Component*> sockets = this->GetAllChildrenByType(ComponentType::Chip);
+    std::vector<Component*> sockets = this->FindChildrenByType(ComponentType::Chip);
     std::vector<Thread*> cpu_hw_threads, hw_threads_to_refresh;
     for(Component * socket : sockets)
     {
         if(static_cast<Chip*>(socket)->GetChipType() == ChipType::CpuSocket || static_cast<Chip*>(socket)->GetChipType() == ChipType::Cpu)
-            socket->GetAllSubcomponentsByType(reinterpret_cast<std::vector<Component*>*>(&cpu_hw_threads), ComponentType::Thread);
+            socket->FindDescendantsByType(reinterpret_cast<std::vector<Component*>*>(&cpu_hw_threads), ComponentType::Thread);
     }
 
     //remove duplicate threads of the same core (hyperthreading -- 2 threads on the same core have the same freq)

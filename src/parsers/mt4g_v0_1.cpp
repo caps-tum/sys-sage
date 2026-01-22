@@ -215,7 +215,7 @@ int Mt4gParser::ParseBenchmarkData()
         }
     }
 
-    ret = root->CheckComponentTreeConsistency();
+    ret = root->CheckSubtreeConsistency();
     return ret;
 }
 
@@ -451,14 +451,14 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
         }
 
         std::vector<Component*> parents;
-        root->GetAllSubcomponentsByType(&parents, sys_sage::ComponentType::Subdivision);
+        root->FindDescendantsByType(&parents, sys_sage::ComponentType::Subdivision);
         for(Component * parent : parents)
         {
             if(static_cast<Subdivision*>(parent)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
             {
                 if(!L2_shared_on_gpu)
                 {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
+                    std::vector<Component*> caches = parent->FindChildrenByType(sys_sage::ComponentType::Cache);
                     for(Component * cache: caches){
                         if(static_cast<Cache*>(cache)->GetCacheName() == "L2"){
                             parent = cache;
@@ -472,7 +472,7 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
                 //insert DP with latency
                 if(latency != -1)
                 {
-                    std::vector<Component*> threads = parent->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
+                    std::vector<Component*> threads = parent->FindDescendantsByType(sys_sage::ComponentType::Thread);
                     for(Component* t: threads)
                         new DataPath(mem, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
                 }
@@ -679,14 +679,14 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
         //insert DP with latency
         if(latency != -1)
         {
-            std::vector<Component*> threads = parent->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
+            std::vector<Component*> threads = parent->FindDescendantsByType(sys_sage::ComponentType::Thread);
             for(Component* t: threads)
                 new DataPath(cache, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
         }
     }
     else if(shared_on == 1) //shared on SM
     {
-        std::vector<Component*> sms = root->GetAllSubcomponentsByType(sys_sage::ComponentType::Subdivision);
+        std::vector<Component*> sms = root->FindDescendantsByType(sys_sage::ComponentType::Subdivision);
         cout << endl << endl << endl << "=====      ===== ENTERING elseif for  - " << header_name << "sms (size=:" << sms.size() << endl << endl << endl;
         for(Component * sm : sms)
         {
@@ -696,7 +696,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
                 //if L2 is not shared on GPU, it will be the parent
                 if(cache_type != "L2" && !L2_shared_on_gpu)
                 {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
+                    std::vector<Component*> caches = parent->FindChildrenByType(sys_sage::ComponentType::Cache);
                     for(Component * cache: caches){
                         if(static_cast<Cache*>(cache)->GetCacheName() == "L2"){
                             parent = cache;
@@ -707,7 +707,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
                 //constant L1 is child of constant L1.5
                 if(cache_type == "Constant_L1")
                 {
-                    std::vector<Component*> caches = parent->GetAllChildrenByType(sys_sage::ComponentType::Cache);
+                    std::vector<Component*> caches = parent->FindChildrenByType(sys_sage::ComponentType::Cache);
                     for(Component * cache: caches){
                         if(static_cast<Cache*>(cache)->GetCacheName() == "Constant_L1.5"){
                             parent = cache;
@@ -716,7 +716,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
                     }
                 }
 
-                std::vector<Component*> threads = sm->GetAllSubcomponentsByType(sys_sage::ComponentType::Thread);
+                std::vector<Component*> threads = sm->FindDescendantsByType(sys_sage::ComponentType::Thread);
                 for(int i=0; i<caches_per_sm; i++)
                 {
                     Cache * cache = new Cache(parent, i, cache_type);

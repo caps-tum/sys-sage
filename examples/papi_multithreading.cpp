@@ -85,10 +85,10 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
 
     const std::set<sys_sage::Component *> cpus {
-        node.GetSubcomponentById(0, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(1, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(5, sys_sage::ComponentType::Thread),
-        node.GetSubcomponentById(7, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(0, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(1, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(5, sys_sage::ComponentType::Thread),
+        node.GetDescendantById(7, sys_sage::ComponentType::Thread),
     };
 
     int rval;
@@ -179,12 +179,14 @@ int main(int argc, const char **argv)
             FATAL(PAPI_strerror(wargs[s].rval));
     }
 
+#ifndef NDEBUG
     for (s = 0; auto cpu : cpus) {
         // make sure that sys-sage captured the correct CPUs
         assert(wargs[s].metrics->GetComponents().size() == 1
                && wargs[s].metrics->GetComponent(0) == cpu);
         s++;
     }
+#endif
 
     // assuming at most two CPUs per core
     std::map<int, std::pair<double, double>> core_IPC;

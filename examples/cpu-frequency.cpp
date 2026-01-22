@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     cout << "-- End parseHwlocOutput" << endl;
 
     cout << "-- Refresh frequency on core 1 (and do not store the timestamp). ";
-    Core* c1 = (Core*)n->GetSubcomponentById(1, sys_sage::ComponentType::Core);
+    Core* c1 = (Core*)n->GetDescendantById(1, sys_sage::ComponentType::Core);
     if(c1 != NULL)
     {
         c1->RefreshFreq(false);//
