@@ -32,10 +32,10 @@ While sys-sage is deeply rooted in HPC and classical hardware, it’s built to b
 
 
 ## Documentation overview
-
 - [Detailed Concepts and Architecture](Concept.md)
 - [Installation Guide](Installation_Guide.md)
 - [Data Parsers](Data_Parsers.md)
+- [PAPI Integration](sys-sage_PAPI.md)
 - [**Python API**](python-sys-sage.md)
 
 - **API documentation**

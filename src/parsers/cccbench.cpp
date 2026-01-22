@@ -87,7 +87,7 @@ sys_sage::CccbenchParser::CccbenchParser(const char *csv_path)
 void sys_sage::CccbenchParser::applyDataPaths(Component *root)
 {
     auto corev = new vector<Component *>();
-    root->GetAllSubcomponentsByType(corev, sys_sage::ComponentType::Core);
+    root->FindDescendantsByType(corev, sys_sage::ComponentType::Core);
     //auto corev = root->GetAllChildrenByType(SYS_SAGE_COMPONENT_CORE);
 
     for(auto xcore : *corev)
@@ -107,9 +107,9 @@ void sys_sage::CccbenchParser::applyDataPaths(Component *root)
             auto min = new float(*min_element(xtoylatv.begin(), xtoylatv.end()));
             auto dtp = new DataPath(xcore, ycore, sys_sage::DataPathOrientation::Oriented,
                                    sys_sage::DataPathType::C2C, 0, *mean);
-            dtp->attrib.insert(std::pair<string, void *>("latency_max", (void *)max));
-            dtp->attrib.insert(std::pair<string, void *>("latency_min", (void *)min));
-            dtp->attrib.insert(std::pair<string, void *>("latency", (void *)mean));
+            dtp->attrib.insert(std::pair<string, void *>("latency_max", reinterpret_cast<void*>(max)));
+            dtp->attrib.insert(std::pair<string, void *>("latency_min", reinterpret_cast<void*>(min)));
+            dtp->attrib.insert(std::pair<string, void *>("latency", reinterpret_cast<void*>(mean)));
         }
     }
 }

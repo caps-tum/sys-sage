@@ -24,6 +24,17 @@ if (QDMI)
     add_executable(qdmi-test qdmi-test.cpp)
 endif()
 
+if(SS_PAPI)
+    add_executable(papi_basics papi_basics.cpp)
+    add_executable(papi_multithreading papi_multithreading.cpp)
+    add_executable(papi_monitor_process papi_monitor_process.cpp)
+    add_executable(papi_migrate_cpus papi_migrate_cpus.cpp)
+endif()
+
+if(SS_PAPI AND PROC_CPUINFO)
+    add_executable(papi_greenscore papi_greenscore.cpp)
+endif()
+
 install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test DESTINATION bin/examples)
 install(DIRECTORY example_data DESTINATION bin/examples)
 

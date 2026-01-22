@@ -36,8 +36,8 @@ ut::suite<"relation"> _ = []
     }
     ut::expect(ut::that % r.GetComponents() == v);
 
-    ut::expect(ut::that % foo.GetRelations(RelationType::Relation) == std::vector<Relation *> {&r});
-    ut::expect(ut::that % bar.GetRelations(RelationType::Relation) == std::vector<Relation *> {&r});
+    ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
+    ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
   };
 
   ut::test("deletion") = []
@@ -47,8 +47,8 @@ ut::suite<"relation"> _ = []
     Relation *r = new Relation (v);
     r->Delete();
 
-    ut::expect(ut::that % foo.GetRelations(RelationType::Relation).size() == 0U);
-    ut::expect(ut::that % bar.GetRelations(RelationType::Relation).size() == 0U);
+    ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation).size() == 0U);
+    ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation).size() == 0U);
   };
 
   ut::test("getters & setters") = []

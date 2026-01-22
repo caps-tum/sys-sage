@@ -50,7 +50,7 @@ int xmldumper_complex(std::string key, void* value, xmlNodePtr node) {
         return 0;
     //xmlBufferPtr buffer = xmlBufferCreate();
     std::string xml_str = res.cast<std::string>();
-    xmlDocPtr doc = xmlParseDoc((const xmlChar*)xml_str.c_str());
+    xmlDocPtr doc = xmlParseDoc(BAD_CAST xml_str.c_str());
     xmlNodePtr root = xmlDocGetRootElement(doc);
     xmlAddChild(node,root->children);
     return 1;
@@ -61,7 +61,7 @@ void* xmlloader(xmlNodePtr node) {
     xmlBufferPtr buffer = xmlBufferCreate();
     try{
         xmlNodeDump(buffer, node->doc, node, 0, 1);
-        std::string xml_str((const char*)xmlBufferContent(buffer));
+        std::string xml_str(reinterpret_cast<const char*>(xmlBufferContent(buffer)));
         xmlBufferFree(buffer);
         py::object value = read_attributes(py::cast(xml_str));
         //check for values content
@@ -81,7 +81,7 @@ int xmlloader_complex(xmlNodePtr node, sys_sage::Component *c) {
     xmlBufferPtr buffer = xmlBufferCreate();
     try{
         xmlNodeDump(buffer, node->doc, node, 0, 1);
-        std::string xml_str((const char*)xmlBufferContent(buffer));
+        std::string xml_str(reinterpret_cast<const char*>(xmlBufferContent(buffer)));
         xmlBufferFree(buffer);
         py::object comp = py::cast(c);
         py::object value = read_complex_attributes(py::cast(xml_str),comp);
@@ -174,12 +174,12 @@ py::object get_attribute(T &self, const std::string &key) {
     auto val = self.attrib.find(key);
     if (val != self.attrib.end()) {
         if(!key.compare("CATcos") || !key.compare("CATL3mask")){
-            uint64_t retval = *((uint64_t*)val->second); 
+            uint64_t retval = *(reinterpret_cast<uint64_t*>(val->second)); 
             return py::cast(retval);
         }
         else if(!key.compare("mig_size") )
         {
-            return py::cast(*(long long*)val->second);
+            return py::cast(*reinterpret_cast<long long*>(val->second));
         }
         //val->secondue: int
         else if(!key.compare("Number_of_streaming_multiprocessors") || 
@@ -187,28 +187,28 @@ py::object get_attribute(T &self, const std::string &key) {
         !key.compare("Number_of_cores_per_SM")  || 
         !key.compare("Bus_Width_bit") )
         {
-            return py::cast(*(int*)val->second);
+            return py::cast(*reinterpret_cast<int*>(val->second));
         }
         //value: double
         else if(!key.compare("Clock_Frequency") || !key.compare("GPU_Clock_Rate"))
         {
-            return py::cast(*(double*)val->second);
+            return py::cast(*reinterpret_cast<double*>(val->second));
         }
         //value: float
         else if(!key.compare("latency") ||
         !key.compare("latency_min") ||
         !key.compare("latency_max") )
         {
-            return py::cast(*(float*)val->second);
+            return py::cast(*reinterpret_cast<float*>(val->second));
         }   
         //value: string
         else if(!key.compare("CUDA_compute_capability") || 
         !key.compare("mig_uuid") )
         {
-            return py::cast(*(std::string*)val->second);
+            return py::cast(*reinterpret_cast<std::string*>(val->second));
         }
         else if(!key.compare("freq_history") ){
-            std::vector<std::tuple<long long,double>>* value = (std::vector<std::tuple<long long,double>>*)(val->second);
+            std::vector<std::tuple<long long,double>>* value = reinterpret_cast<std::vector<std::tuple<long long,double>>*>(val->second);
             py::dict freq_dict;
              for(auto [ ts,freq ] : *value){
                  freq_dict[py::cast(ts)] = py::cast(freq);
@@ -257,7 +257,8 @@ void remove_attribute(T &self, const std::string &key) {
 PYBIND11_MODULE(sys_sage, m) {
     using namespace sys_sage;
 
-    m.attr("COMPONENT_NONE") = ComponentType::None;
+    m.attr("COMPONENT_GENERIC") = ComponentType::Generic;
+    m.attr("COMPONENT_NONE") = ComponentType::Generic;
     m.attr("COMPONENT_THREAD") = ComponentType::Thread;
     m.attr("COMPONENT_CORE") = ComponentType::Core;
     m.attr("COMPONENT_CACHE") = ComponentType::Cache;
@@ -285,6 +286,12 @@ PYBIND11_MODULE(sys_sage, m) {
     m.attr("RELATION_TYPE_DATAPATH") = RelationType::DataPath;
     m.attr("RELATION_TYPE_QUANTUMGATE") = RelationType::QuantumGate;
     m.attr("RELATION_TYPE_COUPLINGMAP") = RelationType::CouplingMap;
+
+    m.attr("RELATION_CATEGORY_ANY") = RelationCategory::Any;
+    m.attr("RELATION_CATEGORY_DEFAULT") = RelationCategory::Default;
+#ifdef SS_PAPI
+    m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
+#endif
 
     m.attr("DATAPATH_TYPE_ANY") = DataPathType::Any;
     m.attr("DATAPATH_TYPE_NONE") = DataPathType::None;
@@ -333,7 +340,10 @@ PYBIND11_MODULE(sys_sage, m) {
         .def_property("parent", &Component::GetParent, &Component::SetParent, "The parent of the component")
         .def("SetParent", &Component::SetParent, py::arg("parent"), "Set the parent of the component")
         .def("PrintSubtree", &Component::PrintSubtree, "Print the subtree of the component up to level 0")
-        .def("PrintAllRelationsInSubtree", &Component::PrintAllRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print all relations in the subtree")
+// -- DEPRECATED PrintAllRelationsInSubtree (used up until version 1.0.0)
+        .def("PrintAllRelationsInSubtree", &Component::PrintRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print all relations in the subtree")
+// --
+        .def("PrintRelationsInSubtree", &Component::PrintRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print the relations in the subtree")
         .def_property("name", &Component::GetName, &Component::SetName, "The name of the component")
         .def_property_readonly("id", &Component::GetId, "The id of the component")
         .def_property_readonly("type", &Component::GetComponentType, "The type of the component")
@@ -342,37 +352,99 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetChild", &Component::GetChild, py::arg("id"), "Like get_child_by_id()")
         .def("GetChildById", &Component::GetChildById, py::arg("id"), "Get the first child component by id")
         .def("GetChildByType", &Component::GetChildByType, py::arg("type"), "Get the first child component by type")
-        //vector<Component*> as input doesnt work
-        .def("GetAllChildrenByType", (std::vector<Component*> (Component::*)(ComponentType::type) const)(&Component::GetAllChildrenByType), py::arg("type"), "Get all child components by type")
-        .def("GetAllSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))(&Component::GetAllSubcomponentsByType),py::arg("type") ,"Get all sub components by type")
-        .def("CountAllSubcomponents", &Component::CountAllSubcomponents, "Count all sub components")
-        .def("CountAllSubcomponentsByType", &Component::CountAllSubcomponentsByType, py::arg("type"),"Count sub components by type")
-        .def("CountChildrenByType", &Component::CountAllChildrenByType,py::arg("type"),"Count children by type")
+// -- DEPRECATED GetAllChildrenByType (used up until version 1.0.0)
+        .def("GetAllChildrenByType", (std::vector<Component*> (Component::*)(ComponentType::type) const)(&Component::FindChildrenByType), py::arg("type"), "Get all child components by type")
+// --
+        .def("FindChildrenByType", (std::vector<Component*> (Component::*)(ComponentType::type) const)(&Component::FindChildrenByType), py::arg("type"), "Find the child components by type")
+// -- DEPRECATED GetAllSubcomponentsByType (used up until version 1.0.0)
+        .def("GetAllSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))(&Component::FindDescendantsByType),py::arg("type") ,"Get all sub components by type")
+// --
+        .def("FindDescendantsByType", (std::vector<Component*> (Component::*) (ComponentType::type)) (&Component::FindDescendantsByType), py::arg("type") , "Find descendants by type")
+// -- DEPRECATED CountAllSubcomponents (used up until version 1.0.0)
+        .def("CountAllSubcomponents", [] (Component &self) {
+            return self.CountDescendantsByType(ComponentType::Any);
+        }, "Count all sub components")
+// --
+        .def("CountDescendantsByType", &Component::CountDescendantsByType, py::arg("type"), "Count the descendants by type")
+// -- DEPRECATED CountAllSubcomponentsByType (used up until version 1.0.0)
+        .def("CountAllSubcomponentsByType", &Component::CountDescendantsByType, py::arg("type"),"Count sub components by type")
+// --
+// -- DEPRECATED CountAllChildrenByType (used up until version 1.0.0)
+        .def("CountAllChildrenByType", &Component::CountChildrenByType,py::arg("type"),"Count children by type")
+// --
+        .def("CountChildrenByType", &Component::CountChildrenByType, py::arg("type"), "Count children by type")
         .def("GetAncestorByType", &Component::GetAncestorByType, py::arg("type"),"Get the first ancestor component by type")
-        .def("GetSubtreeDepth", &Component::GetSubtreeDepth, "Get the depth of the subtree")
+// -- DEPRECATED GetSubtreeDepth (used up until version 1.0.0)
+        .def("GetSubtreeDepth", &Component::CalcSubtreeDepth, "Get the depth of the subtree")
+// --
+        .def("CalcSubtreeDepth", &Component::CalcSubtreeDepth, "Calculate the depth of the subtree")
         .def("GetNthAncestor", &Component::GetNthAncestor, py::arg("n"),"Get the nth ancestor of the component")
-        .def("GetNthDescendents", (std::vector<Component*> (Component::*)(int))&Component::GetNthDescendents,py::arg("n"),"Get all the nth descendents of the component")
-        .def("GetSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))&Component::GetSubcomponentsByType,py::arg("type"),"Get all the sub components of the component by type")
-        .def("GetComponentsInSubtree", (std::vector<Component*> (Component::*)())&Component::GetComponentsInSubtree,"Get all the components in the subtree of the component")
-        .def("GetSubcomponentById", &Component::GetSubcomponentById, py::arg("id"),py::arg("type"),"Get the first sub component by id and type")
-        .def("GetRelations", &Component::GetRelations, py::arg("type"), "Get all relations of that type")
-        .def("GetAllRelationsBy", &Component::GetAllRelationsBy, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Get all relations of that type and position")
+// -- DEPRECATED GetNthDescendents (used up until version 1.0.0)
+        .def("GetNthDescendents", (std::vector<Component*> (Component::*)(int))&Component::FindNthDescendants,py::arg("n"),"Get all the nth descendents of the component")
+// --
+        .def("FindNthDescendants", (std::vector<Component*> (Component::*) (int)) &Component::FindNthDescendants, py::arg("n"), "Find the nth descendants of the component")
+// -- DEPRECATED GetSubcomponentsByType (used up until version 1.0.0)
+        .def("GetSubcomponentsByType", (std::vector<Component*> (Component::*)(ComponentType::type))&Component::FindDescendantsByType,py::arg("type"),"Get all the sub components of the component by type")
+// --
+// -- DEPRECATED GetComponentsInSubtree (used up until version 1.0.0)
+        .def("GetComponentsInSubtree", [] (Component &self) {
+            std::vector<Component *> v;
+            self.FindDescendantsByType(&v, ComponentType::Any);
+            return v;
+        }, "Get all the components in the subtree of the component")
+// --
+// -- DEPRECATED GetSubcomponentById (used up until version 1.0.0)
+        .def("GetSubcomponentById", &Component::GetDescendantById, py::arg("id"),py::arg("type"),"Get the first sub component by id and type")
+// --
+        .def("GetDescendantById", &Component::GetDescendantById, py::arg("id"), py::arg("type"), "Get the first descendant by id and type")
+// -- DEPRECATED GetRelations (used up until version 1.0.0)
+        .def("GetRelations", &Component::GetRelationsByType, py::arg("type"), "Get all relations of that type")
+// --
+        .def("GetRelationsByType", &Component::GetRelationsByType, py::arg("type"), "Get all relations of that type")
+// -- DEPRECATED GetAllRelationsBy (used up until version 1.0.0)
+        .def("GetAllRelationsBy", &Component::FindRelations, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Get all relations of that type and position")
+// --
+        .def("FindRelations", &Component::FindRelations, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Find the relations of that type and position")
         .def("GetDataPathByType", &Component::GetDataPathByType, py::arg("type"), py::arg("direction") = DataPathDirection::Any,"Get the first data path associated with the component by type")
-        .def("GetAllDataPaths", (std::vector<DataPath *> (Component::*)(DataPathType::type, DataPathDirection::type) const)&Component::GetAllDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Get all datapaths of that type and direction")
-        .def("CheckComponentTreeConsistency", &Component::CheckComponentTreeConsistency,"Check if the component tree is consistent")
-        // pybind11 doesn't support pass-by-reference or pass-by-pointer of primitive types.
-        // -> use a tuple instead of output parameters
+// -- DEPRECATED GetAllDataPaths (used up until version 1.0.0)
+        .def("GetAllDataPaths", (std::vector<DataPath *> (Component::*) (DataPathType::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Get all datapaths of that type and direction")
+// --
+        .def("FindDataPaths", (std::vector<DataPath *> (Component::*) (DataPathType::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Find the datapaths of that type and direction")
+// -- DEPRECATED CheckComponentTreeConsistency (used up until version 1.0.0)
+        .def("CheckComponentTreeConsistency", &Component::CheckSubtreeConsistency,"Check if the component tree is consistent")
+// --
+        .def("CheckSubtreeConsistency", &Component::CheckSubtreeConsistency, "Check if the subtree is consistent")
+// -- DEPRECATED GetTopologySize (used up until version 1.0.0)
         .def("GetTopologySize", [] (Component &self) {
             unsigned out_component_size = 0;
             unsigned out_dataPathSize = 0;
-            int total_bytes = self.GetTopologySize(&out_component_size, &out_dataPathSize);
+            int total_bytes = self.CalcSubtreeSize(&out_component_size, &out_dataPathSize);
             return std::make_tuple(total_bytes, out_component_size, out_dataPathSize);
         }, "Get the size of the topology")
-        .def("GetDepth", &Component::GetDepth,py::arg("refresh"),"Get the depth of the component, if refresh is true it will update the depth")
+// --
+        // pybind11 doesn't support pass-by-reference or pass-by-pointer of primitive types.
+        // -> use a tuple instead of output parameters
+        .def("CalcSubtreeSize", [] (Component &self) {
+            unsigned out_component_size = 0;
+            unsigned out_dataPathSize = 0;
+            int total_bytes = self.CalcSubtreeSize(&out_component_size, &out_dataPathSize);
+            return std::make_tuple(total_bytes, out_component_size, out_dataPathSize);
+        }, "Calculate the size of the subtree")
+// -- DEPRECATED GetDepth (used up until version 1.0.0)
+        .def("GetDepth", &Component::CalcDepth,py::arg("refresh"),"Get the depth of the component, if refresh is true it will update the depth")
+// --
+        .def("CalcDepth", &Component::CalcDepth, py::arg("refresh"), "Calculate the depth of the component, if refresh is true it will update the depth")
         .def("DeleteRelation", &Component::DeleteRelation, py::arg("relation"), "Delete the given relation from the component")
-        .def("DeleteAllRelations", &Component::DeleteAllRelations, py::arg("type") = RelationType::Any,"Delete all relations of that type from the component")
+// -- DEPRECATED DeleteAllRelations (used up until version 1.0.0)
+        .def("DeleteAllRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any,"Delete all relations of that type from the component")
+// --
+        .def("DeleteRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any, "Delete the relations of that type from the component")
         .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
         .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
+#ifdef SS_PAPI
+        .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet") = PAPI_NULL)
+        .def("FindPAPIrelationsInSubtree", (std::vector<Relation *> (Component::*)() const) &Component::FindPAPIrelationsInSubtree)
+#endif
         .def("__bool__",[](Component& self){
             std::vector<Component*> children = self.GetChildren();
             return !children.empty();
@@ -460,12 +532,22 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("RefreshFreq", &Thread::RefreshFreq,py::arg("keep_history") = false,"Refresh the frequency of the component")
         .def_property_readonly("freq", &Thread::GetFreq, "Get Frequency of this thread")
         #endif
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Thread::GetPAPImetric, py::arg("eventCode"), py::arg("eventSet"), py::arg("timestamp") = 0)
+        .def("PrintPAPImetrics", &Thread::PrintPAPImetrics, py::arg("eventSet") = PAPI_NULL)
+        .def("GetPAPIrelation", &Thread::PrintPAPImetrics, py::arg("eventSet"))
+        .def("FindPAPIrelations", (std::vector<Relation *> (Thread::*)() const) &Thread::FindPAPIrelations)
+        .def("FindPAPIeventSets", (std::vector<int> (Thread::*)() const) &Thread::FindPAPIeventSets)
+#endif
         .def(py::init<int,std::string>(),py::arg("id") = 0,py::arg("name") = "Thread")
         .def(py::init<Component*,int,std::string>(),py::arg("parent"),py::arg("id") = 0,py::arg("name") = "Thread");
 
     py::class_<Qubit, std::unique_ptr<Qubit, py::nodelete>, Component>(m, "Qubit")
         .def(py::init<int, std::string>(), py::arg("id") = 0, py::arg("name") = "Qubit")
         .def(py::init<Component *, int, std::string> (), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "Qubit")
+        #ifdef QDMI
+        .def("RefreshProperties", &Qubit::RefreshProperties)
+        #endif
         .def_property_readonly("t1", &Qubit::GetT1)
         .def_property_readonly("t2", &Qubit::GetT2)
         .def_property_readonly("readout_fidelity", &Qubit::GetReadoutFidelity)
@@ -482,12 +564,22 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("GetAllGateTypes", &QuantumBackend::GetAllGateTypes, "Get a list of the quantum gates in the backend")
         #ifdef QDMI
         .def_property("device", &QuantumBackend::GetQDMIDevice, &QuantumBackend::SetQDMIDevice)
+        .def("RefreshTopology", &QuantumBackend::RefreshTopology, py::arg("qubit_indices"), "Get all qubits in the backend")
         #endif
         .def("addGate", &QuantumBackend::addGate, py::arg("gate"), "Add this gate to the backend")
-        .def("GetGatesBySize", &QuantumBackend::GetGatesBySize, py::arg("size"), "Get quantum gates by their size")
-        .def("GetGatesByType", &QuantumBackend::GetGatesByType, py::arg("type"), "Get quantum gates by their type")
+// -- DEPRECATED GetGatesBySize (used up until version 1.0.0)
+        .def("GetGatesBySize", &QuantumBackend::FindGatesBySize, py::arg("size"), "Get quantum gates by their size")
+// --
+        .def("FindGatesBySize", &QuantumBackend::FindGatesBySize, py::arg("size"), "Find quantum gates by their size")
+// -- DEPRECATED GetGatesByType (used up until version 1.0.0)
+        .def("GetGatesByType", &QuantumBackend::FindGatesByType, py::arg("type"), "Get quantum gates by their type")
+// --
+        .def("FindGatesByType", &QuantumBackend::FindGatesByType, py::arg("type"), "Find quantum gates by their type")
         .def("GetNumberofGates", &QuantumBackend::GetNumberofGates, "Get the number of gates in the backend")
-        .def("GetAllQubits", &QuantumBackend::GetAllQubits, "Get all qubits in the backend");
+// -- DEPRECATED GetAllQubits (used up until version 1.0.0)
+        .def("GetAllQubits", &QuantumBackend::FindAllQubits, "Get all qubits in the backend")
+// --
+        .def("FindAllQubits", &QuantumBackend::FindAllQubits, "Find all qubits in the backend");
 
     py::class_<AtomSite::SiteProperties>(m, "SiteProperties")
         .def_readwrite("nRows", &AtomSite::SiteProperties::nRows)
@@ -508,6 +600,7 @@ PYBIND11_MODULE(sys_sage, m) {
         .def(py::init<const std::vector<Component*> &, int, bool>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true)
         .def_property("id", &Relation::GetId, &Relation::SetId)
         .def_property_readonly("type", &Relation::GetType)
+        .def_property_readonly("category", &Relation::GetCategory)
         .def_property_readonly("ordered", &Relation::IsOrdered)
         .def_property_readonly("components", &Relation::GetComponents)
         .def("__setitem__", [](Relation& self, const std::string& name, py::object value) {
@@ -522,6 +615,15 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("__delitem__", [](Relation& self, const std::string& name) {
             remove_attribute<Relation>(self,name);
         })
+#ifdef SS_PAPI
+        .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("eventCode"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
+        .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("eventCode"), py::arg("cpuNum"))
+        .def("PrintPAPImetrics", &Relation::PrintPAPImetrics, py::arg("cpuNum") = -1)
+        .def("FindPAPIevents", (std::vector<int> (Relation::*)() const) &Relation::FindPAPIevents)
+        .def("GetCurrentEventSet", &Relation::GetCurrentEventSet)
+        .def("GetElapsedTime", &Relation::GetElapsedTime, py::arg("timestamp"))
+        .def("GetLatestCpuNum", &Relation::GetLatestCpuNum)
+#endif
         .def("GetTypeStr", &Relation::GetTypeStr, "Get a string representing the type of the relation")
         .def("ContainsComponent", &Relation::ContainsComponent, py::arg("component"), "Check if a component is part of this relation")
         .def("GetComponent", &Relation::GetComponent, py::arg("index"), "Get a component at a specific position")
@@ -564,9 +666,9 @@ PYBIND11_MODULE(sys_sage, m) {
         .def("SetGateProperties", &QuantumGate::SetGateProperties, py::arg("name"), py::arg("fidelity"), py::arg("unitary"), "Sets the name, fidelity, unitary and type of the quantum gate")
         .def("Print", &QuantumGate::Print, "Print basic information about the quantum gate to stdout");
 
-    m.def("parseMt4gTopo", (int (*) (Node*,std::string,int, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"), py::arg("gpuID"), py::arg("delim") = ";");
-    m.def("parseMt4gTopo", (int (*) (Component*,std::string,int, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"), py::arg("gpuID"), py::arg("delim") = ";");
-    m.def("parseMt4gTopo", (int (*) (Chip*,std::string, std::string)) &parseMt4gTopo, "parseMt4gTopo", py::arg("parent"), py::arg("dataSourcePath"),  py::arg("delim") = ";");
+    m.def("ParseMt4g", (int (*) (Component *, const std::string &, int)) &ParseMt4g, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v1_x", (int (*) (Component *, const std::string &, int)) &ParseMt4g_v1_x, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v0_1", (int (*) (Component *, const std::string &, int, const std::string)) &ParseMt4g_v0_1, py::arg("parent"), py::arg("path"), py::arg("gpuId"), py::arg("delim") = ";", "Construct a complete GPU topology by parsing an mt4g output file.");
 
     m.def("parseHwlocOutput", &parseHwlocOutput, "parseHwlocOutput", py::arg("root"), py::arg("xmlPath"));
 
@@ -594,6 +696,56 @@ PYBIND11_MODULE(sys_sage, m) {
             read_complex_attributes = *search_custom_complex_attrib_key_fcn;
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
+
+#ifdef SS_PAPI
+    py::class_<Metric, std::unique_ptr<Metric, py::nodelete>>(m, "Metric")
+      .def_readwrite("timestamp", &Metric::timestamp)
+      .def_readwrite("value", &Metric::value)
+      .def_readwrite("permanent", &Metric::permanent)
+
+      .def("__str__", [](Metric &self){
+        std::string str = "{ .timestamp = ";
+        str += self.timestamp;
+        str += ", .value = ";
+        str += self.value;
+        str += " }";
+
+        return str;
+      });
+
+    py::class_<CpuMetrics, std::unique_ptr<CpuMetrics, py::nodelete>>(m, "CpuMetrics")
+      .def_readwrite("entries", &CpuMetrics::entries)
+      .def_readwrite("cpuNum", &CpuMetrics::cpuNum);
+
+    m.def("SS_PAPI_start", [](int eventSet, Relation *metrics) {
+      int rval = SS_PAPI_start(eventSet, &metrics);
+      return std::make_tuple(rval, metrics);
+    }, py::arg("eventSet"), py::arg("metrics"));
+
+    m.def("SS_PAPI_reset", &SS_PAPI_reset, py::arg("metrics"));
+
+    m.def("SS_PAPI_read", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_read(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_accum", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_accum(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+    m.def("SS_PAPI_stop", [](Relation *metrics, Component *root, bool permanent = false) {
+      unsigned long long timestamp;
+      int rval = SS_PAPI_stop(metrics, root, permanent, &timestamp);
+
+      return std::make_tuple(rval, timestamp);
+    }, py::arg("metrics"), py::arg("root"), py::arg("permanent") = false);
+
+#endif
 }
 
 

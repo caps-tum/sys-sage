@@ -23,6 +23,7 @@
 namespace sys_sage { //forward declaration
     class Component;
     class Qubit;
+    struct CpuMetrics;
 }
 
 namespace sys_sage {
@@ -54,7 +55,8 @@ namespace sys_sage {
          *
          * The type of the relation is set to sys_sage::RelationType::Relation.
          */
-        Relation(const std::vector<Component*>& components, int _id = 0, bool _ordered = true);
+        Relation(const std::vector<Component*>& components, int _id = 0, bool _ordered = true,
+                 RelationCategory::type category = RelationCategory::Default);
         /**
          * @brief Sets the id of the relationship.
          * @param _id The id of the relationship to set.
@@ -70,6 +72,12 @@ namespace sys_sage {
          * @return The current type of the relation (as sys_sage::RelationType::type).
          */
         RelationType::type GetType() const;
+
+        /**
+         * @brief Get the category of the relation.
+         */
+        RelationCategory::type GetCategory() const;
+
         /**
          * @brief Return a human-readable name of the relation type.
          * @return A string like "DataPath" or "QuantumGate".
@@ -144,6 +152,15 @@ namespace sys_sage {
         int UpdateComponent(Component* _old_component, Component * _new_component);
 
         /**
+         * @brief Removes the component at the given index.
+         * 
+         * @param index The index of interest.
+         *
+         * @return 0 on success, -1 otherwise.
+         */
+        int RemoveComponent(size_t index);
+
+        /**
          * @private
          * @brief Serialize this relation to XML.
          * @return A libxml node representing the relation.
@@ -163,13 +180,115 @@ namespace sys_sage {
          * This is a virtual destructor to ensure proper cleanup of derived classes.
          */
         virtual ~Relation() = default;
+
+#ifdef SS_PAPI
+        /**
+         * @brief Get the perf counter value of a specific event and CPU. Only
+         *        works if this relation is of category `RelationCategory::PAPI_Metrics`.
+         *
+         * @param eventCode The event of interest.
+         * @param cpuNum An optional parameter used to distinguish between a
+         *               CPU-centric view and an EventSet-centric view. If the
+         *               value is greater than -1, the perf counter value of
+         *               the CPU with the given `cpuNum` is returned. If it is
+         *               equal to -1, the output contains the sum of perf
+         *               counter values on all CPUs in the relation.
+         * @param timestamp An optional parameter used to select a perf counter
+         *                  value from a specific perf counter reading. A value
+         *                  of 0 refers to the latest reading. Note that the
+         *                  last recorded metrics entry of a CPU does not have
+         *                  to belong to the latest perf counter reading. This
+         *                  discrepency can happen when the last entry is set
+         *                  to "permanent mode" (see documentation of
+         *                  `sys_sage::SS_PAPI_read`) and this CPU was not
+         *                  involved in the latest reading.
+         *
+         * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
+         */
+        long long GetPAPImetric(int eventCode, int cpuNum = -1, unsigned long long timestamp = 0) const;
+
+        /**
+         * @brief Get all the perf counter values of a specific event that are
+         *        collected on a specific CPU. Only works if this relation is
+         *        of category `RelationCategory::PAPI_Metrics`.
+         *
+         * @param eventCode The event of interest.
+         * @param cpuNum The CPU of interest.
+         *
+         * @return A valid pointer to an object containing the perf counter
+         *         values. If such an object doesn't exist for the given
+         *         paramters, `nullptr` is returned.
+         */
+        const CpuMetrics *GetAllPAPImetrics(int eventCode, int cpuNum) const;
+
+        /**
+         * @brief Print PAPI metrics measured on the CPUs stored in this
+         *        relation. If this relation is not of category
+         *        `RelationCategory::PAPI_Metrics`, nothing will be done.
+         *
+         * @param cpuNum Optional parameter used to decide whether all CPUs
+         *        should be printed or only a specific one. If the value is -1,
+         *        the former will be done. Otherwise, the value is interpreted
+         *        as the target CPUs ID.
+         */
+        void PrintPAPImetrics(int cpuNum = -1) const;
+
+        /**
+         * @brief Retrieve all PAPI events stored in this relation.
+         *
+         * @return A vector containing the event codes. It may be empty if no
+         *         such events exist.
+         */
+        std::vector<int> FindPAPIevents() const;
+
+        /**
+         * @brief Retrieve all PAPI events stored in this relation.
+         *
+         * @param events A vector used for storing the event codes.
+         */
+        void FindPAPIevents(std::vector<int> &events) const;
+
+         /**
+          * @brief Retrieve the event set to which this relation is currently
+          *        (or was previously) bound to.
+          *
+          * @return The corresponding event set. If this relation is not of
+          *         category `RelationCategory::PAPI_Metrics`, then `PAPI_NULL`
+          *         will be returned instead.
+          */
+        int GetCurrentEventSet() const;
+
+        /**
+         * @brief Returns the time between the given timestamp and the start of
+         *        the event set.
+         *
+         * @param timestamp The timestamp of interest.
+         *
+         * @return If this relation is not of category
+         *         `RelationCategory::PAPI_Metrics`, 0 is returned, otherwise
+         *         the elapsed time.
+         */
+        unsigned long long GetElapsedTime(unsigned long long timestamp) const;
+
+        /**
+         * @brief Retrieve the ID of the CPU on which the latest perf counter
+         *        reading was conducted on.
+         *
+         * @return If this relation is not of category
+         *         `RelationCategory::PAPI_Metrics` or no measurements have yet
+         *         been taken, -1 is returned. Otherwise, the ID of the
+         *         described CPU.
+         */
+        int GetLatestCpuNum() const;
+#endif
+
     protected:
         /**
          * @private
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(RelationType::type _relation_type);
+        Relation(RelationType::type _relation_type, RelationCategory::type _relation_category);
         /**
          * @private
          * @brief Protected constructor for internal use. Makes sure that the relation type is set correctly.
@@ -178,7 +297,7 @@ namespace sys_sage {
          * @param _ordered Whether the order of components carries semantic meaning.
          * @param _relation_type The type of the relation (see RelationType::type).
          */
-        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type);
+        Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category);
 
         /**
          * @brief Whether order in the component list is meaningful.
@@ -193,9 +312,15 @@ namespace sys_sage {
         /**
          * @brief The type of the relationship (see RelationType::type).
          *
-         * This member variable stores the type or category of the relationship.
+         * This member variable stores the type of the relationship.
          */
         RelationType::type type;
+
+        /**
+         * @brief The category of the relationship.
+         */
+        RelationCategory::type category;
+
         /**
          * @brief A vector of components associated with the relationship.
          * 

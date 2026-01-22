@@ -44,14 +44,14 @@ int main(int argc, char *argv[])
         return 1;
     }
     cout << "-- End parseMusa" << endl;
-    cout << "Total num HW threads: " << topo->CountAllSubcomponentsByType(sys_sage::ComponentType::Thread) << endl;
+    cout << "Total num HW threads: " << topo->CountDescendantsByType(sys_sage::ComponentType::Thread) << endl;
 
     cout << "---------------- Printing the whole tree ----------------" << endl;
     topo->PrintSubtree();
     cout << "----------------                     ----------------" << endl;
 
     cout << "---------------- Printing all DataPaths ----------------" << endl;
-    topo->PrintAllRelationsInSubtree();
+    topo->PrintRelationsInSubtree();
     cout << "----------------                        ----------------" << endl;
 
     std::string output_name = "custom_data_parser_musa_sample_output.xml";

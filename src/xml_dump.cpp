@@ -34,13 +34,13 @@ int sys_sage::_search_default_attrib_key(std::string key, void* value, std::stri
     if(!key.compare("CATcos") || 
     !key.compare("CATL3mask") )
     {
-        *ret_value_str=std::to_string(*(uint64_t*)value);
+        *ret_value_str=std::to_string(*reinterpret_cast<uint64_t*>(value));
         return 1;
     }
     //value: long long
     else if(!key.compare("mig_size") )
     {
-        *ret_value_str=std::to_string(*(long long*)value);
+        *ret_value_str=std::to_string(*reinterpret_cast<long long*>(value));
         return 1;
     }
     //value: int
@@ -49,13 +49,13 @@ int sys_sage::_search_default_attrib_key(std::string key, void* value, std::stri
     !key.compare("Number_of_cores_per_SM")  || 
     !key.compare("Bus_Width_bit") )
     {
-        *ret_value_str=std::to_string(*(int*)value);
+        *ret_value_str=std::to_string(*reinterpret_cast<int*>(value));
         return 1;
     }
     //value: double
     else if(!key.compare("Clock_Frequency") || !key.compare("GPU_Clock_Rate") )
     {
-        *ret_value_str=std::to_string(*(double*)value);
+        *ret_value_str=std::to_string(*reinterpret_cast<double*>(value));
         return 1;
     }
     //value: float
@@ -63,14 +63,14 @@ int sys_sage::_search_default_attrib_key(std::string key, void* value, std::stri
     !key.compare("latency_min") ||
     !key.compare("latency_max") )
     {
-        *ret_value_str=std::to_string(*(float*)value);
+        *ret_value_str=std::to_string(*reinterpret_cast<float*>(value));
         return 1;
     }   
     //value: string
     else if(!key.compare("CUDA_compute_capability") || 
     !key.compare("mig_uuid") )
     {
-        *ret_value_str=*(std::string*)value;
+        *ret_value_str=*reinterpret_cast<std::string*>(value);
         return 1;
     }
 
@@ -82,17 +82,17 @@ int sys_sage::_search_default_complex_attrib_key(std::string key, void* value, x
     //value: std::vector<std::tuple<long long,double>>*
     if(!key.compare("freq_history"))
     {
-        std::vector<std::tuple<long long,double>>* val = (std::vector<std::tuple<long long,double>>*)value;
+        std::vector<std::tuple<long long,double>>* val = reinterpret_cast<std::vector<std::tuple<long long,double>>*>(value);
 
         xmlNodePtr attrib_node = xmlNewNode(NULL, (const unsigned char *)"Attribute");
-        xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
+        xmlNewProp(attrib_node, reinterpret_cast<const unsigned char *>("name"), reinterpret_cast<const unsigned char *>(key.c_str()));
         xmlAddChild(n, attrib_node);
         for(auto [ ts,freq ] : *val)
         {
-            xmlNodePtr attrib = xmlNewNode(NULL, (const unsigned char *)key.c_str());
-            xmlNewProp(attrib, (const unsigned char *)"timestamp", (const unsigned char *)std::to_string(ts).c_str());
-            xmlNewProp(attrib, (const unsigned char *)"frequency", (const unsigned char *)std::to_string(freq).c_str());
-            xmlNewProp(attrib, (const unsigned char *)"unit", (const unsigned char *)"MHz");
+            xmlNodePtr attrib = xmlNewNode(NULL, reinterpret_cast<const unsigned char *>(key.c_str()));
+            xmlNewProp(attrib, reinterpret_cast<const unsigned char *>("timestamp"), reinterpret_cast<const unsigned char *>(std::to_string(ts).c_str()));
+            xmlNewProp(attrib, reinterpret_cast<const unsigned char *>("frequency"), reinterpret_cast<const unsigned char *>(std::to_string(freq).c_str()));
+            xmlNewProp(attrib, reinterpret_cast<const unsigned char *>("unit"), reinterpret_cast<const unsigned char *>("MHz"));
             xmlAddChild(attrib_node, attrib);
         }
         return 1;
@@ -127,9 +127,9 @@ int sys_sage::_print_attrib(std::map<std::string,void*> attrib, xmlNodePtr n)
 
         if(ret==1)//attrib found
         {
-            xmlNodePtr attrib_node = xmlNewNode(NULL, (const unsigned char *)"Attribute");
-            xmlNewProp(attrib_node, (const unsigned char *)"name", (const unsigned char *)key.c_str());
-            xmlNewProp(attrib_node, (const unsigned char *)"value", (const unsigned char *)attrib_value.c_str());
+            xmlNodePtr attrib_node = xmlNewNode(NULL, reinterpret_cast<const unsigned char *>("Attribute"));
+            xmlNewProp(attrib_node, reinterpret_cast<const unsigned char *>("name"), reinterpret_cast<const unsigned char *>(key.c_str()));
+            xmlNewProp(attrib_node, reinterpret_cast<const unsigned char *>("value"), reinterpret_cast<const unsigned char *>(attrib_value.c_str()));
             xmlAddChild(n, attrib_node);
             continue;
         }
@@ -147,69 +147,69 @@ xmlNodePtr sys_sage::Memory::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
     if(size > 0)
-        xmlNewProp(n, (const unsigned char *)"size", (const unsigned char *)(std::to_string(size)).c_str());
-    xmlNewProp(n, (const unsigned char *)"is_volatile", (const unsigned char *)(std::to_string(is_volatile?1:0)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("size"), reinterpret_cast<const unsigned char *>(std::to_string(size).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("is_volatile"), reinterpret_cast<const unsigned char *>((std::to_string(is_volatile?1:0)).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Storage::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
     if(size > 0)
-        xmlNewProp(n, (const unsigned char *)"size", (const unsigned char *)(std::to_string(size)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("size"), reinterpret_cast<const unsigned char *>(std::to_string(size).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Chip::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
     if(!vendor.empty())
-        xmlNewProp(n, (const unsigned char *)"vendor", (const unsigned char *)(vendor.c_str()));
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("vendor"), reinterpret_cast<const unsigned char *>(vendor.c_str()));
     if(!model.empty())
-        xmlNewProp(n, (const unsigned char *)"model", (const unsigned char *)(model.c_str()));
-    xmlNewProp(n, (const unsigned char *)"type", (const unsigned char *)(std::to_string(type).c_str()));
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("model"), reinterpret_cast<const unsigned char *>(model.c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("type"), reinterpret_cast<const unsigned char *>(std::to_string(type).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Cache::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
-    xmlNewProp(n, (const unsigned char *)"cache_type", (const unsigned char *)cache_type.c_str());
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("cache_type"), reinterpret_cast<const unsigned char *>(cache_type.c_str()));
     if(cache_size >= 0)
-        xmlNewProp(n, (const unsigned char *)"cache_size", (const unsigned char *)(std::to_string(cache_size)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("cache_size"), reinterpret_cast<const unsigned char *>(std::to_string(cache_size).c_str()));
     if(cache_associativity_ways >= 0)
-        xmlNewProp(n, (const unsigned char *)"cache_associativity_ways", (const unsigned char *)(std::to_string(cache_associativity_ways)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("cache_associativity_ways"), reinterpret_cast<const unsigned char *>(std::to_string(cache_associativity_ways).c_str()));
     if(cache_line_size >= 0)
-        xmlNewProp(n, (const unsigned char *)"cache_line_size", (const unsigned char *)(std::to_string(cache_line_size)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("cache_line_size"), reinterpret_cast<const unsigned char *>(std::to_string(cache_line_size).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Subdivision::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
-    xmlNewProp(n, (const unsigned char *)"subdivision_type", (const unsigned char *)(std::to_string(type)).c_str());
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("subdivision_type"), reinterpret_cast<const unsigned char *>(std::to_string(type).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Numa::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
     if(size > 0)
-        xmlNewProp(n, (const unsigned char *)"size", (const unsigned char *)(std::to_string(size)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("size"), reinterpret_cast<const unsigned char *>(std::to_string(size).c_str()));
     return n;
 }
 xmlNodePtr sys_sage::Qubit::_CreateXmlSubtree()
 {
     xmlNodePtr n = Component::_CreateXmlSubtree();
-    xmlNewProp(n, (const unsigned char *)"q1_fidelity", (const unsigned char *)(std::to_string(q1_fidelity)).c_str());
-    xmlNewProp(n, (const unsigned char *)"t1", (const unsigned char *)(std::to_string(t1)).c_str());
-    xmlNewProp(n, (const unsigned char *)"t2", (const unsigned char *)(std::to_string(t2)).c_str());
-    xmlNewProp(n, (const unsigned char *)"readout_fidelity", (const unsigned char *)(std::to_string(readout_fidelity)).c_str());
-    xmlNewProp(n, (const unsigned char *)"readout_length", (const unsigned char *)(std::to_string(readout_length)).c_str());
-    xmlNewProp(n, (const unsigned char *)"frequency", (const unsigned char *)(std::to_string(frequency)).c_str());
-    xmlNewProp(n, (const unsigned char *)"calibration_time", (const unsigned char *)(calibration_time).c_str());
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("q1_fidelity"), reinterpret_cast<const unsigned char *>(std::to_string(q1_fidelity).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("t1"), reinterpret_cast<const unsigned char *>(std::to_string(t1).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("t2"), reinterpret_cast<const unsigned char *>(std::to_string(t2).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("readout_fidelity"), reinterpret_cast<const unsigned char *>(std::to_string(readout_fidelity).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("readout_length"), reinterpret_cast<const unsigned char *>(std::to_string(readout_length).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("frequency"), reinterpret_cast<const unsigned char *>(std::to_string(frequency).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("calibration_time"), reinterpret_cast<const unsigned char *>(calibration_time.c_str()));
     return n;
 }
 xmlNodePtr sys_sage::QuantumBackend::_CreateXmlSubtree()
 {
     //SVTODO deal with gate_types -- can this go into Relations?
     xmlNodePtr n = Component::_CreateXmlSubtree();
-    xmlNewProp(n, (const unsigned char *)"num_qubits", (const unsigned char *)(std::to_string(num_qubits)).c_str());
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("num_qubits"), reinterpret_cast<const unsigned char *>(std::to_string(num_qubits).c_str()));
     // if(gate_types.size() > 0)
     // {
     //     xmlNodePtr xml_gt = xmlNewNode(NULL, (const unsigned char *)"gateTypes");
@@ -231,14 +231,14 @@ xmlNodePtr sys_sage::AtomSite::_CreateXmlSubtree()
     xmlNodePtr n = Component::_CreateXmlSubtree();
     
     xmlNodePtr xml_siteprops = xmlNewNode(NULL, (const unsigned char *)"SiteProperties");
-    xmlNewProp(xml_siteprops, (const unsigned char *)"nRows", (const unsigned char *)(std::to_string(properties.nRows)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"nColumns", (const unsigned char *)(std::to_string(properties.nColumns)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"nAods", (const unsigned char *)(std::to_string(properties.nAods)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"nAodIntermediateLevels", (const unsigned char *)(std::to_string(properties.nAodIntermediateLevels)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"nAodCoordinates", (const unsigned char *)(std::to_string(properties.nAodCoordinates)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"interQubitDistance", (const unsigned char *)(std::to_string(properties.interQubitDistance)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"interactionRadius", (const unsigned char *)(std::to_string(properties.interactionRadius)).c_str());
-    xmlNewProp(xml_siteprops, (const unsigned char *)"blockingFactor", (const unsigned char *)(std::to_string(properties.blockingFactor)).c_str());
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("nRows"), reinterpret_cast<const unsigned char *>(std::to_string(properties.nRows).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("nColumns"), reinterpret_cast<const unsigned char *>(std::to_string(properties.nColumns).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("nAods"), reinterpret_cast<const unsigned char *>(std::to_string(properties.nAods).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("nAodIntermediateLevels"), reinterpret_cast<const unsigned char *>(std::to_string(properties.nAodIntermediateLevels).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("nAodCoordinates"), reinterpret_cast<const unsigned char *>(std::to_string(properties.nAodCoordinates).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("interQubitDistance"), reinterpret_cast<const unsigned char *>(std::to_string(properties.interQubitDistance).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("interactionRadius"), reinterpret_cast<const unsigned char *>(std::to_string(properties.interactionRadius).c_str()));
+    xmlNewProp(xml_siteprops, reinterpret_cast<const unsigned char *>("blockingFactor"), reinterpret_cast<const unsigned char *>(std::to_string(properties.blockingFactor).c_str()));
     xmlAddChild(n, xml_siteprops);
 
     //SVTODO handle shuttlingTimes, shuttlingAverageFidelities
@@ -248,13 +248,13 @@ xmlNodePtr sys_sage::AtomSite::_CreateXmlSubtree()
 xmlNodePtr sys_sage::Component::_CreateXmlSubtree()
 {
     xmlNodePtr n = xmlNewNode(NULL, (const unsigned char *)GetComponentTypeStr().c_str());
-    xmlNewProp(n, (const unsigned char *)"id", (const unsigned char *)(std::to_string(id)).c_str());
-    xmlNewProp(n, (const unsigned char *)"name", (const unsigned char *)name.c_str());
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("id"), reinterpret_cast<const unsigned char *>(std::to_string(id).c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("name"), reinterpret_cast<const unsigned char *>(name.c_str()));
     if(count > 0)
-        xmlNewProp(n, (const unsigned char *)"count", (const unsigned char *)(std::to_string(count)).c_str());
+        xmlNewProp(n, reinterpret_cast<const unsigned char *>("count"), reinterpret_cast<const unsigned char *>(std::to_string(count).c_str()));
     std::ostringstream addr;
     addr << this;
-    xmlNewProp(n, (const unsigned char *)"addr", (const unsigned char *)(addr.str().c_str()));
+    xmlNewProp(n, reinterpret_cast<const unsigned char *>("addr"), reinterpret_cast<const unsigned char *>(addr.str().c_str()));
 
     _print_attrib(attrib, n);
 
@@ -271,7 +271,7 @@ xmlNodePtr sys_sage::_buildComponentSubtree(Component* c)
 {
     switch(c->GetComponentType()) //not all necessarily have their specific implementation; if not, it will just call the default Component->_CreateXmlSubtree 
     {
-        case ComponentType::None:
+        case ComponentType::Generic:
             return reinterpret_cast<Component*>(c)->_CreateXmlSubtree();
         case ComponentType::Thread:
             return reinterpret_cast<Thread*>(c)->_CreateXmlSubtree();
@@ -311,28 +311,28 @@ xmlNodePtr sys_sage::DataPath::_CreateXmlEntry()
 {
     xmlNodePtr r_xml = Relation::_CreateXmlEntry();
 
-    xmlNewProp(r_xml, (const unsigned char *)"DataPathType", (const unsigned char *)(std::to_string(dp_type)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"bw", (const unsigned char *)(std::to_string(bw)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"latency", (const unsigned char *)(std::to_string(latency)).c_str());
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("DataPathType"), reinterpret_cast<const unsigned char *>(std::to_string(dp_type).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("bw"), reinterpret_cast<const unsigned char *>(std::to_string(bw).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("latency"), reinterpret_cast<const unsigned char *>(std::to_string(latency).c_str()));
     return r_xml;
 }
 xmlNodePtr sys_sage::QuantumGate::_CreateXmlEntry()
 {
     xmlNodePtr r_xml = Relation::_CreateXmlEntry();
 
-    xmlNewProp(r_xml, (const unsigned char *)"gate_size", (const unsigned char *)(std::to_string(gate_size)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"name", (const unsigned char *)name.c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"gate_length", (const unsigned char *)(std::to_string(gate_length)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"gate_type", (const unsigned char *)(std::to_string(gate_type)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"fidelity", (const unsigned char *)(std::to_string(fidelity)).c_str());
-    xmlNewProp(r_xml, (const unsigned char *)"unitary", (const unsigned char *)unitary.c_str());    
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("gate_size"), reinterpret_cast<const unsigned char *>(std::to_string(gate_size).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("name"), reinterpret_cast<const unsigned char *>(name.c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("gate_length"), reinterpret_cast<const unsigned char *>(std::to_string(gate_length).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("gate_type"), reinterpret_cast<const unsigned char *>(std::to_string(gate_type).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("fidelity"), reinterpret_cast<const unsigned char *>(std::to_string(fidelity).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("unitary"), reinterpret_cast<const unsigned char *>(unitary.c_str()));    
     return r_xml;
 }
 xmlNodePtr sys_sage::CouplingMap::_CreateXmlEntry()
 {
     xmlNodePtr r_xml = Relation::_CreateXmlEntry();
 
-    xmlNewProp(r_xml, (const unsigned char *)"fidelity", (const unsigned char *)(std::to_string(fidelity)).c_str());
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("fidelity"), reinterpret_cast<const unsigned char *>(std::to_string(fidelity).c_str()));
     return r_xml;
 }
 xmlNodePtr sys_sage::Relation::_CreateXmlEntry()
@@ -347,8 +347,8 @@ xmlNodePtr sys_sage::Relation::_CreateXmlEntry()
         xmlNewProp(r_xml, BAD_CAST "components", BAD_CAST (c_addr.str().c_str()));
     }
 
-    xmlNewProp(r_xml, (const unsigned char *)"ordered", (const unsigned char *)(std::to_string(ordered).c_str()));
-    xmlNewProp(r_xml, (const unsigned char *)"id", (const unsigned char *)(std::to_string(id).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("ordered"), reinterpret_cast<const unsigned char *>(std::to_string(ordered).c_str()));
+    xmlNewProp(r_xml, reinterpret_cast<const unsigned char *>("id"), reinterpret_cast<const unsigned char *>(std::to_string(id).c_str()));
     //xmlNewProp(r_xml, (const unsigned char *)"RelationType", (const unsigned char *)(std::to_string(type).c_str()));
     //RelationType provided through the xml node name
 
@@ -382,14 +382,14 @@ int sys_sage::exportToXml(
 
     //scan all Components for their relations
     std::vector<Component*> components;
-    root->GetComponentsInSubtree(&components);
+    root->FindDescendantsByType(&components, ComponentType::Any);
     std::cout << "Number of components to export: " << components.size() << std::endl;
     for(Component* cPtr : components)
     {
         //iterate over different relation types and process them separately
         for(RelationType::type rt : RelationType::RelationTypeList)
         {
-            std::vector<Relation*> rList = cPtr->GetRelations(rt);
+            std::vector<Relation*> rList = cPtr->GetRelationsByType(rt);
 
             for(Relation* r: rList)
             {

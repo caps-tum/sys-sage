@@ -56,6 +56,77 @@ namespace sys_sage {
             */
             long long GetCATAwareL3Size();
     #endif
+
+#ifdef SS_PAPI
+        /**
+         * @brief Get the perf counter value of a specific event in an event set.
+         *
+         * @param event The event of interest.
+         * @param eventSet The event set to which the event belongs to.
+         * @param timestamp An optional parameter used to select a perf counter
+         *                  value from a specific perf counter reading. A value
+         *                  of 0 refers to the latest reading. Note that the
+         *                  last recorded metrics entry of a CPU does not have
+         *                  to belong to the latest perf counter reading. This
+         *                  discrepency can happen when the last entry is set
+         *                  to "permanent mode" (see documentation of
+         *                  `sys_sage::SS_PAPI_read`) and this CPU was not
+         *                  involved in the latest reading.
+         *
+         * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
+         */
+        long long GetPAPImetric(int eventCode, int eventSet, unsigned long long timestamp = 0) const;
+
+        /**
+         * @brief Print all PAPI metrics of this CPU in given the event set.
+         *
+         * @param eventSet Specifies the event set of interest. If the value is
+         *        `PAPI_NULL`, then all event sets will be printed.
+         */
+        void PrintPAPImetrics(int eventSet = -1) const;
+
+        /**
+         * @brief Retrieve the relation that involves this component and corresponds to the given event set.
+         *
+         * @param eventSet The event set of interest.
+         *
+         * @return A valid pointer if such a relation exists, `nullptr` otherwise.
+         */
+        Relation *GetPAPIrelation(int eventSet) const;
+
+        /**
+         * @brief Retrieve all relations that are associated to this component
+         *        and contain PAPI metrics.
+         *
+         * @return A vector containing the relations. It may be empty if no
+         *         such relations exist.
+         */
+        std::vector<Relation *> FindPAPIrelations() const;
+
+        /**
+         * @brief Retrieve all relations that are associated to this component
+         *        and contain PAPI metrics.
+         *
+         * @param A vector used for storing the relations.
+         */
+        void FindPAPIrelations(std::vector<Relation *> &) const;
+
+        /**
+         * @brief Retrieve all eventSets that are associated to this component.
+         *
+         * @return A vector containing the relations. It may be empty if no
+         *         such relations exist.
+         */
+        std::vector<int> FindPAPIeventSets() const;
+
+        /**
+         * @brief Retrieve all eventSets that are associated to this component.
+         *
+         * @param A vector used for storing the relations.
+         */
+        void FindPAPIeventSets(std::vector<int> &) const;
+
+#endif
     private:
     };
 

@@ -31,7 +31,7 @@ int main()
     qc_topo->PrintSubtree();
     cout << "---------------- Printing Qubit Coupling Mappings for IBM Backend----------------" << endl;
     QuantumBackend* qc = dynamic_cast<QuantumBackend*>(qc_topo->GetChild(0));
-    int total_qubits = qc->CountAllSubcomponents();
+    int total_qubits = qc->CountDescendantsByType(ComponentType::Any);
     for (int i = 0; i < total_qubits; i++)
     {
         Qubit* q = dynamic_cast<Qubit*>(qc->GetChild(i));
@@ -44,10 +44,10 @@ int main()
         std::cout << "}\n";
     }
     cout << "---------------- Printing Supported Gate Types for IBM Backend----------------" << endl;
-    auto _1q_gates = qc->GetGatesBySize(SYS_SAGE_1Q_QUANTUM_GATE);
-    auto _2q_gates = qc->GetGatesBySize(SYS_SAGE_2Q_QUANTUM_GATE);
-    auto _mq_gates = qc->GetGatesBySize(SYS_SAGE_MQ_QUANTUM_GATE);
-    auto _0q_gates = qc->GetGatesBySize(SYS_SAGE_NO_TYPE_QUANTUM_GATE);
+    auto _1q_gates = qc->FindGatesBySize(SYS_SAGE_1Q_QUANTUM_GATE);
+    auto _2q_gates = qc->FindGatesBySize(SYS_SAGE_2Q_QUANTUM_GATE);
+    auto _mq_gates = qc->FindGatesBySize(SYS_SAGE_MQ_QUANTUM_GATE);
+    auto _0q_gates = qc->FindGatesBySize(SYS_SAGE_NO_TYPE_QUANTUM_GATE);
 
     if(_1q_gates.size())
     {

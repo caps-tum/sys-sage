@@ -52,14 +52,14 @@ int sys_sage::Chip::UpdateMIGSettings(std::string uuid)
     //cout << "...........multiprocessorCount " << attributes.multiprocessorCount << " gpuInstanceSliceCount=" << attributes.gpuInstanceSliceCount << "  computeInstanceSliceCount=" << attributes.computeInstanceSliceCount << "    memorySizeMB=" << attributes.memorySizeMB << endl;
     
     //main memory, expects the memory as a child of
-    Memory* m = (Memory*)GetChildByType(ComponentType::Memory);
+    Memory* m = static_cast<Memory*>(GetChildByType(ComponentType::Memory));
     long long* mig_size;
     if(m != NULL){
         DataPath * d = NULL;
         //iterate over dp_outgoing to check if DP already exists
-        for(Relation* r : GetRelations(RelationType::DataPath))
+        for(Relation* r : GetRelationsByType(RelationType::DataPath))
         {
-            DataPath * dp = reinterpret_cast<DataPath*>(r);
+            DataPath * dp = static_cast<DataPath*>(r);
             if( dp->GetDataPathType() == DataPathType::MIG && *(static_cast<std::string*>(dp->attrib["mig_uuid"])) == uuid)
             {
                 d = dp;
@@ -70,8 +70,8 @@ int sys_sage::Chip::UpdateMIGSettings(std::string uuid)
         d = new DataPath(this, m, DataPathOrientation::Bidirectional, DataPathType::MIG);
         std::string* mig_uuid = new std::string(uuid);
         mig_size = new long long(attributes.memorySizeMB*1000000);
-        d->attrib.insert({"mig_uuid",(void*)mig_uuid});
-        d->attrib.insert({"mig_size",(void*)mig_size});
+        d->attrib.insert({"mig_uuid",reinterpret_cast<void*>(mig_uuid)});
+        d->attrib.insert({"mig_size",reinterpret_cast<void*>(mig_size)});
     } else {
         std::cerr << "Chip::UpdateMIGSettings: Component Type Memory not found as a child of this Chip. Memory info will not be updated." << std::endl;
         ret = 1;
@@ -83,11 +83,11 @@ int sys_sage::Chip::UpdateMIGSettings(std::string uuid)
         L2_fraction = (m->GetSize() + (*mig_size/2)) / *mig_size; //divide and round up or down
     }
     std::vector<Component*> caches;
-    GetSubcomponentsByType(&caches, ComponentType::Cache);
+    FindDescendantsByType(&caches, ComponentType::Cache);
     std::vector<Cache*> L2_caches;
     for(Component* c : caches){
-        if(((Cache*)c)->GetCacheName() == "L2"){
-            L2_caches.push_back((Cache*)c);
+        if(static_cast<Cache*>(c)->GetCacheName() == "L2"){
+            L2_caches.push_back(static_cast<Cache*>(c));
         }            
     }
     int num_caches = L2_caches.size();
@@ -97,11 +97,11 @@ int sys_sage::Chip::UpdateMIGSettings(std::string uuid)
             DataPath * d = new DataPath(this, c, DataPathOrientation::Bidirectional, DataPathType::MIG);
             std::string* mig_uuid = new std::string(uuid);
             mig_size = new long long();
-            *mig_size = c->GetCacheSize() * ( (float)num_caches/(float)L2_fraction-(float)cache_id/(float)num_caches);
+            *mig_size = c->GetCacheSize() * ( static_cast<float>(num_caches)/static_cast<float>(L2_fraction)-static_cast<float>(cache_id)/static_cast<float>(num_caches));
             if(*mig_size <0)
                 *mig_size=0;
-            d->attrib.insert({"mig_uuid",(void*)mig_uuid});
-            d->attrib.insert({"mig_size",(void*)mig_size});
+            d->attrib.insert({"mig_uuid",reinterpret_cast<void*>(mig_uuid)});
+            d->attrib.insert({"mig_size",reinterpret_cast<void*>(mig_size)});
             cache_id++;
         }
     } else {
@@ -111,17 +111,17 @@ int sys_sage::Chip::UpdateMIGSettings(std::string uuid)
 
     //sm  attributes.multiprocessorCount
     std::vector<Component*> subdivisions;
-    GetSubcomponentsByType(&subdivisions, ComponentType::Subdivision);
+    FindDescendantsByType(&subdivisions, ComponentType::Subdivision);
     std::vector<Subdivision*> sms;
     for(Component* sm : subdivisions){
-        if(((Subdivision*)sm)->GetSubdivisionType() == SubdivisionType::GpuSM)
-            sms.push_back((Subdivision*)sm);
+        if(static_cast<Subdivision*>(sm)->GetSubdivisionType() == SubdivisionType::GpuSM)
+            sms.push_back(static_cast<Subdivision*>(sm));
     }
     for(Subdivision* sm: sms){
-        if(sm->GetId() < (int)attributes.multiprocessorCount){
+        if(sm->GetId() < static_cast<int>(attributes.multiprocessorCount)){
             DataPath * d = new DataPath(this, sm, DataPathOrientation::Bidirectional, DataPathType::MIG);
             std::string* mig_uuid = new std::string(uuid);
-            d->attrib.insert({"mig_uuid",(void*)mig_uuid});
+            d->attrib.insert({"mig_uuid",reinterpret_cast<void*>(mig_uuid)});
         }
     }
 
@@ -141,22 +141,22 @@ int sys_sage::Chip::GetMIGNumSMs(std::string uuid)
         std::cerr << "Chip::GetMIGNumSMs: no UUID provided or found in env CUDA_VISIBLE_DEVICES. Returning information for full machine." << std::endl;
         
         std::vector<Component*> subdivisions;
-        GetSubcomponentsByType(&subdivisions, ComponentType::Subdivision);
+        FindDescendantsByType(&subdivisions, ComponentType::Subdivision);
         std::vector<Subdivision*> sms;
         for(Component* sm : subdivisions){
-            if(((Subdivision*)sm)->GetSubdivisionType() == SubdivisionType::GpuSM){
+            if(static_cast<Subdivision*>(sm)->GetSubdivisionType() == SubdivisionType::GpuSM){
                 num_sm++;
             }
         }
     } 
     else
     {
-        for(Relation* r : GetRelations(RelationType::DataPath))
+        for(Relation* r : GetRelationsByType(RelationType::DataPath))
         {
-            DataPath * dp = reinterpret_cast<DataPath*>(r);
-            if(dp->GetDataPathType() == DataPathType::MIG && *(std::string*)dp->attrib["mig_uuid"] == uuid){
+            DataPath * dp = static_cast<DataPath*>(r);
+            if(dp->GetDataPathType() == DataPathType::MIG && *reinterpret_cast<std::string*>(dp->attrib["mig_uuid"]) == uuid){
                 Component* target = dp->GetTarget();
-                if(target->GetComponentType() == ComponentType::Subdivision && ((Subdivision*)target)->GetSubdivisionType() == SubdivisionType::GpuSM ){
+                if(target->GetComponentType() == ComponentType::Subdivision && static_cast<Subdivision*>(target)->GetSubdivisionType() == SubdivisionType::GpuSM ){
                     num_sm++;
                 }
             }
@@ -180,21 +180,21 @@ int sys_sage::Chip::GetMIGNumCores(std::string uuid)
         std::cerr << "Chip::GetMIGNumCores: no UUID provided or found in env CUDA_VISIBLE_DEVICES. Returning information for full machine." << std::endl;
 
         std::vector<Component*> subdivisions;
-        GetSubcomponentsByType(&subdivisions, ComponentType::Subdivision);
+        FindDescendantsByType(&subdivisions, ComponentType::Subdivision);
         for(Component* sm : subdivisions){
-            if(((Subdivision*)sm)->GetSubdivisionType() == SubdivisionType::GpuSM)
-                sms.push_back((Subdivision*)sm);
+            if(static_cast<Subdivision*>(sm)->GetSubdivisionType() == SubdivisionType::GpuSM)
+                sms.push_back(static_cast<Subdivision*>(sm));
         }
     }
     else
     {
-        for(Relation* r : GetRelations(RelationType::DataPath))
+        for(Relation* r : GetRelationsByType(RelationType::DataPath))
         {
-            DataPath * dp = reinterpret_cast<DataPath*>(r);
-            if(dp->GetDataPathType() == DataPathType::MIG && *(std::string*)dp->attrib["mig_uuid"] == uuid){
+            DataPath * dp = static_cast<DataPath*>(r);
+            if(dp->GetDataPathType() == DataPathType::MIG && *reinterpret_cast<std::string*>(dp->attrib["mig_uuid"]) == uuid){
                 Component* target = dp->GetTarget();
-                if(target->GetComponentType() == ComponentType::Subdivision && ((Subdivision*)target)->GetSubdivisionType() == SubdivisionType::GpuSM ){
-                    sms.push_back((Subdivision*)target);
+                if(target->GetComponentType() == ComponentType::Subdivision && static_cast<Subdivision*>(target)->GetSubdivisionType() == SubdivisionType::GpuSM ){
+                    sms.push_back(static_cast<Subdivision*>(target));
                 }
             }
         }
@@ -202,7 +202,7 @@ int sys_sage::Chip::GetMIGNumCores(std::string uuid)
 
     for(Subdivision* sm: sms)
     {
-        sm->GetSubcomponentsByType(&cores, ComponentType::Thread);
+        sm->FindDescendantsByType(&cores, ComponentType::Thread);
     }
     
     return cores.size();
@@ -222,12 +222,12 @@ long long sys_sage::Memory::GetMIGSize(std::string uuid) const
         return size;
     } 
 
-    for(Relation* r : GetRelations(RelationType::DataPath))
+    for(Relation* r : GetRelationsByType(RelationType::DataPath))
     {
-        DataPath * dp = reinterpret_cast<DataPath*>(r);
-        if(dp->GetDataPathType() == DataPathType::MIG && *(std::string*)dp->attrib["mig_uuid"] == uuid){
+        DataPath * dp = static_cast<DataPath*>(r);
+        if(dp->GetDataPathType() == DataPathType::MIG && *reinterpret_cast<std::string*>(dp->attrib["mig_uuid"]) == uuid){
             if (dp->attrib.count("mig_size")){
-                long long r = *(long long*)dp->attrib["mig_size"];
+                long long r = *reinterpret_cast<long long*>(dp->attrib["mig_size"]);
                 return r;
             }
         }
@@ -251,12 +251,12 @@ long long sys_sage::Cache::GetMIGSize(std::string uuid) const
     }
 
     if(GetCacheLevel() == 2){
-        for(Relation* r : GetRelations(RelationType::DataPath))
+        for(Relation* r : GetRelationsByType(RelationType::DataPath))
         {
-            DataPath * dp = reinterpret_cast<DataPath*>(r);
-            if(dp->GetDataPathType() == DataPathType::MIG && *(std::string*)dp->attrib["mig_uuid"] == uuid){
+            DataPath * dp = static_cast<DataPath*>(r);
+            if(dp->GetDataPathType() == DataPathType::MIG && *reinterpret_cast<std::string*>(dp->attrib["mig_uuid"]) == uuid){
                 if (dp->attrib.count("mig_size")){
-                    long long r = *(long long*)dp->attrib["mig_size"];
+                    long long r = *reinterpret_cast<long long*>(dp->attrib["mig_size"]);
                     return r;
                 }
             }

@@ -85,7 +85,7 @@ uint64_t getCoreCOS(unsigned int socketId, unsigned int coreId, unsigned * socke
     return std::numeric_limits<uint64_t>::max();
 }
 
-int Node::UpdateL3CATCoreCOS(){
+int sys_sage::Node::UpdateL3CATCoreCOS(){
 
     struct pqos_config cfg;
     const struct pqos_cpuinfo *p_cpu = NULL;
@@ -115,13 +115,13 @@ int Node::UpdateL3CATCoreCOS(){
     }
 
     vector<Chip*> sockets;
-    GetSubcomponentsByType((vector<Component*>*)&sockets, sys_sage::ComponentType::Chip);
+    FindDescendantsByType(reinterpret_cast<vector<Component*>*>(&sockets), sys_sage::ComponentType::Chip);
     for(auto it = std::begin(sockets); it != std::end(sockets); ++it)
     {
         Chip* socket = *it;
         //std::cout << "socket " << socket->GetComponentTypeStr() << " id " << socket->GetId() << std::endl;
         vector<Thread*> threads;
-        socket->GetSubcomponentsByType((vector<Component*>*)&threads, sys_sage::ComponentType::Thread);
+        socket->FindDescendantsByType(reinterpret_cast<vector<Component*>*>(&threads), sys_sage::ComponentType::Thread);
         for(auto it_threads = std::begin(threads); it_threads != std::end(threads); ++it_threads)
         {
             Thread* thread = *it_threads;
@@ -140,11 +140,11 @@ int Node::UpdateL3CATCoreCOS(){
             }
 
             //find L3 cache above the threads
-            Component* c = (Component*)thread;
+            Component* c = thread;
             while(c->GetParent() != NULL){
                 //go up until L3 found
                 c = c->GetParent();
-                if(c->GetComponentType() == sys_sage::ComponentType::Cache && ((Cache*)c)->GetCacheLevel() == 3)
+                if(c->GetComponentType() == sys_sage::ComponentType::Cache && static_cast<Cache*>(c)->GetCacheLevel() == 3)
                     break;
             };
             if(c==NULL || c->GetComponentType() != sys_sage::ComponentType::Cache){
@@ -154,15 +154,15 @@ int Node::UpdateL3CATCoreCOS(){
             //TODO check if exists -> overwrite
 
             //add DataPath to thread and L3
-            DataPath* d = NewDataPath(thread, c, SYS_SAGE_DATAPATH_BIDIRECTIONAL, SYS_SAGE_DATAPATH_TYPE_L3CAT);
-            d->attrib.insert({"CATcos", (void*)cos});
-            d->attrib.insert({"CATL3mask", (void*)mask});
+            DataPath* d = new DataPath(thread, c, sys_sage::DataPathOrientation::Bidirectional, sys_sage::DataPathType::L3CAT);
+            d->attrib.insert({"CATcos", reinterpret_cast<void*>(cos)});
+            d->attrib.insert({"CATL3mask", reinterpret_cast<void*>(mask)});
         }
     }
     return 1;
 }
 
-long long Thread::GetCATAwareL3Size()
+long long sys_sage::Thread::GetCATAwareL3Size()
 {
     //look for dp_outgoing where attrib contains "CATL3mask"
     for(auto it = std::begin(dp_outgoing); it != std::end(dp_outgoing); ++it)
@@ -172,12 +172,15 @@ long long Thread::GetCATAwareL3Size()
         if (search == dp->attrib.end()) {
             continue;
         }
-        uint64_t* mask = (uint64_t*)search->second;
+        uint64_t* mask = reinterpret_cast<uint64_t*>(search->second);
 
-        Cache* c = (Cache*)dp->GetTarget();
+        Cache* c = dynamic_cast<Cache*>(dp->GetTarget());
+        if (!c) {
+            continue;
+        }
         int available_cache_associativity_ways = 0;
         for(int bit = 0; bit<c->GetCacheAssociativityWays(); bit++){
-            if((*mask & (1<<bit)) == (uint64_t)(1<<bit)){
+            if((*mask & (1ULL<<bit)) == (1ULL<<bit)){
                 available_cache_associativity_ways++;
             }
         }
@@ -185,12 +188,12 @@ long long Thread::GetCATAwareL3Size()
         return c->GetCacheSize() / c->GetCacheAssociativityWays() * available_cache_associativity_ways ;
     }
 
-    Component* c = (Component*)this;
+    Component* c = this;
     while(c->GetParent() != NULL){
         //go up until L3 found
         c = c->GetParent();
-        if(c->GetComponentType() == sys_sage::ComponentType::Cache && ((Cache*)c)->GetCacheLevel() == 3)
-            return ((Cache*)c)->GetCacheSize();
+        if(c->GetComponentType() == sys_sage::ComponentType::Cache && static_cast<Cache*>(c)->GetCacheLevel() == 3)
+            return static_cast<Cache*>(c)->GetCacheSize();
     };
     return -1;
 }

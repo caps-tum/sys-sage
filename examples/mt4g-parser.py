@@ -23,7 +23,7 @@ if __name__ == "__main__":
     n = syge.Node(topo, 1)
 
     print("-- Parsing mt4g output from file", gpuTopoPath)
-    if syge.parseMt4gTopo(n, gpuTopoPath, 0, ";") != 0:  # adds topo to a next node
+    if syge.ParseMt4g_v0_1(n, gpuTopoPath, 0, ";") != 0:  # adds topo to a next node
         print("failed parsing mt4g output")
         usage(sys.argv[0])
         sys.exit(1)

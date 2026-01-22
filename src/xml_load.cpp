@@ -46,7 +46,7 @@ std::map<std::string, sys_sage::Component *> addr_to_component;
 
 //Helper-Function to retrieve string from xml-node
 std::string sys_sage::_getStringFromProp(xmlNodePtr n, std::string prop) {
-	const unsigned char *v = xmlGetProp(n, (const unsigned char *)prop.c_str());
+	const unsigned char *v = xmlGetProp(n, reinterpret_cast<const unsigned char *>(prop.c_str()));
 	std::string value(reinterpret_cast<char const *>(v));
 	return value;
 }
@@ -55,7 +55,7 @@ std::string sys_sage::_getStringFromProp(xmlNodePtr n, std::string prop) {
 void* sys_sage::_search_default_attrib_key(xmlNodePtr n) {
 	std::string key, value;
 	//check if the node has a name-attribute
-	if (xmlHasProp(n, (const xmlChar *)"name") && xmlHasProp(n, (const xmlChar *)"value")) 
+	if (xmlHasProp(n, BAD_CAST "name") && xmlHasProp(n, BAD_CAST "value")) 
 	{
 		key = _getStringFromProp(n, "name");
 		value = _getStringFromProp(n, "value");
@@ -69,12 +69,12 @@ void* sys_sage::_search_default_attrib_key(xmlNodePtr n) {
 	// Handle attributes with uint64_t values
 	if (!key.compare("CATcos") || !key.compare("CATL3mask")) 
 	{
-		return new long long (std::strtoull((const char *)value.c_str(), NULL, 16));
+		return new long long (std::strtoull(reinterpret_cast<const char *>(value.c_str()), NULL, 16));
 	}
 	// Handle attributes with long long values
 	else if (!key.compare("mig_size")) 
 	{
-		return new long long (std::strtoull((const char *)value.c_str(), NULL, 10));
+		return new long long (std::strtoull(reinterpret_cast<const char *>(value.c_str()), NULL, 10));
 	}
 
 	// Handle attributes with int values
@@ -115,7 +115,7 @@ void* sys_sage::_search_default_attrib_key(xmlNodePtr n) {
 // but a more complex structure like a vector
 int sys_sage::_search_default_complex_attrib_key(xmlNodePtr n, Component *c) {
 	std::string key;
-	if (xmlHasProp(n, (const xmlChar *)"name")) 
+	if (xmlHasProp(n, BAD_CAST "name")) 
 	{
 		key = _getStringFromProp(n, "name");
 	}
@@ -141,7 +141,7 @@ int sys_sage::_search_default_complex_attrib_key(xmlNodePtr n, Component *c) {
 
 			val->push_back(std::make_tuple(ts_ll, freq_d));
 		}
-		c->attrib[key] = (void*) val;
+		c->attrib[key] = reinterpret_cast<void*>(val);
 		return 1;
 	} 
 	//else if (!key.compare("GPU_Clock_Rate"))
@@ -237,56 +237,56 @@ sys_sage::Component* sys_sage::_CreateComponentSubtree(xmlNodePtr n) {
 	}
 	if (nodeName.compare("Cache") == 0) {
 		c = new Cache(id);
-		if (xmlHasProp(n, (const xmlChar *)"cache_level")) {
+		if (xmlHasProp(n, BAD_CAST "cache_level")) {
 			std::string value = _getStringFromProp(n, "cache_level");
-			((Cache *)c)->SetCacheLevel(std::stoi(value));
+			static_cast<Cache*>(c)->SetCacheLevel(std::stoi(value));
 		}
-		if (xmlHasProp(n, (const xmlChar *)"cache_size")) {
+		if (xmlHasProp(n, BAD_CAST "cache_size")) {
 			std::string value = _getStringFromProp(n, "cache_size");
-			((Cache *)c)->SetCacheSize(std::stoi(value));
+			static_cast<Cache*>(c)->SetCacheSize(std::stoi(value));
 		}
-		if (xmlHasProp(n, (const xmlChar *)"cache_associativity_ways")) {
+		if (xmlHasProp(n, BAD_CAST "cache_associativity_ways")) {
 			std::string value = _getStringFromProp(n, "cache_associativity_ways");
-			((Cache *)c)->SetCacheAssociativityWays(std::stoi(value));
+			static_cast<Cache*>(c)->SetCacheAssociativityWays(std::stoi(value));
 		}
-		if (xmlHasProp(n, (const xmlChar *)"cache_line_size")) {
+		if (xmlHasProp(n, BAD_CAST "cache_line_size")) {
 			std::string value = _getStringFromProp(n, "cache_line_size");
-			((Cache *)c)->SetCacheLineSize(std::stoi(value));
+			static_cast<Cache*>(c)->SetCacheLineSize(std::stoi(value));
 		}
 	}
 	if (nodeName.compare("Subdivision") == 0) {
 		c = new Subdivision(id);
 		int sd_type = std::stoi(_getStringFromProp(n, "type"));
 
-		((Subdivision *)c)->SetSubdivisionType(sd_type);
+		static_cast<Subdivision*>(c)->SetSubdivisionType(sd_type);
 	}
 	if (nodeName.compare("NUMA") == 0) {
 		c = new Numa(id);
-		if (xmlHasProp(n, (const xmlChar *)"size")) {
+		if (xmlHasProp(n, BAD_CAST "size")) {
 			std::string value = _getStringFromProp(n, "size");
-			((Numa *)c)->SetSize(std::stoll(value));
+			static_cast<Numa*>(c)->SetSize(std::stoll(value));
 		}
 	}
 	if (nodeName.compare("Chip") == 0) {
 		c = new Chip(id);
 		// check for vendor and model
-		if (xmlHasProp(n, (const xmlChar *)"vendor")) {
+		if (xmlHasProp(n, BAD_CAST "vendor")) {
 			std::string value = _getStringFromProp(n, "vendor");
-			((Chip *)c)->SetVendor(value);
+			static_cast<Chip*>(c)->SetVendor(value);
 		}
-		if (xmlHasProp(n, (const xmlChar *)"model")) {
+		if (xmlHasProp(n, BAD_CAST "model")) {
 			std::string model = _getStringFromProp(n, "model");
-			((Chip *)c)->SetModel(model);
+			static_cast<Chip*>(c)->SetModel(model);
 		}
 	}
 	if (nodeName.compare("Memory") == 0) {
 		long long size = 0;
 		bool is_volatile = false;
-		if (xmlHasProp(n, (const xmlChar *)"size")) {
+		if (xmlHasProp(n, BAD_CAST "size")) {
 			std::string value = _getStringFromProp(n, "size");
 			size = std::stoll(value);
 		}
-		if (xmlHasProp(n, (const xmlChar *)"is_volatile")) {
+		if (xmlHasProp(n, BAD_CAST "is_volatile")) {
 			std::string value = _getStringFromProp(n, "is_volatile");
 			is_volatile = (std::string(value) == "true");
 		}
@@ -295,12 +295,12 @@ sys_sage::Component* sys_sage::_CreateComponentSubtree(xmlNodePtr n) {
 	if (nodeName.compare("Storage") == 0) {
 		// Same as with memory
 		long long size = 0;
-		if (xmlHasProp(n, (const xmlChar *)"size")) {
+		if (xmlHasProp(n, BAD_CAST "size")) {
 			std::string value = _getStringFromProp(n, "size");
 			size = std::stoll(value);
 		}
 		c = new Storage();
-		((Storage *)c)->SetSize(size);
+		static_cast<Storage *>(c)->SetSize(size);
 	}
 	if (nodeName.compare("Node") == 0) {
 		c = new Node(id);
@@ -418,13 +418,13 @@ sys_sage::Component* sys_sage::importFromXml(
 
 	Component *c = NULL;
 	for (xmlNodePtr n = sys_sage_root->children; n != NULL; n = n->next) {
-		if (xmlStrcmp(n->name, (const xmlChar *)"text") == 0) {
+		if (xmlStrcmp(n->name, BAD_CAST "text") == 0) {
 			//do nothing
 		}
-		else if (xmlStrcmp(n->name, (const xmlChar *)"Components") == 0) {
+		else if (xmlStrcmp(n->name, BAD_CAST "Components") == 0) {
 			c = _CreateComponentSubtree(n);
 		}
-		else if (xmlStrcmp(n->name, (const xmlChar *)"Relations") == 0) {
+		else if (xmlStrcmp(n->name, BAD_CAST "Relations") == 0) {
 			_CreateRelations(n);
 		}
 	}

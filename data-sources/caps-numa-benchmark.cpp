@@ -99,8 +99,8 @@ if(round == 0) cerr << "    numa" << n << ": mem_sz[mb] "<< numa[n].numa_mem_sz/
             if(numa[n].numa_mem_sz == 0)
                 continue;
             int sum;
-            mock_arr = (uint64_t*)numa_alloc_onnode(numa[n].arrsz, n);
-            arr = (uint64_t*)numa_alloc_onnode(numa[n].arrsz, n);
+            mock_arr = reinterpret_cast<uint64_t*>(numa_alloc_onnode(numa[n].arrsz, n));
+            arr = reinterpret_cast<uint64_t*>(numa_alloc_onnode(numa[n].arrsz, n));
 
             fill_arr(arr, numa[n].num_elems);
             fill_arr(mock_arr, numa[n].num_elems);
@@ -167,7 +167,7 @@ void run_caps_numa_benchmark() {
     if (numa_available() == -1)
         return;
 
-    int measure_numa_only = 1;
+    [[ maybe_unused ]]int measure_numa_only = 1;
     #ifdef MEASURE_EACH_CPU
     measure_numa_only = 0;
     #endif

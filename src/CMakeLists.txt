@@ -36,6 +36,7 @@ set(SOURCES
     parsers/hwloc.cpp
     parsers/caps-numa-benchmark.cpp
     parsers/mt4g.cpp
+    parsers/mt4g_v0_1.cpp
     parsers/cccbench.cpp
     parsers/qdmi-parser.cpp
     parsers/iqm-parser.cpp
@@ -72,6 +73,11 @@ set(HEADERS
     parsers/qdmi-parser.hpp
     parsers/iqm-parser.hpp
     )
+
+if(SS_PAPI)
+	list(APPEND SOURCES ${EXT_INTF}/ss_papi.cpp)
+	list(APPEND HEADERS ${EXT_INTF}/ss_papi.hpp)
+endif()
 
 # add_library(sys-sage SHARED ${SOURCES} ${HEADERS})
 
@@ -166,4 +172,3 @@ endif()
         FILES_MATCHING PATTERN "*.hpp")
 
 #endif()
-

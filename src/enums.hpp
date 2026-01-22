@@ -22,7 +22,10 @@ namespace sys_sage {
     namespace ComponentType{
         using type = int32_t; /**< ComponentType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
-        constexpr type None = 1; /**< class Component (do not use normally)*/
+        constexpr type Any = -1;
+        constexpr type Generic = 1; /**< class Component (do not use normally)*/
+        [[ deprecated("Use ComponentType::Generic instead. This constant will be removed in the future (used up until version 1.0.0).") ]]
+        constexpr type None = Generic; /**< class Component (do not use normally)*/
         constexpr type Thread = 2; /**< class Thread */
         constexpr type Core = 3; /**< class Core */
         constexpr type Cache = 4; /**< class Cache */
@@ -39,7 +42,7 @@ namespace sys_sage {
 
         //SVTODO this should remain private???
         static const std::unordered_map<type, const char*> names = {
-            {None, "GenericComponent"},
+            {Generic, "GenericComponent"},
             {Thread, "HW_Thread"},
             {Core, "Core"},
             {Cache, "Cache"},
@@ -118,7 +121,7 @@ namespace sys_sage {
             Relation, 
             DataPath, 
             QuantumGate, 
-            CouplingMap
+            CouplingMap,
         };
 
         //SVTODO this should remain private???
@@ -142,6 +145,19 @@ namespace sys_sage {
             if (it != names.end()) return it->second;
             return "Unknown";
         }
+    }
+
+    /**
+     * @brief Enumerates all supported relation categories in sys-sage.
+     */
+    namespace RelationCategory {
+        using type = int32_t; /**< RelationCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+
+        constexpr type Any = -1; /**< Any category. */
+        constexpr type Default = 0; /**< The default category. */
+#ifdef SS_PAPI
+        constexpr type PAPI_Metrics = 1; /**< A relation used for capturing PAPI metrics. */
+#endif
     }
 
     /**

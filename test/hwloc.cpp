@@ -22,7 +22,7 @@ static suite<"hwloc"> _ = []
          })
     {
         std::vector<Component *> components;
-        topo.GetSubcomponentsByType(&components, type);
+        topo.FindDescendantsByType(&components, type);
         expect(that % _u(count) == components.size());
     }
 
