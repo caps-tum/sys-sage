@@ -11,7 +11,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   endif()
 endif()
 
-project(sys-sage VERSION 1.0.0 LANGUAGES C CXX )
+project(sys-sage VERSION 1.1.0 LANGUAGES C CXX )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 ######################################################
