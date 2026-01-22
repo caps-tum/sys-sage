@@ -80,6 +80,7 @@ spack install sys-sage
 - libpqos (11+, only when building with the **INTEL_CAT** option)
 - numactl (only when building **caps-numa-benchmark data source**)
 - hwloc (2.9+, only when building **hwloc data source**)
+- papi (3.10+, only when building with **PAPI** option)
 
 #### Building from sources
 
