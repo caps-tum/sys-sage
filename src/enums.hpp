@@ -106,6 +106,8 @@ namespace sys_sage {
      * @brief Enumerates all supported relation types in sys-sage.
      *
      * Used to distinguish between different types of relations (edges) in the topology graph.
+     * It gives a high-level classification of the relationship between hardware components
+     * (e.g. data transfer between cache and core). Each type corresponds to one C++ class.
      */
     namespace RelationType{
         using type = int32_t; /**< RelationType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
@@ -149,6 +151,11 @@ namespace sys_sage {
 
     /**
      * @brief Enumerates all supported relation categories in sys-sage.
+     *
+     * Due to the high versatility of the `Relation` class and the numerous ways
+     * in which components can be related to one another, sys-sage provides the
+     * means for a more fine grained categorization of the relations. It can be
+     * used to indicate a special purpose of the relation (e.g. performance metrics collection).
      */
     namespace RelationCategory {
         using type = int32_t; /**< RelationCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
