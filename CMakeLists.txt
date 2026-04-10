@@ -41,7 +41,7 @@ if(DATA_SOURCES OR DS_HWLOC)
   find_package(HWLOC REQUIRED)
 endif()
 
-if(PY_SYS_SAGE)
+if(PYBIND)
   find_package(Python 3.10 COMPONENTS Interpreter Development REQUIRED)
   find_package(pybind11 CONFIG REQUIRED)
 endif()
@@ -86,6 +86,7 @@ option(DS_MT4G "Build and install data source mt4g (Compute and memory topology 
 option(DS_NUMA "Build and install data source caps-numa-benchmark" OFF)
 option(QDMI "Build with QDMI for Quantum Systems" OFF)
 option(PAPI "Build and install with performance metrics functionality using PAPI" OFF)
+option(PYBIND "Build with Python bindings" OFF)
 
 set(SS_PAPI ${PAPI})
 

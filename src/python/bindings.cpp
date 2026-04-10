@@ -2,7 +2,7 @@
 #define SYS_SAGE_BINDINGS_CPP
 
 #include "defines.hpp"
-#ifdef PY_SYS_SAGE
+#ifdef PYBIND
 
 #include <cstdio>
 #include <exception>
@@ -749,5 +749,5 @@ PYBIND11_MODULE(sys_sage, m) {
 }
 
 
-#endif //PY_SYS_SAGE
+#endif //PYBIND
 #endif //SYS_SAGE_BINDINGS_CPP
