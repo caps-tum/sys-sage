@@ -3,8 +3,6 @@ pybind11_add_module(sys_sage MODULE bindings.cpp)
 target_link_libraries(sys_sage PRIVATE pybind11::module)
 target_link_libraries(sys_sage PRIVATE sys-sage)
 
-set_target_properties(sys_sage PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
-
 execute_process(
     COMMAND ${Python_EXECUTABLE} -c "import os, sysconfig; print(os.path.relpath(sysconfig.get_path('purelib'), sysconfig.get_config_var('prefix')))"
     OUTPUT_VARIABLE PYTHON_REL_SITE_PACKAGE_PATH
