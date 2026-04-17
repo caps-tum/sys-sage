@@ -1,0 +1,7 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "py_sys_sage"
+version = "1.0.0"

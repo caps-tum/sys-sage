@@ -7,16 +7,16 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "Component.hpp"
-#include "Thread.hpp"
-#include "Core.hpp"
-#include "Cache.hpp"
-#include "Subdivision.hpp"
-#include "Numa.hpp"
-#include "Chip.hpp"
-#include "Memory.hpp"
-#include "Storage.hpp"
-#include "Node.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Thread.hpp>
+#include <sys-sage/Core.hpp>
+#include <sys-sage/Cache.hpp>
+#include <sys-sage/Subdivision.hpp>
+#include <sys-sage/Numa.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Memory.hpp>
+#include <sys-sage/Storage.hpp>
+#include <sys-sage/Node.hpp>
 
 /*! \file */
 

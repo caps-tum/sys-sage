@@ -1,9 +1,3 @@
-#ifndef SYS_SAGE_BINDINGS_CPP
-#define SYS_SAGE_BINDINGS_CPP
-
-#include "defines.hpp"
-#ifdef PYBIND
-
 #include <cstdio>
 #include <exception>
 #include <libxml2/libxml/parser.h>
@@ -14,7 +8,8 @@
 #include <string>
 #include <tuple>
 
-#include "sys-sage.hpp"
+#include <sys-sage/sys-sage.hpp>
+#include <sys-sage/defines.hpp>
 
 namespace py = pybind11;
 
@@ -747,7 +742,3 @@ PYBIND11_MODULE(sys_sage, m) {
 
 #endif
 }
-
-
-#endif //PYBIND
-#endif //SYS_SAGE_BINDINGS_CPP
