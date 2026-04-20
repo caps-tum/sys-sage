@@ -1,5 +1,5 @@
-#ifndef DEFINES
-#define DEFINES
+#ifndef SYS_SAGE_DEFINES_HPP
+#define SYS_SAGE_DEFINES_HPP
 
 //add cmake-style define, so that when headers are included as an external library, the options/defines used during compilation will be reflected also in the headers
 #cmakedefine PROC_CPUINFO        //in cmake, add -DPROC_CPUINFO=OFF to turn off (default on)

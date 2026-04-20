@@ -1,7 +1,9 @@
-#ifndef CHIP_HPP
-#define CHIP_HPP
+#ifndef SYS_SAGE_CHIP_HPP
+#define SYS_SAGE_CHIP_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/enums.hpp>
+#include <string>
 
 namespace sys_sage {
 
@@ -123,4 +125,4 @@ namespace sys_sage {
     };
 }
 
-#endif //CHIP_HPP
+#endif

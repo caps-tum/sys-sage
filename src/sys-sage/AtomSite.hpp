@@ -1,7 +1,9 @@
-#ifndef ATOMSITE_HPP
-#define ATOMSITE_HPP
+#ifndef SYS_SAGE_ATOMSITE_HPP
+#define SYS_SAGE_ATOMSITE_HPP
 
-#include "QuantumBackend.hpp"
+#include <sys-sage/QuantumBackend.hpp>
+#include <map>
+#include <string>
 
 namespace sys_sage {
 
@@ -52,13 +54,14 @@ namespace sys_sage {
         /**
          * @brief Shuttling times for various operations, indexed by operation name.
          */
-        std::map <std::string, double> shuttlingTimes;
+        std::map<std::string, double> shuttlingTimes;
 
         /**
         * @brief Average fidelities for shuttling operations, indexed by operation name.
         */
-        std::map <std::string, double> shuttlingAverageFidelities;
+        std::map<std::string, double> shuttlingAverageFidelities;
 
     };
 } //namespace sys_sage 
-#endif //ATOMSITE_HPP
+
+#endif

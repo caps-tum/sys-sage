@@ -1,11 +1,12 @@
-#ifndef DATAPATH_CPP
-#define DATAPATH_CPP
+#ifndef SYS_SAGE_DATAPATH_HPP
+#define SYS_SAGE_DATAPATH_HPP
 
-#include "Relation.hpp"
+#include <sys-sage/Relation.hpp>
+#include <sys-sage/enums.hpp>
 
-namespace sys_sage { //forward declaration
-    class Component;
-}
+//namespace sys_sage { //forward declaration
+//    class Component;
+//}
 
 namespace sys_sage {
     /**
@@ -142,4 +143,5 @@ namespace sys_sage {
     };
  
 } //namespace sys_sage 
-#endif // RELATION_HPP
+
+#endif

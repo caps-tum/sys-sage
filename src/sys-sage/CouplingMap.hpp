@@ -1,7 +1,7 @@
-#ifndef COUPLINGMAP_HPP
-#define COUPLINGMAP_HPP
+#ifndef SYS_SAGE_COUPLINGMAP_HPP
+#define SYS_SAGE_COUPLINGMAP_HPP
 
-#include "Relation.hpp"
+#include <sys-sage/Relation.hpp>
 
 namespace sys_sage {
 
@@ -64,4 +64,5 @@ namespace sys_sage {
         double fidelity; ///< Fidelity of the coupling (e.g., two-qubit gate fidelity)
     };
 }
-#endif //COUPLINGMAP_HPP
+
+#endif

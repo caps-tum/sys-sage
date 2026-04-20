@@ -1,6 +1,7 @@
-#ifndef ENUMS_HPP
-#define ENUMS_HPP
+#ifndef SYS_SAGE_ENUMS_HPP
+#define SYS_SAGE_ENUMS_HPP
 
+#include <sys-sage/defines.hpp>
 #include <cstdint>
 #include <unordered_map>
 
@@ -255,4 +256,5 @@ namespace sys_sage {
 
 
 }
-#endif //ENUMS_HPP
+
+#endif

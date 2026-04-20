@@ -1,43 +1,47 @@
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/defines.hpp.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/defines.hpp
+    sys-sage/defines.hpp.in
+    sys-sage/defines.hpp
 )
 
 set(SOURCES
-    Component.cpp
-    Thread.cpp
-    Core.cpp
-    Cache.cpp
-    Subdivision.cpp
-    Numa.cpp
-    Chip.cpp
-    Memory.cpp
-    Storage.cpp
-    Node.cpp
-    QuantumBackend.cpp
-    Qubit.cpp
-    AtomSite.cpp
-    Topology.cpp
-    Relation.cpp
-    DataPath.cpp
-    QuantumGate.cpp
-    CouplingMap.cpp
-    xml_dump.cpp
-    xml_load.cpp
-    external_interfaces/intel_pqos.cpp
-    external_interfaces/proc_cpuinfo.cpp
-    external_interfaces/nvidia_mig.cpp
-    parsers/hwloc.cpp
-    parsers/caps-numa-benchmark.cpp
-    parsers/mt4g.cpp
-    parsers/mt4g_v0_1.cpp
-    parsers/cccbench.cpp
-    parsers/qdmi-parser.cpp
-    parsers/iqm-parser.cpp
+    sys-sage/Component.cpp
+    sys-sage/Topology.cpp
+    sys-sage/Node.cpp
+    sys-sage/Storage.cpp
+    sys-sage/Chip.cpp
+    sys-sage/Numa.cpp
+    sys-sage/Subdivision.cpp
+    sys-sage/Memory.cpp
+    sys-sage/Cache.cpp
+    sys-sage/Core.cpp
+    sys-sage/Thread.cpp
+    sys-sage/QuantumBackend.cpp
+    sys-sage/AtomSite.cpp
+    sys-sage/Qubit.cpp
+
+    sys-sage/Relation.cpp
+    sys-sage/DataPath.cpp
+    sys-sage/QuantumGate.cpp
+    sys-sage/CouplingMap.cpp
+
+    sys-sage/xml_dump.cpp
+    sys-sage/xml_load.cpp
+
+    sys-sage/parsers/hwloc.cpp
+    sys-sage/parsers/caps-numa-benchmark.cpp
+    sys-sage/parsers/mt4g.cpp
+    sys-sage/parsers/mt4g_v0_1.cpp
+    sys-sage/parsers/cccbench.cpp
+    sys-sage/parsers/qdmi-parser.cpp
+    sys-sage/parsers/iqm-parser.cpp
+
+    sys-sage/external_interfaces/intel_pqos.cpp
+    sys-sage/external_interfaces/proc_cpuinfo.cpp
+    sys-sage/external_interfaces/nvidia_mig.cpp
 )
 
 if(SS_PAPI)
-	list(APPEND SOURCES external_interfaces/ss_papi.cpp)
+	list(APPEND SOURCES sys-sage/external_interfaces/ss_papi.cpp)
 endif()
 
 add_library(sys-sage SHARED ${SOURCES})
@@ -50,7 +54,7 @@ include(GNUInstallDirs)
 
 target_include_directories(sys-sage PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/sys-sage>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 find_package(nlohmann_json 3.10 REQUIRED)
@@ -81,7 +85,7 @@ if(PAPI)
     find_package(PAPI REQUIRED)
 
     target_include_directories(sys-sage PUBLIC ${PAPI_INCLUDE_DIRS})
-    target_link_libraries(sys-sage ${PAPI_LIBRARIES})
+    target_link_libraries(sys-sage PRIVATE ${PAPI_LIBRARIES})
 endif()
 
 install(TARGETS sys-sage
@@ -91,7 +95,10 @@ install(TARGETS sys-sage
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+install(FILES sys-sage.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(DIRECTORY sys-sage/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sys-sage
     FILES_MATCHING PATTERN "*.hpp"
 )
@@ -119,4 +126,5 @@ configure_file(
     @ONLY
 )
 install(FILES ${PROJECT_BINARY_DIR}/sys-sage.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)

@@ -1,32 +1,38 @@
-#ifndef SYS_SAGE
-#define SYS_SAGE
+#ifndef SYS_SAGE_HPP
+#define SYS_SAGE_HPP
 
-//includes all other headers
-#include "Topology.hpp"
-#include "Component.hpp"
-#include "Thread.hpp"
-#include "Core.hpp"
-#include "Cache.hpp"
-#include "Subdivision.hpp"
-#include "Numa.hpp"
-#include "Chip.hpp"
-#include "Memory.hpp"
-#include "Storage.hpp"
-#include "Node.hpp"
-#include "QuantumBackend.hpp"
-#include "Qubit.hpp"
-#include "AtomSite.hpp"
-#include "Relation.hpp"
-#include "DataPath.hpp"
-#include "QuantumGate.hpp"
-#include "CouplingMap.hpp"
-#include "xml_dump.hpp"
-#include "xml_load.hpp"
-#include "parsers/hwloc.hpp"
-#include "parsers/caps-numa-benchmark.hpp"
-#include "parsers/mt4g.hpp"
-#include "parsers/cccbench.hpp"
-#include "parsers/qdmi-parser.hpp"
-#include "parsers/iqm-parser.hpp"
-#include "external_interfaces/ss_papi.hpp"
-#endif //SYS_SAGE
+//includes internal headers
+
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Topology.hpp>
+#include <sys-sage/Node.hpp>
+#include <sys-sage/Storage.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Numa.hpp>
+#include <sys-sage/Subdivision.hpp>
+#include <sys-sage/Memory.hpp>
+#include <sys-sage/Cache.hpp>
+#include <sys-sage/Core.hpp>
+#include <sys-sage/Thread.hpp>
+#include <sys-sage/QuantumBackend.hpp>
+#include <sys-sage/AtomSite.hpp>
+#include <sys-sage/Qubit.hpp>
+
+#include <sys-sage/Relation.hpp>
+#include <sys-sage/DataPath.hpp>
+#include <sys-sage/QuantumGate.hpp>
+#include <sys-sage/CouplingMap.hpp>
+
+#include <sys-sage/xml_dump.hpp>
+#include <sys-sage/xml_load.hpp>
+
+#include <sys-sage/parsers/hwloc.hpp>
+#include <sys-sage/parsers/caps-numa-benchmark.hpp>
+#include <sys-sage/parsers/mt4g.hpp>
+#include <sys-sage/parsers/cccbench.hpp>
+#include <sys-sage/parsers/qdmi-parser.hpp>
+#include <sys-sage/parsers/iqm-parser.hpp>
+
+#include <sys-sage/external_interfaces/ss_papi.hpp>
+
+#endif

@@ -1,7 +1,7 @@
-#ifndef CORE_HPP
-#define CORE_HPP
+#ifndef SYS_SAGE_CORE_HPP
+#define SYS_SAGE_CORE_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
 
 namespace sys_sage {
 
@@ -55,4 +55,4 @@ namespace sys_sage {
     };
 }
 
-#endif //CORE_HPP
+#endif

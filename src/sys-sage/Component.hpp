@@ -1,27 +1,18 @@
-#ifndef COMPONENT
-#define COMPONENT
+#ifndef SYS_SAGE_COMPONENT_HPP
+#define SYS_SAGE_COMPONENT_HPP
 
-#include <array>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <set>
-
-#include "defines.hpp"
-#include "enums.hpp"
-#include "DataPath.hpp"
+#include <sys-sage/defines.hpp>
+#include <sys-sage/enums.hpp>
 #include <libxml/parser.h>
-
-
+#include <array>
+#include <map>
+#include <vector>
+#include <string>
 
 namespace sys_sage { //forward declaration
-    class Topology;
-
     class Relation;
     class DataPath;
-    class QuantumGate;
 }
-
 
 namespace sys_sage {
     //SVTODO make sure parameters such as ComponentType are of the correct type
@@ -858,4 +849,5 @@ namespace sys_sage {
     };
 
 } //namespace sys_sage 
-#endif //COMPONENT_HPP
+
+#endif

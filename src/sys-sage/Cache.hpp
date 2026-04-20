@@ -1,8 +1,8 @@
+#ifndef SYS_SAGE_CACHE_HPP
+#define SYS_SAGE_CACHE_HPP
 
-#ifndef CACHE_HPP
-#define CACHE_HPP
-
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <string>
 
 namespace sys_sage {
 
@@ -144,4 +144,5 @@ namespace sys_sage {
     #endif
     };
 }
-#endif //CACHE_HPP
+
+#endif
