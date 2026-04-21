@@ -14,7 +14,7 @@
  * sys-sage PAPI integration would handle these scenarios.
  */
 
-#include "sys-sage.hpp"
+#include <sys-sage.hpp>
 #include <assert.h>
 #include <iostream>
 #include <pthread.h>

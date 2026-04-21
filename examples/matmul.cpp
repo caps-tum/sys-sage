@@ -1,3 +1,6 @@
+#include <sys-sage.hpp>
+#include <hwloc.h>
+
 ///for matmul
 #include<iostream>
 #include<iomanip>
@@ -10,9 +13,6 @@
 //pid
 #include <unistd.h>
 #include <sys/types.h>
-
-#include "sys-sage.hpp"
-#include <hwloc.h>
 
 //intel cat
 #ifdef INTEL_PQOS

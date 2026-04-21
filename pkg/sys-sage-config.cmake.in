@@ -13,6 +13,17 @@ if(DATA_SOURCES OR DS_HWLOC)
   find_dependency(HWLOC)
 endif()
 
+# expose the options of the build configuration
+set(sys-sage-INTEL_PQOS @INTEL_PQOS@)
+set(sys-sage-NVIDIA_MIG @NVIDIA_MIG@)
+set(sys-sage-PROC_CPUINFO @PROC_CPUINFO@)
+set(sys-sage-DATA_SOURCES @DATA_SOURCES@)
+set(sys-sage-DS_HWLOC @DS_HWLOC@)
+set(sys-sage-DS_MT4G @DS_MT4G@)
+set(sys-sage-DS_NUMA @DS_NUMA@)
+set(sys-sage-QDMI @QDMI@)
+set(sys-sage-PAPI @PAPI@)
+
 include("${CMAKE_CURRENT_LIST_DIR}/sys-sage-targets.cmake")
 
 check_required_components(sys-sage)

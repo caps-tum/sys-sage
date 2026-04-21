@@ -12,7 +12,7 @@ add_executable(test test.cpp topology.cpp datapath.cpp hwloc.cpp mt4g.cpp caps-n
 target_compile_definitions(test PRIVATE SYS_SAGE_TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
 
 find_package(sys-sage REQUIRED)
-target_link_libraries(test PRIVATE sys_sage::sys-sage)
+target_link_libraries(test PRIVATE sys-sage::sys-sage)
 
 find_package(ut REQUIRED)
 target_link_libraries(test PRIVATE Boost::ut)

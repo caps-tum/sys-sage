@@ -13,7 +13,7 @@
  *   - ...plot the performance counters collected at each CPU.
  */
 
-#include "sys-sage.hpp"
+#include <sys-sage.hpp>
 #include <errno.h>
 #include <filesystem>
 #include <fstream>

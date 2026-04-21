@@ -3,7 +3,7 @@
  * together with plain PAPI.
  */
 
-#include "sys-sage.hpp"
+#include <sys-sage.hpp>
 #include <iostream>
 #include <memory>
 #include <stdlib.h>

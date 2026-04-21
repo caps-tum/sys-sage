@@ -5,14 +5,12 @@ export CONF_IBM=/home/diogenes/sys-sage/build/_deps/backends-src/tests/ibm_conf.
 export QDMI_CONFIG_FILE=/home/diogenes/sys-sage/build/_deps/qdmi-src/.qdmi-config
 export PROP_IBM=/home/diogenes/sys-sage/build/_deps/backends-src/tests/ibm_prob.json
 */
-#ifdef QDMI
+
+#include <sys-sage.hpp>
+#include <iomanip>
+#include <iostream>
 
 using namespace sys_sage;
-
-#include <iostream>
-#include <string.h>
-#include <iomanip>
-#include "sys-sage.hpp"
 
 int main()
 {
@@ -140,5 +138,3 @@ int main()
        
     return 0;
 }
-
-#endif QDMI

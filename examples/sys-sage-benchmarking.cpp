@@ -1,13 +1,9 @@
-
-
+#include <sys-sage.hpp>
+#include <libxml/parser.h>
 #include <cstdint>
-#include <iostream>
-// #include <hwloc.h>
 #include <chrono>
-#include <libxml2/libxml/parser.h>
-#include <sys/types.h>
-
-#include "sys-sage.hpp"
+#include <iostream>
+#include <string>
 
 using namespace sys_sage;
 

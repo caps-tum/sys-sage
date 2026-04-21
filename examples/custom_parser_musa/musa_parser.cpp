@@ -1,12 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <map>
-#include <sstream>
-#include <algorithm>
-
 #include "musa_parser.hpp"
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 using namespace sys_sage;
 

@@ -1,5 +1,7 @@
-#include "sys-sage.hpp"
+#include <sys-sage.hpp>
+#include <libxml2/tree.h>
 #include <functional>
+#include <string>
 
 using namespace sys_sage;
 using std::cout;

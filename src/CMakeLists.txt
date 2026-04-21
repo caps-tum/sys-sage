@@ -113,7 +113,7 @@ install(DIRECTORY sys-sage/
 
 install(EXPORT sys-sage-targets
     FILE sys-sage-targets.cmake
-    NAMESPACE sys_sage::
+    NAMESPACE sys-sage::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sys-sage
 )
 

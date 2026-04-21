@@ -1,16 +1,10 @@
 #ifndef MUSA_PARSER
 #define MUSA_PARSER
 
-#include <iostream>
-#include <fstream>
+#include <sys-sage.hpp>
 #include <string>
 #include <vector>
 #include <map>
-#include <sstream>
-
-
-#include "sys-sage.hpp"
-
 
 int parseMusa(sys_sage::Chip* _socket, std::string datapath);
 

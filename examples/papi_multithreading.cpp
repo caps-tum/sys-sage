@@ -14,7 +14,7 @@
  *   - ...compute the IPC on the cores of the CPUs
  */
 
-#include "sys-sage.hpp"
+#include <sys-sage.hpp>
 #include <assert.h>
 #include <iostream>
 #include <map>

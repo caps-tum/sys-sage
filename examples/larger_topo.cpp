@@ -1,9 +1,6 @@
-
-
+#include <sys-sage.hpp>
 #include <iostream>
-//#include <hwloc.h>
-
-#include "sys-sage.hpp"
+#include <string>
 
 using namespace sys_sage;
 
