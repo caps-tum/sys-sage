@@ -30,11 +30,9 @@ jobs:
       - name: Configure library
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPAPI=ON # TODO: add more flags in the future
       - name: Build library
-        run: cmake --build build --prallel
+        run: cmake --build build --parallel
       - name: Install library
-        run: cmake --install build
-      - name: Get boost-ext-ut
-        run: 
+        run: sudo cmake --install build
       - name: Configure tests
         run: cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug ${{ inputs.flags }}
       - name: Build tests
