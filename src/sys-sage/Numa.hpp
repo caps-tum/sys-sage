@@ -1,7 +1,7 @@
-#ifndef NUMA_HPP
-#define NUMA_HPP
+#ifndef SYS_SAGE_NUMA_HPP
+#define SYS_SAGE_NUMA_HPP
 
-#include "Subdivision.hpp"
+#include <sys-sage/Subdivision.hpp>
 
 namespace sys_sage {
 
@@ -56,4 +56,4 @@ namespace sys_sage {
     };
 }
 
-#endif //NUMA_HPP
+#endif

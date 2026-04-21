@@ -1,7 +1,14 @@
-#ifndef QUANTUMGATE_HPP
-#define QUANTUMGATE_HPP
+#ifndef SYS_SAGE_QUANTUMGATE_HPP
+#define SYS_SAGE_QUANTUMGATE_HPP
 
-#include "Relation.hpp"
+#include <sys-sage/Relation.hpp>
+#include <sys-sage/enums.hpp>
+#include <string>
+#include <vector>
+
+namespace sys_sage {
+    class Qubit;
+}
 
 namespace sys_sage {
 
@@ -205,4 +212,5 @@ namespace sys_sage {
 
 
 }
-#endif //QUANTUMGATE_HPP
+
+#endif

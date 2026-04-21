@@ -1,18 +1,18 @@
-#include "sys-sage.hpp"
+#include <sys-sage/external_interfaces/ss_papi.hpp>
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Relation.hpp>
 #include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <queue>
 #include <stddef.h>
 #include <sched.h>
 #include <string>
 #include <sstream>
 #include <utility>
-#include <vector>
 
 #define TIME() static_cast<unsigned long long>( std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() )
 

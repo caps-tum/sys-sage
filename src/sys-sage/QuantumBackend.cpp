@@ -1,8 +1,6 @@
-#include "QuantumBackend.hpp"
-
-#include "Qubit.hpp"
-
-
+#include <sys-sage/QuantumBackend.hpp>
+#include <sys-sage/Qubit.hpp>
+#include <sys-sage/QuantumGate.hpp>
 
 sys_sage::QuantumBackend::QuantumBackend(int _id, std::string _name):Component(_id, _name, sys_sage::ComponentType::QuantumBackend){}
 sys_sage::QuantumBackend::QuantumBackend(Component * _parent, int _id, std::string _name):Component(_parent, _id, _name, sys_sage::ComponentType::QuantumBackend){}
@@ -90,5 +88,3 @@ void sys_sage::QuantumBackend::SetQDMIDevice(QDMI_Device dev)
 QDMI_Device sys_sage::QuantumBackend::GetQDMIDevice(){ return device; }
 
 #endif
-
-

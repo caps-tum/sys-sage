@@ -1,7 +1,7 @@
-#ifndef STORAGE_HPP
-#define STORAGE_HPP
+#ifndef SYS_SAGE_STORAGE_HPP
+#define SYS_SAGE_STORAGE_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
 
 namespace sys_sage {
 
@@ -55,4 +55,4 @@ namespace sys_sage {
     };
 }
 
-#endif //STORAGE_HPP
+#endif

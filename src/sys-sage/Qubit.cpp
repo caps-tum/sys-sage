@@ -1,6 +1,4 @@
-#include "Qubit.hpp"
-
-
+#include <sys-sage/Qubit.hpp>
 
 sys_sage::Qubit::Qubit(int _id, std::string _name):Component(_id, _name, sys_sage::ComponentType::Qubit){}
 sys_sage::Qubit::Qubit(Component * parent, int _id, std::string _name):Component(parent, _id, _name, sys_sage::ComponentType::Qubit){}
@@ -13,7 +11,6 @@ void sys_sage::Qubit::SetProperties(double _t1, double _t2, double _readout_fide
     readout_fidelity = _readout_fidelity;
     q1_fidelity = _q1_fidelity;
     readout_length = _readout_length;
-
 }
 
 double sys_sage::Qubit::GetT1() const { return t1; }    

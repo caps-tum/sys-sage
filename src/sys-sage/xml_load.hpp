@@ -1,10 +1,13 @@
-#ifndef XML_LOAD
-#define XML_LOAD
+#ifndef SYS_SAGE_XML_LOAD_HPP
+#define SYS_SAGE_XML_LOAD_HPP
 
+#include <libxml/tree.h>
 #include <functional>
+#include <string>
 
-#include "Component.hpp"
-#include "DataPath.hpp"
+namespace sys_sage {
+    class Component;
+}
 
 //SVTODO make sure all functions from the .cpp are also in the header
 //SVTODO check the import and export functionalities and adapt them to Relations
@@ -71,5 +74,5 @@ namespace sys_sage {
      */
     int _collect_attrib(xmlNodePtr n, Component* c);
 } //namespace sys_sage
-#endif
 
+#endif

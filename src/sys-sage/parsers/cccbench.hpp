@@ -1,15 +1,13 @@
-#ifndef CCCBENCH_PARSER
-#define CCCBENCH_PARSER
+#ifndef SYS_SAGE_PARSERS_CCCBENCH_PARSER_HPP
+#define SYS_SAGE_PARSERS_CCCBENCH_PARSER_HPP
 
+#include <string>
 #include <vector>
 
-#include "enums.hpp"
-
-#include "Component.hpp"
-#include "Node.hpp"
-
-
-
+namespace sys_sage {
+    class Component;
+    class Node;
+}
 
 namespace sys_sage {
     int parseCccbenchOutput(Node* , std::string );
@@ -55,4 +53,5 @@ namespace sys_sage {
     };
 
 } //namespace sys_sage
+
 #endif

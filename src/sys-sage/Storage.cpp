@@ -1,5 +1,4 @@
-#include "Storage.hpp"
-
+#include <sys-sage/Storage.hpp>
 
 sys_sage::Storage::Storage(long long _size):Component(0, "Storage", sys_sage::ComponentType::Storage), size(_size){}
 sys_sage::Storage::Storage(Component * parent, long long _size):Component(parent, 0, "Storage", sys_sage::ComponentType::Storage), size(_size){}

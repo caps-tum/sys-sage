@@ -1,6 +1,3 @@
-#ifndef RELATION_HPP
-#define RELATION_HPP
-
 /**
  * @file Relation.hpp
  * @brief Defines the Relation class for modeling connections between components in system topologies.
@@ -12,17 +9,18 @@
  * to represent specific types of connections.
  */
 
-#include <map>
-#include <vector>
-#include <string>
-#include <libxml/parser.h>
+#ifndef SYS_SAGE_RELATION_HPP
+#define SYS_SAGE_RELATION_HPP
 
-#include "defines.hpp"
-#include "enums.hpp"
+#include <sys-sage/defines.hpp>
+#include <sys-sage/enums.hpp>
+#include <libxml/tree.h>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace sys_sage { //forward declaration
     class Component;
-    class Qubit;
     struct CpuMetrics;
 }
 
@@ -406,4 +404,5 @@ namespace sys_sage {
     };
 
 }
-#endif //RELATION_HPP
+
+#endif

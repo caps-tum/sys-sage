@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <unordered_map>
 
-
 namespace sys_sage {
 
 /////////////////////////////////////////////////////////////

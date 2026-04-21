@@ -1,6 +1,6 @@
-#include "CouplingMap.hpp"
-
-#include "Qubit.hpp"
+#include <sys-sage/CouplingMap.hpp>
+#include <sys-sage/Qubit.hpp>
+#include <sys-sage/enums.hpp>
 
 sys_sage::CouplingMap::CouplingMap(Qubit* q1, Qubit* q2) : Relation(sys_sage::RelationType::CouplingMap, sys_sage::RelationCategory::Default)
 {

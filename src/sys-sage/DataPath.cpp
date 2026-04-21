@@ -1,10 +1,5 @@
-#include "DataPath.hpp"
-
-#include <cstdint>
-#include <algorithm>
-#include <stdexcept>
-
-#include "Component.hpp"
+#include <sys-sage/DataPath.hpp>
+#include <iostream>
 
 using std::cout;
 using std::endl;

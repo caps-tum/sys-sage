@@ -4,6 +4,10 @@
 #include <sys-sage/Relation.hpp>
 
 namespace sys_sage {
+    class Qubit;
+}
+
+namespace sys_sage {
 
     /**
      * @class CouplingMap

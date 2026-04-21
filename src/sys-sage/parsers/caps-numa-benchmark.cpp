@@ -1,10 +1,8 @@
-
-#include "caps-numa-benchmark.hpp"
-
+#include <sys-sage/parsers/caps-numa-benchmark.hpp>
+#include <sys-sage/Component.hpp>
+#include <sys-sage/DataPath.hpp>
 #include <iostream>
 #include <fstream>
-#include <vector>
-
 
 int sys_sage::parseCapsNumaBenchmark(Component* rootComponent, std::string benchmarkPath, std::string delim)
 {

@@ -3,8 +3,10 @@
  * @brief sys-sage's interface to QDMI.
  */
 
-#ifdef QDMI
-#include "qdmi-parser.hpp"
+#include <sys-sage/parsers/qdmi-parser.hpp>
+#include <sys-sage/Topolog.hpp>
+#include <sys-sage/QuantumBackend.hpp>
+#include <sys-sage/QuantumGate.hpp>
 
 QInfo QdmiParser::info; 
 QDMI_Session QdmiParser::session; 
@@ -273,7 +275,4 @@ void Qubit::RefreshProperties()
 
     QuantumBackend *qc = dynamic_cast<QuantumBackend*> (this->GetParent());
     QdmiParser::refreshQubitProperties(qc->GetQDMIDevice(), this);
-    
 }
-
-#endif // QDMI

@@ -1,15 +1,8 @@
-#ifndef INTEL_PQOS_CPP
-#define INTEL_PQOS_CPP
-
-#include "defines.hpp"
-#ifdef INTEL_PQOS
 //code written based on https://github.com/intel/intel-cmt-cat/blob/master/examples/c/CAT_MBA/allocation_app_l3cat.c
-
+#include <sys-sage/Component.hpp>
 #include <pqos.h>
 #include <cstring> //memset
 #include <limits> //numeric_limits
-
-#include "Component.hpp"
 
 using namespace std;
 
@@ -197,6 +190,3 @@ long long sys_sage::Thread::GetCATAwareL3Size()
     };
     return -1;
 }
-
-#endif //INTEL_PQOS
-#endif //INTEL_PQOS_CPP

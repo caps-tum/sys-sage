@@ -1,22 +1,12 @@
-#ifndef NVIDIA_MIG_CPP
-#define NVIDIA_MIG_CPP
-
-#include "defines.hpp"
-#ifdef NVIDIA_MIG
-
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <array>
-
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Subdivision.hpp>
+#include <sys-sage/Memory.hpp>
+#include <sys-sage/Cache.hpp>
+#include <sys-sage/DataPath.hpp>
 #include <nvml.h>
-
-#include "Component.hpp"
-#include "Chip.hpp"
-#include "Memory.hpp"
-#include "Cache.hpp"
-#include "Subdivision.hpp"
-
+#include <iostream>
+#include <string>
 
 //SVTODO refactor to std::map<std::string, std::any> attrib;
 
@@ -265,6 +255,3 @@ long long sys_sage::Cache::GetMIGSize(std::string uuid) const
     std::cerr << "Cache::GetMIGSize: no information found about specified UUID " << uuid << " - returning full cache size." << std::endl;
     return cache_size;
 }
-
-#endif
-#endif

@@ -1,10 +1,14 @@
-#ifndef XML_DUMP
-#define XML_DUMP
+#ifndef SYS_SAGE_XML_DUMP_HPP
+#define SYS_SAGE_XML_DUMP_HPP
 
+#include <libxml/tree.h>
 #include <functional>
+#include <string>
+#include <map>
 
-#include "Component.hpp"
-#include "DataPath.hpp"
+namespace sys_sage {
+    class Component;
+}
 
 namespace sys_sage{
     /**
@@ -69,4 +73,5 @@ namespace sys_sage{
      */
     int _print_attrib(std::map<std::string, void *> attrib, xmlNodePtr n);
 } //namespace sys_sage
+
 #endif

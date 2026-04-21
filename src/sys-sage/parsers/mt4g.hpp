@@ -1,8 +1,12 @@
-#ifndef MT4G_PARSER
-#define MT4G_PARSER
+#ifndef SYS_SAGE_PARSERS_MT4G_HPP
+#define SYS_SAGE_PARSERS_MT4G_HPP
 
-#include "sys-sage.hpp"
 #include <string>
+
+namespace sys_sage {
+    class Component;
+    class Chip;
+}
 
 namespace sys_sage {
 

@@ -1,7 +1,8 @@
+#include <sys-sage/Relation.hpp>
+#include <sys-sage/Component.hpp>
 #include <algorithm>
-#include "Relation.hpp"
+#include <cstdint>
 #include <iostream>
-#include "Component.hpp"
 
 using std::cout;
 using std::endl;

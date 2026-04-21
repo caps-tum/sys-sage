@@ -1,7 +1,8 @@
-#ifndef SUBDIVISION_HPP
-#define SUBDIVISION_HPP
+#ifndef SYS_SAGE_SUBDIVISION_HPP
+#define SYS_SAGE_SUBDIVISION_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/enums.hpp>
 
 namespace sys_sage {
 
@@ -71,4 +72,4 @@ namespace sys_sage {
     };
 }
 
-#endif //SUBDIVISION_HPP
+#endif

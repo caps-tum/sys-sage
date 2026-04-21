@@ -1,13 +1,15 @@
-#include "mt4g.hpp"
-
+#include <sys-sage/parsers/mt4g.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Subdivision.hpp>
+#include <sys-sage/Memory.hpp>
+#include <sys-sage/Cache.hpp>
+#include <sys-sage/Thread.hpp>
+#include <sys-sage/DataPath.hpp>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <map>
-#include <algorithm>
-#include <tuple>
-#include <string>
-#include <algorithm>
+#include <vector>
 
 using namespace sys_sage;
 

@@ -2,10 +2,20 @@
  * @file iqm-parser.cpp
  * @brief sys-sage's interface to IQM
  */
-#include "iqm-parser.hpp"
-#include <algorithm>
-#include <sstream>
 
+#include <sys-sage/parsers/iqm-parser.hpp>
+#include <sys-sage/QuantumBackend.hpp>
+#include <sys-sage/Qubit.hpp>
+#include <sys-sage/CouplingMap.hpp>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 int sys_sage::parseIQM(Component* parent, std::string dataSourcePath, int qcId, int tsForHistory)
 {

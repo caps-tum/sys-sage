@@ -3,18 +3,16 @@
 * @brief sys-sage's interface to IQM Q-Systems.
 */
 
-#ifndef IQM_PARSER_HPP
-#define IQM_PARSER_HPP
-
-#include <fstream>
-#include <iostream>
+#ifndef SYS_SAGE_PARSERS_IQM_PARSER_HPP
+#define SYS_SAGE_PARSERS_IQM_PARSER_HPP
 
 #include <nlohmann/json.hpp>
+#include <string>
 
-#include "Component.hpp"
-#include "QuantumBackend.hpp"
-#include "Qubit.hpp"
-#include "CouplingMap.hpp"
+namespace sys_sage {
+    class Component;
+    class QuantumBackend;
+}
 
 using json = nlohmann::json;
 
@@ -38,4 +36,4 @@ namespace sys_sage {
     };
 } //namespace sys_sage
 
-#endif // IQM_PARSER_HPP
+#endif

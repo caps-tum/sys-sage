@@ -1,7 +1,8 @@
-#ifndef NODE_HPP
-#define NODE_HPP
+#ifndef SYS_SAGE_NODE_HPP
+#define SYS_SAGE_NODE_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/defines.hpp>
 
 namespace sys_sage {
 
@@ -55,4 +56,4 @@ namespace sys_sage {
 
 }
 
-#endif //NODE_HPP
+#endif

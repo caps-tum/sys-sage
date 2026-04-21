@@ -1,8 +1,9 @@
+#ifndef SYS_SAGE_MEMORY_HPP
+#define SYS_SAGE_MEMORY_HPP
 
-#ifndef MEMORY_HPP
-#define MEMORY_HPP
-
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/defines.hpp>
+#include <string>
 
 namespace sys_sage {
 
@@ -78,4 +79,5 @@ namespace sys_sage {
     };
 
 }
-#endif //MEMORY_HPP
+
+#endif

@@ -1,14 +1,13 @@
-#include <iostream>
-#include <cassert>
+#include <sys-sage/parsers/cccbench.hpp>
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Node.hpp>
+#include <sys-sage/DataPath.hpp>
 #include <algorithm>
-#include <numeric>
+#include <cassert>
+#include <climits>
 #include <fstream>
-#include <string>
-#include <vector>
-#include <exception>
-//#include <bits/stdc++.h>
+#include <numeric>
 #include <sstream>
-#include "cccbench.hpp"
 
 using namespace std;
 
@@ -122,5 +121,3 @@ int sys_sage::parseCccbenchOutput(Node* n, std::string cccPath)
     delete cccparser;
     return 0;
 }
-
-

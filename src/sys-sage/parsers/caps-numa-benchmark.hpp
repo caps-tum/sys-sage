@@ -1,9 +1,12 @@
-#ifndef CAPS_NUMA_BENCHMARK
-#define CAPS_NUMA_BENCHMARK
+#ifndef SYS_SAGE_PARSERS_CAPS_NUMA_BENCHMARK_HPP
+#define SYS_SAGE_PARSERS_CAPS_NUMA_BENCHMARK_HPP
 
-#include "Component.hpp"
-#include "DataPath.hpp"
+#include <string>
+#include <vector>
 
+namespace sys_sage {
+    class Component;
+};
 
 namespace sys_sage {
     int parseCapsNumaBenchmark(Component* rootComponent, std::string benchmarkPath, std::string delim = ";");
@@ -19,4 +22,5 @@ namespace sys_sage {
     };
 
 } //namespace sys_sage
+
 #endif

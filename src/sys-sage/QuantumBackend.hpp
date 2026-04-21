@@ -1,15 +1,20 @@
-#ifndef QUANTUMBACKEND_HPP
-#define QUANTUMBACKEND_HPP
+#ifndef SYS_SAGE_QUANTUMBACKEND_HPP
+#define SYS_SAGE_QUANTUMBACKEND_HPP
 
-#include "Component.hpp"
-
-#include "QuantumGate.hpp"
-
+#include <sys-sage/Component.hpp>
+#include <sys-sage/defines.hpp>
+#include <sys-sage/enums.hpp>
+#include <vector>
 
 #ifdef QDMI
 #include <ibm.h>
+#include <set>
 #endif
-// #include <qdmi_internal.h>
+
+namespace sys_sage {
+    class QuantumGate;
+    class Qubit;
+}
 
 namespace sys_sage {
 
@@ -166,4 +171,5 @@ namespace sys_sage {
     };
 
 }
-#endif //QUANTUMBACKEND_HPP
+
+#endif

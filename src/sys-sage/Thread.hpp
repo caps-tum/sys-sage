@@ -1,11 +1,15 @@
-#ifndef THREAD_HPP
-#define THREAD_HPP
+#ifndef SYS_SAGE_THREAD_HPP
+#define SYS_SAGE_THREAD_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/defines.hpp>
+#include <vector>
 
 namespace sys_sage {
+    class Relation;
+}
 
-
+namespace sys_sage {
     /**
     Class Thread - represents HW thread on CPUs, or a thread on a GPU.
     \n This class is a child of Component class, therefore inherits its attributes and methods.
@@ -131,5 +135,5 @@ namespace sys_sage {
     };
 
 }
-#endif //THREAD_HPP
 
+#endif

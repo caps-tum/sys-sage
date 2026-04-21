@@ -1,7 +1,7 @@
-#ifndef TOPOLOGY_HPP
-#define TOPOLOGY_HPP
+#ifndef SYS_SAGE_TOPOLOGY_HPP
+#define SYS_SAGE_TOPOLOGY_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
 
 namespace sys_sage {
 

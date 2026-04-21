@@ -9,8 +9,8 @@ set(SOURCES
     sys-sage/Node.cpp
     sys-sage/Storage.cpp
     sys-sage/Chip.cpp
-    sys-sage/Numa.cpp
     sys-sage/Subdivision.cpp
+    sys-sage/Numa.cpp
     sys-sage/Memory.cpp
     sys-sage/Cache.cpp
     sys-sage/Core.cpp
@@ -32,16 +32,24 @@ set(SOURCES
     sys-sage/parsers/mt4g.cpp
     sys-sage/parsers/mt4g_v0_1.cpp
     sys-sage/parsers/cccbench.cpp
-    sys-sage/parsers/qdmi-parser.cpp
     sys-sage/parsers/iqm-parser.cpp
-
-    sys-sage/external_interfaces/intel_pqos.cpp
-    sys-sage/external_interfaces/proc_cpuinfo.cpp
-    sys-sage/external_interfaces/nvidia_mig.cpp
 )
 
+if(INTEL_PQOS)
+    list(APPEND SOURCES sys-sage/external_interfaces/intel_pqos.cpp)
+endif()
+if(NVIDIA_MIG)
+    list(APPEND SOURCES sys-sage/external_interfaces/nvidia_mig.cpp)
+endif()
+if(PROC_CPUINFO)
+    list(APPEND SOURCES sys-sage/external_interfaces/proc_cpuinfo.cpp)
+endif()
 if(SS_PAPI)
 	list(APPEND SOURCES sys-sage/external_interfaces/ss_papi.cpp)
+endif()
+
+if(QDMI)
+    list(APPEND SOURCES sys-sage/parsers/qdmi-parser.cpp)
 endif()
 
 add_library(sys-sage SHARED ${SOURCES})

@@ -8,8 +8,8 @@
 #include <sys-sage/Node.hpp>
 #include <sys-sage/Storage.hpp>
 #include <sys-sage/Chip.hpp>
-#include <sys-sage/Numa.hpp>
 #include <sys-sage/Subdivision.hpp>
+#include <sys-sage/Numa.hpp>
 #include <sys-sage/Memory.hpp>
 #include <sys-sage/Cache.hpp>
 #include <sys-sage/Core.hpp>

@@ -3,17 +3,25 @@
 * @brief sys-sage's interface to QDMI.
 */
 
-#ifndef QDMIParser_HPP
-#define QDMIParser_HPP
+#ifndef SYS_SAGE_PARSERS_QDMI_PARSER_HPP
+#define SYS_SAGE_PARSERS_QDMI_PARSER_HPP
+
+#include <sys-sage/defines.hpp>
 
 #ifdef QDMI
 
-#include <iostream>
-#include <string.h>
-#include <vector>
-#include <map>
-#include "Component.hpp"
+#include <sys-sage/Qubit.hpp>
 #include <ibm.h>
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace sys_sage {
+    class Topology;
+    class QuantumBackend;
+}
 
 #define CHECK_ERR(a,b) { if (a!=QDMI_SUCCESS) { printf("\n[Error]: %i at %s",a,b); return 1; }}
 
@@ -134,5 +142,6 @@ extern "C"
     
 }
 
-#endif //QDMI
-#endif // QDMIParser_HPP
+#endif
+
+#endif

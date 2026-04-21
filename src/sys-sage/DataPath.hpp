@@ -4,9 +4,9 @@
 #include <sys-sage/Relation.hpp>
 #include <sys-sage/enums.hpp>
 
-//namespace sys_sage { //forward declaration
-//    class Component;
-//}
+namespace sys_sage { //forward declaration
+    class Component;
+}
 
 namespace sys_sage {
     /**

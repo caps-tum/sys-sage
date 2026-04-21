@@ -1,8 +1,14 @@
-
-#include <iostream>
+#include <sys-sage/parsers/hwloc.hpp>
+#include <sys-sage/Component.hpp>
+#include <sys-sage/Node.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Numa.hpp>
+#include <sys-sage/Cache.hpp>
+#include <sys-sage/Core.hpp>
+#include <sys-sage/Thread.hpp>
+#include <libxml/parser.h>
 #include <algorithm>
-
-#include "hwloc.hpp"
+#include <iostream>
 
 using namespace std;
 

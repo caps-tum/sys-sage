@@ -1,22 +1,14 @@
-#ifndef HWLOC
-#define HWLOC
+#ifndef SYS_SAGE_PARSERS_HWLOC_HPP
+#define SYS_SAGE_PARSERS_HWLOC_HPP
 
+#include <libxml/tree.h>
 #include <vector>
 #include <string>
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-
-#include <sys-sage/Component.hpp>
-#include <sys-sage/Thread.hpp>
-#include <sys-sage/Core.hpp>
-#include <sys-sage/Cache.hpp>
-#include <sys-sage/Subdivision.hpp>
-#include <sys-sage/Numa.hpp>
-#include <sys-sage/Chip.hpp>
-#include <sys-sage/Memory.hpp>
-#include <sys-sage/Storage.hpp>
-#include <sys-sage/Node.hpp>
+namespace sys_sage {
+    class Component;
+    class Node;
+}
 
 /*! \file */
 
@@ -47,4 +39,5 @@ namespace sys_sage {
     extern std::vector<std::string> xmlRelevantObjectTypes;
 
 } //namespace sys_sage
+
 #endif

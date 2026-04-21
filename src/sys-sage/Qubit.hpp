@@ -1,7 +1,9 @@
-#ifndef QUBIT_HPP
-#define QUBIT_HPP
+#ifndef SYS_SAGE_QUBIT_HPP
+#define SYS_SAGE_QUBIT_HPP
 
-#include "Component.hpp"
+#include <sys-sage/Component.hpp>
+#include <sys-sage/defines.hpp>
+#include <string>
 
 namespace sys_sage {
 
@@ -118,4 +120,5 @@ namespace sys_sage {
     };
 
 }
-#endif //QUBIT_HPP
+
+#endif

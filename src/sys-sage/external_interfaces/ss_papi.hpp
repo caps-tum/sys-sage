@@ -1,14 +1,18 @@
+#ifndef SYS_SAGE_EXTERNAL_INTERFACES_SS_PAPI_HPP
+#define SYS_SAGE_EXTERNAL_INTERFACES_SS_PAPI_HPP
+
+#include <sys-sage/defines.hpp>
+
 #ifdef SS_PAPI
 
-#ifndef SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
-#define SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
-
 #include <papi.h>
-#include <unordered_map>
 #include <vector>
 #include <ostream>
 
-/*! \file */
+namespace sys_sage {
+    class Component;
+    class Relation;
+}
 
 namespace sys_sage {
 
@@ -117,6 +121,6 @@ namespace sys_sage {
  */
 std::ostream &operator<<(std::ostream &stream, const sys_sage::Metric &metric);
 
-#endif // SRC_EXTERNAL_INTERFACES_SS_PAPI_HPP
+#endif
 
-#endif // SS_PAPI
+#endif

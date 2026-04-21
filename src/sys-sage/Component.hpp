@@ -3,10 +3,11 @@
 
 #include <sys-sage/defines.hpp>
 #include <sys-sage/enums.hpp>
-#include <libxml/parser.h>
+#include <libxml/tree.h>
 #include <array>
 #include <map>
 #include <vector>
+#include <set>
 #include <string>
 
 namespace sys_sage { //forward declaration

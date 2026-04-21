@@ -1,6 +1,4 @@
-
-#include "QuantumGate.hpp"
-
+#include <sys-sage/QuantumGate.hpp>
 #include <iostream>
 
 sys_sage::QuantumGate::QuantumGate(size_t _gate_size, std::string _name, double _fidelity, std::string _unitary) : Relation(sys_sage::RelationType::QuantumGate, sys_sage::RelationCategory::Default), gate_size(_gate_size), name(_name), fidelity(_fidelity), unitary(_unitary) {}
@@ -94,5 +92,3 @@ void sys_sage::QuantumGate::Print() const
     _PrintRelationAttrib();
     std::cout << std::endl;
 }
-
-
