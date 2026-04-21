@@ -26,7 +26,7 @@ jobs:
              tar -C /tmp -xzf /tmp/v2.3.1.tar.gz
              cmake -S /tmp/ut-2.3.1 -B /tmp/ut-2.3.1/build -DBOOST_UT_BUILD_EXAMPLES=OFF -DBOOST_UT_BUILD_TESTS=OFF
              cmake --build /tmp/ut-2.3.1/build
-             cmake --install /tmp/ut-2.3.1/build
+             sudo cmake --install /tmp/ut-2.3.1/build
       - name: Configure library
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPAPI=ON # TODO: add more flags in the future
       - name: Build library
