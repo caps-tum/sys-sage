@@ -1,5 +1,6 @@
 #include <sys-sage/external_interfaces/ss_papi.hpp>
 #include <sys-sage/Component.hpp>
+#include <sys-sage/Thread.hpp>
 #include <sys-sage/Relation.hpp>
 #include <algorithm>
 #include <chrono>

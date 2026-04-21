@@ -1,11 +1,12 @@
-#include <boost/ut.hpp>
+#include <sys-sage.hpp>
 
-#include "sys-sage.hpp"
+#ifdef PROC_CPUINFO
+
+#include <boost/ut.hpp>
 
 using namespace boost::ut;
 using namespace sys_sage;
 
-#ifdef PROC_CPUINFO
 
 static suite<"cpuinfo"> _ = []
 {

@@ -1,6 +1,3 @@
 [submodule "data-sources/mt4g"]
 	path = data-sources/mt4g
 	url = https://github.com/caps-tum/mt4g.git
-[submodule "test/ut"]
-	path = test/ut
-	url = git@github.com:boost-ext/ut.git

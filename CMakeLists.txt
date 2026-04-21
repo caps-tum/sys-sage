@@ -20,21 +20,8 @@ if(DATA_SOURCES)
     set(DS_NUMA ON)
 endif()
 
-option(TEST "Build tests" OFF)
-option(TEST_ASAN "Build tests with enabled address sanitizers" OFF)
-option(TEST_TSAN "Build tests with enabled thread sanitizers" OFF)
-option(TEST_UBSAN "Build tests with enabled undefined behaviour sanitizers" OFF)
-option(TEST_COVERAGE "Build tests with enabled coverage" OFF)
-
-if(TEST_ASAN OR TEST_TSAN OR TEST_UBSAN OR TEST_COVERAGE)
-    set(TEST ON)
-endif()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 add_subdirectory(src)
 add_subdirectory(data-sources)
-if(TEST)
-    add_subdirectory(test)
-endif()
 #add_subdirectory(examples)

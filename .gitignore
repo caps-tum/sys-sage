@@ -6,6 +6,7 @@ main
 build/*
 install/*
 inst-dir/*
-src/defines.hpp
+src/sys-sage/defines.hpp
 .vscode
 test.xml
+test/build

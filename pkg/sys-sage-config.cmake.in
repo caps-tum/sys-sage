@@ -2,7 +2,9 @@
 
 include(CMakeFindDependencyMacro)
 
+find_dependency(nlohmann_json)
 find_dependency(LibXml2)
+
 #TODO: the conditional options NVIDIA_MIG, DS_HWLOC will have to be set at the user's side (or the libraries present..) -- this should be included automatically if the options are set when building/installing
 if(NVIDIA_MIG)
   find_dependency(CUDAToolkit 10.0)

@@ -1,6 +1,6 @@
 configure_file(
-    sys-sage/defines.hpp.in
-    sys-sage/defines.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sys-sage/defines.hpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/sys-sage/defines.hpp
 )
 
 set(SOURCES
@@ -69,13 +69,13 @@ find_package(nlohmann_json 3.10 REQUIRED)
 target_link_libraries(sys-sage PUBLIC nlohmann_json::nlohmann_json)
 
 find_package(LibXml2 REQUIRED)
-target_link_libraries(sys-sage PRIVATE LibXml2::LibXml2)
+target_link_libraries(sys-sage PUBLIC LibXml2::LibXml2)
 
 if(NVIDIA_MIG)
     find_package(CUDAToolkit 10.0 REQUIRED)
 
-    target_include_directories(sys-sage CUDA::nvml)
-    target_link_libraries(sys-sage CUDA::nvml)
+    target_include_directories(sys-sage PUBLIC CUDA::nvml)
+    target_link_libraries(sys-sage PUBLIC CUDA::nvml)
 endif()
 
 if(QDMI)
@@ -93,7 +93,7 @@ if(PAPI)
     find_package(PAPI REQUIRED)
 
     target_include_directories(sys-sage PUBLIC ${PAPI_INCLUDE_DIRS})
-    target_link_libraries(sys-sage PRIVATE ${PAPI_LIBRARIES})
+    target_link_libraries(sys-sage PUBLIC ${PAPI_LIBRARIES})
 endif()
 
 install(TARGETS sys-sage
