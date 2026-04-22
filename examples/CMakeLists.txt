@@ -45,24 +45,18 @@ if(sys-sage-INTEL_PQOS)
         hwloc
         pqos
     )
-
-    #install(TARGETS matmul DESTINATION bin/examples)
 endif()
 
 if(sys-sage-NVIDIA_MIG)
     add_executable(nvidia-mig nvidia-mig.cpp)
     target_compile_definitions(nvidia-mig PRIVATE EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/example_data")
     target_link_libraries(nvidia-mig PRIVATE sys-sage::sys-sage)
-
-    #install(TARGETS nvidia-mig DESTINATION bin/examples)
 endif()
 
 if(sys-sage-PROC_CPUINFO)
     add_executable(cpu-frequency cpu-frequency.cpp)
     target_compile_definitions(cpu-frequency PRIVATE EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/example_data")
     target_link_libraries(cpu-frequency PRIVATE sys-sage::sys-sage)
-
-    #install(TARGETS cpu-frequency DESTINATION bin/examples)
 endif()
 
 if(sys-sage-PAPI)
@@ -95,6 +89,3 @@ if(sys-sage-QDMI)
         qinfo
     )
 endif()
-
-#install(TARGETS basic_usage mt4g-parser custom_attributes larger_topo sys-sage-benchmarking use_custom_parser cccbenchplushwloc xml_import iqm-test DESTINATION bin/examples)
-#install(DIRECTORY example_data DESTINATION bin/examples)
