@@ -18,10 +18,7 @@ int main(int argc, char *argv[])
 {
     std::string musaPath;
     if(argc < 2){
-        std::string path_prefix(argv[0]);
-        std::size_t found = path_prefix.find_last_of("/\\");
-        path_prefix=path_prefix.substr(0,found) + "/";
-        musaPath = path_prefix + "example_data/musa_custom_data_source.conf";
+        musaPath = EXAMPLE_DIR + std::string("/musa_custom_data_source.conf");
     }
     else if(argc == 2){
         musaPath = argv[1];

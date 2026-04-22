@@ -1,6 +1,7 @@
 #include <sys-sage.hpp>
-#include <libxml2/tree.h>
+#include <libxml/tree.h>
 #include <functional>
+#include <iostream>
 #include <string>
 
 using namespace sys_sage;
@@ -65,11 +66,8 @@ int main(int argc, char *argv[])
     std::string xmlPath;
     std::string bwPath;
     if(argc < 2){
-        std::string path_prefix(argv[0]);
-        std::size_t found = path_prefix.find_last_of("/\\");
-        path_prefix=path_prefix.substr(0,found) + "/";
-        xmlPath = path_prefix + "example_data/skylake_hwloc.xml";
-        bwPath = path_prefix + "example_data/skylake_caps_numa_benchmark.csv";
+        xmlPath = EXAMPLE_DIR + std::string("/skylake_hwloc.xml");
+        bwPath = EXAMPLE_DIR + std::string("/skylake_caps_numa_benchmark.csv");
     }
     else if(argc == 3){
         xmlPath = argv[1];

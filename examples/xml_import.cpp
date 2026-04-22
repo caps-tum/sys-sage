@@ -1,5 +1,6 @@
 #include <sys-sage.hpp>
 #include <algorithm>
+#include <iostream>
 #include <string>
 
 using std::cout;

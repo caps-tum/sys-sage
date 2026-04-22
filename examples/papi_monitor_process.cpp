@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <stdlib.h>
 #include <sstream>
 #include <string.h>

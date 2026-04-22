@@ -75,12 +75,9 @@ int imp_search_complex(xmlNodePtr n, Component *c) {
 //this file benchmarks and prints out performance information about basic operations with sys-sage
 int main(int argc, char *argv[])
 {
-    std::string path_prefix(argv[0]);
-    std::size_t found = path_prefix.find_last_of("/\\");
-    path_prefix=path_prefix.substr(0,found) + "/";
-    std::string xmlPath = path_prefix + "example_data/skylake_hwloc.xml";
-    std::string bwPath = path_prefix + "example_data/skylake_caps_numa_benchmark.csv";
-    std::string mt4gPath = path_prefix + "example_data/pascal_gpu_topo.csv";
+    std::string xmlPath = EXAMPLE_DIR + std::string("/skylake_hwloc.xml");
+    std::string bwPath = EXAMPLE_DIR + std::string("/skylake_caps_numa_benchmark.csv");
+    std::string mt4gPath = EXAMPLE_DIR + std::string("/pascal_gpu_topo.csv");
 
     high_resolution_clock::time_point t_start, t_end;
     uint64_t timer_overhead = get_timer_overhead(TIMER_REPEATS, TIMER_WARMUP);

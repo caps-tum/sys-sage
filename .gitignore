@@ -3,10 +3,10 @@
 src/main
 main
 *.so
-build/*
-install/*
+build/
+test/build
+examples/build
+install/
 inst-dir/*
 src/sys-sage/defines.hpp
 .vscode
-test.xml
-test/build

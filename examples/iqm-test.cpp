@@ -1,6 +1,8 @@
 #include <sys-sage.hpp>
 #include <iomanip>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 
 using std::cout;
 using std::endl;
@@ -83,7 +85,7 @@ int main()
 {
     std::cout << std::setprecision(15);
     QuantumBackend* b = new QuantumBackend();  
-    std::string IQMPathPrefix = "/Users/stepan/phd/repos/q-sys-sage/tmp-qc-data/database/";
+    std::string IQMPathPrefix = "/Users/stepan/phd/repos/q-sys-sage/tmp-qc-data/database/"; // TODO: remove this path?
     std::string IQMPath;
     int IQMPathTs;
     

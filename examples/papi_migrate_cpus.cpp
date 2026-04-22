@@ -46,13 +46,19 @@ void saxpy(double *a, const double *b, const double *c, size_t n, double alpha)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
+    std::string hwlocPath;
+
+    if (argc == 1) {
+        hwlocPath = EXAMPLE_DIR + std::string("/skylake_hwloc.xml");
+    } else if (argc == 2) {
+        hwlocPath = argv[1];
+    } else {
         std::cerr << "usage: " << argv[0] << " <path_to_hwloc_xml>\n";
         return EXIT_FAILURE;
     }
 
     sys_sage::Node node;
-    if (sys_sage::parseHwlocOutput(&node, argv[1]) != 0)
+    if (sys_sage::parseHwlocOutput(&node, hwlocPath) != 0)
         return EXIT_FAILURE;
 
     size_t n = 1'000'000;
