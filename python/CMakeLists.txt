@@ -9,7 +9,7 @@ find_package(sys-sage REQUIRED)
 
 pybind11_add_module(_py_sys_sage MODULE bindings.cpp)
 
-target_link_libraries(_py_sys_sage PRIVATE sys_sage::sys_sage)
+target_link_libraries(_py_sys_sage PRIVATE sys-sage::sys-sage)
 
 install(TARGETS _py_sys_sage
     LIBRARY DESTINATION py_sys_sage

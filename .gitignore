@@ -10,3 +10,6 @@ install/
 inst-dir/*
 src/sys-sage/defines.hpp
 .vscode
+python/py_sys_sage-*/
+python/py_sys_sage/
+!python/py_sys_sage/__init__.py

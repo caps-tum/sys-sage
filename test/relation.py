@@ -1,4 +1,4 @@
-import sys_sage
+import py_sys_sage as pysage
 import unittest
 import sys
 import os
@@ -18,47 +18,47 @@ import os
 
 class TestRelations(unittest.TestCase):
     def test_interconnection(self):
-        foo = sys_sage.Component()
-        bar = sys_sage.Component()
+        foo = pysage.Component()
+        bar = pysage.Component()
         v = [foo, bar]
-        r = sys_sage.Relation(v)
+        r = pysage.Relation(v)
         self.assertEqual(r.GetComponent(0), foo)
         self.assertEqual(r.GetComponent(1), bar)
         #with stream_suppressor("stderr"):
         #    self.assertEqual(r.GetComponent(2), None)
         self.assertEqual(r.GetComponent(2), None)
         self.assertEqual(r.components, v)
-        self.assertEqual(foo.GetRelations(sys_sage.RELATION_TYPE_RELATION), [r])
-        self.assertEqual(bar.GetRelations(sys_sage.RELATION_TYPE_RELATION), [r])
+        self.assertEqual(foo.GetRelations(pysage.RELATION_TYPE_RELATION), [r])
+        self.assertEqual(bar.GetRelations(pysage.RELATION_TYPE_RELATION), [r])
 
     def test_deletion(self):
-        foo = sys_sage.Component()
-        bar = sys_sage.Component()
+        foo = pysage.Component()
+        bar = pysage.Component()
         v = [foo, bar]
-        r = sys_sage.Relation(v)
+        r = pysage.Relation(v)
         r.Delete()
         
-        self.assertEqual(len(foo.GetRelations(sys_sage.RELATION_TYPE_RELATION)), 0)
-        self.assertEqual(len(bar.GetRelations(sys_sage.RELATION_TYPE_RELATION)), 0)
+        self.assertEqual(len(foo.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
+        self.assertEqual(len(bar.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
 
     def test_getters_and_setters(self):
-        r = sys_sage.Relation([])
+        r = pysage.Relation([])
 
-        self.assertEqual(r.type, sys_sage.RELATION_TYPE_RELATION)
+        self.assertEqual(r.type, pysage.RELATION_TYPE_RELATION)
 
         r.id = 2
         self.assertEqual(r.id, 2)
         self.assertTrue(r.ordered)
 
     def test_adding_and_updating_components(self):
-        r = sys_sage.Relation([])
+        r = pysage.Relation([])
         self.assertEqual(len(r.components), 0)
 
-        foo = sys_sage.Component()
+        foo = pysage.Component()
         r.AddComponent(foo)
         self.assertTrue(r.ContainsComponent(foo))
 
-        bar = sys_sage.Component()
+        bar = pysage.Component()
         #with stream_suppressor("stderr"):
         #    self.assertEqual(r.UpdateComponent(bar, bar), 1)
         self.assertEqual(r.UpdateComponent(bar, bar), 1)
@@ -66,7 +66,7 @@ class TestRelations(unittest.TestCase):
         r.UpdateComponent(foo, bar)
         self.assertEqual(r.components, [bar])
 
-        foobar = sys_sage.Component()
+        foobar = pysage.Component()
         #with stream_suppressor("stderr"):
         #    self.assertEqual(r.UpdateComponent(1, foobar), 1)
         self.assertEqual(r.UpdateComponent(1, foobar), 1)
@@ -75,7 +75,7 @@ class TestRelations(unittest.TestCase):
         self.assertEqual(r.components, [foobar])
 
     def test_attributes(self):
-        r = sys_sage.Relation([])
+        r = pysage.Relation([])
 
         r["foo"] = 1
         r["bar"] = 2.0
@@ -93,32 +93,32 @@ class TestRelations(unittest.TestCase):
             r[1] = 2
 
     def test_inheritance_data_path(self):
-        foo = sys_sage.Component()
-        bar = sys_sage.Component()
+        foo = pysage.Component()
+        bar = pysage.Component()
 
-        r = sys_sage.DataPath(foo, bar, sys_sage.DATAPATH_ORIENTATION_ORIENTED, sys_sage.DATAPATH_TYPE_ANY)
+        r = pysage.DataPath(foo, bar, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_TYPE_ANY)
         # test if inherited class can access members of the base class
-        self.assertEqual(r.type, sys_sage.RELATION_TYPE_DATAPATH)
+        self.assertEqual(r.type, pysage.RELATION_TYPE_DATAPATH)
 
     def test_inheritance_quantum_gate(self):
-        foo = sys_sage.Qubit()
-        bar = sys_sage.Qubit()
+        foo = pysage.Qubit()
+        bar = pysage.Qubit()
         v = [foo, bar]
-        r = sys_sage.QuantumGate(len(v), v)
+        r = pysage.QuantumGate(len(v), v)
 
-        self.assertEqual(r.type, sys_sage.RELATION_TYPE_QUANTUMGATE)
+        self.assertEqual(r.type, pysage.RELATION_TYPE_QUANTUMGATE)
 
         r.SetGateProperties("cx", 1.0, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]")
-        self.assertEqual(r.gate_type, sys_sage.QUANTUMGATE_TYPE_CNOT)
+        self.assertEqual(r.gate_type, pysage.QUANTUMGATE_TYPE_CNOT)
         self.assertEqual(r.fidelity, 1.0)
         self.assertEqual(r.unitary, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]")
 
     def test_inheritance_coupling_map(self):
-        foo = sys_sage.Qubit()
-        bar = sys_sage.Qubit()
-        r = sys_sage.CouplingMap(foo, bar)
+        foo = pysage.Qubit()
+        bar = pysage.Qubit()
+        r = pysage.CouplingMap(foo, bar)
 
-        self.assertEqual(r.type, sys_sage.RELATION_TYPE_COUPLINGMAP)
+        self.assertEqual(r.type, pysage.RELATION_TYPE_COUPLINGMAP)
 
         r.fidelity = 1.0
         self.assertEqual(r.fidelity, 1.0)
