@@ -1,6 +1,6 @@
 #TODO Fix this bullshit
 
-import sys_sage as syge 
+import py_sys_sage as pysage 
 import sys 
 import os  
 import timeit
@@ -10,8 +10,8 @@ import timeit
 if __name__ == "__main__":
     
 
-    t = syge.Topology()
-    n = syge.Node(t, 1)
+    t = pysage.Topology()
+    n = pysage.Node(t, 1)
     
     def update():
         n["example"] = 1

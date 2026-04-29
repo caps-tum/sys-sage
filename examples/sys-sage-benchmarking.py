@@ -1,6 +1,6 @@
 #TODO Fix this bullshit
 
-import sys_sage as syge 
+import py_sys_sage as pysage 
 import sys 
 import os  
 import timeit
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     bwPath = path_prefix + "example_data/skylake_caps_numa_benchmark.csv"
     mt4gPath = path_prefix + "example_data/ampere_gpu_topo.csv"
 
-    t = syge.Topology()
-    n = syge.Node(t, 1)
+    t = pysage.Topology()
+    n = pysage.Node(t, 1)
 
 
     #time export sys_sage representation
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     n["benchmark"] = 1000
     n["complex"] = 1000
-    time_export = timeit.timeit(lambda: syge.exportToXml(t, "test.xml", None, None), number=100)
+    time_export = timeit.timeit(lambda: pysage.exportToXml(t, "test.xml", None, None), number=100)
     print("time export to xml: ", time_export*10000000)
     
     #time import sys_sage respresentation
@@ -46,16 +46,16 @@ if __name__ == "__main__":
             c["complex"] = int(val)
             return 1
         return 0
-    time_import = timeit.timeit(lambda: syge.importFromXml("test.xml", None, None), number=100)
+    time_import = timeit.timeit(lambda: pysage.importFromXml("test.xml", None, None), number=100)
     print("time import from xml: ", time_import*10000000)
 
     #time create new component
-    time_createNewComponent = min(timeit.repeat(lambda: syge.Node(t, 1), number=1000, repeat=3))
+    time_createNewComponent = min(timeit.repeat(lambda: pysage.Node(t, 1), number=1000, repeat=3))
     print("time create new component: ",time_createNewComponent*1000000)
     
     #time hwloc parsing
     
-    time_hwloc = timeit.timeit(lambda: syge.parseHwlocOutput(n, xmlPath), number=1)
+    time_hwloc = timeit.timeit(lambda: pysage.parseHwlocOutput(n, xmlPath), number=1)
     print("time hwloc parsing: ", time_hwloc*1000000000)
     
 
@@ -66,17 +66,17 @@ if __name__ == "__main__":
     
     # time caps-numa-benchmark parsing
     
-    time_parseCapsNumaBenchmark = timeit.timeit(lambda: syge.parseCapsNumaBenchmark(n, bwPath), number=1)
+    time_parseCapsNumaBenchmark = timeit.timeit(lambda: pysage.parseCapsNumaBenchmark(n, bwPath), number=1)
     print("time for parseCapsNumaBenchmark: ", time_parseCapsNumaBenchmark*1000000000)
-    # n = syge.Node(2)
-    # syge.parseHwlocOutput(n, xmlPath)
-    # syge.parseCapsNumaBenchmark(n, bwPath)
+    # n = pysage.Node(2)
+    # pysage.parseHwlocOutput(n, xmlPath)
+    # pysage.parseCapsNumaBenchmark(n, bwPath)
     
-    numa = n.GetSubcomponentById(0, syge.COMPONENT_NUMA)
+    numa = n.GetSubcomponentById(0, pysage.COMPONENT_NUMA)
     max_bw_comp = None
     def max_bw(m):
         max_bw = 0
-        dps = m.GetDataPaths(syge.DATAPATH_OUTGOING)
+        dps = m.GetDataPaths(pysage.DATAPATH_OUTGOING)
         for dp in dps:
             if dp.bandwidth > max_bw:
                 max_bw = dp.bandwidth
@@ -88,10 +88,10 @@ if __name__ == "__main__":
     print("time for numa max bw: ", time_numa_max_bw*10000000)
     
     
-    gpu = syge.Chip(n,100,"GPU")
+    gpu = pysage.Chip(n,100,"GPU")
     
     #time mt4g parsing
-    time_parse_mt4g = timeit.timeit(lambda: syge.parseMt4gTopo(gpu, mt4gPath, ";"), number=1)
+    time_parse_mt4g = timeit.timeit(lambda: pysage.parseMt4gTopo(gpu, mt4gPath, ";"), number=1)
     print("time for parsing mt4g: ",time_parse_mt4g*1000000000)
     
     #time get mt4g subtree node list

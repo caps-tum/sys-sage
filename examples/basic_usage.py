@@ -1,4 +1,4 @@
-import sys_sage as syge 
+import py_sys_sage as pysage
 import sys
 import os
 
@@ -21,22 +21,22 @@ def main():
         return 1
 
     #create root Topology and one node
-    topo = syge.Topology()
-    n = syge.Node(topo, 1)
+    topo = pysage.Topology()
+    n = pysage.Node(topo, 1)
 
     print("-- Parsing Hwloc output from file", xmlPath)
-    if syge.parseHwlocOutput(n, xmlPath) != 0: #adds topo to a next node
+    if pysage.parseHwlocOutput(n, xmlPath) != 0: #adds topo to a next node
         usage(sys.argv[0])
         return 1
     print("-- End parseHwlocOutput")
 
-    print("Total num HW threads:", topo.CountAllSubcomponentsByType(syge.COMPONENT_THREAD))
+    print("Total num HW threads:", topo.CountAllSubcomponentsByType(pysage.COMPONENT_THREAD))
     print("---------------- Printing the whole tree ----------------")
     topo.PrintSubtree()
     print("----------------                     ----------------")
 
     print("-- Parsing CapsNumaBenchmark output from file", bwPath)
-    if syge.parseCapsNumaBenchmark(n, bwPath, ";") != 0:
+    if pysage.parseCapsNumaBenchmark(n, bwPath, ";") != 0:
         print("failed parsing caps-numa-benchmark")
         usage(sys.argv[0])
         return 1
@@ -48,7 +48,7 @@ def main():
 
     output_name = "sys-sage_sample_output.xml"
     print("-------- Exporting as XML to", output_name, "--------")
-    syge.exportToXml(topo, output_name)
+    pysage.exportToXml(topo, output_name)
 
     print("--------Clearing up the tree--------")
     topo.Delete(True)

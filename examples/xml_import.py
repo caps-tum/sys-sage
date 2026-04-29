@@ -1,4 +1,4 @@
-import sys_sage as syge
+import py_sys_sage as pysage
 import os
 import sys
 
@@ -11,17 +11,17 @@ def main():
         xmlPath = sys.argv[1]
 
     # create root Topology and one node
-    topo = syge.Topology()
-    n = syge.Node(topo, 1)
+    topo = pysage.Topology()
+    n = pysage.Node(topo, 1)
 
     print("-- Parsing Hwloc output from file", xmlPath)
-    syge.parseHwlocOutput(n, xmlPath)
+    pysage.parseHwlocOutput(n, xmlPath)
 
     c_orig = topo.GetComponentsInSubtree()
 
-    syge.exportToXml(topo, "output.xml")
+    pysage.exportToXml(topo, "output.xml")
 
-    topo2 = syge.importFromXml("output.xml")
+    topo2 = pysage.importFromXml("output.xml")
 
     for c in c_orig:
         type = c.GetComponentType()

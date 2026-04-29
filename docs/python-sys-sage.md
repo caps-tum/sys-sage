@@ -1,30 +1,46 @@
 # sys-sage Python API documentation
 
-The _sys-sage_ library provides bindings for the Python programming language through the _sys-sage_ module. This documenation offers a brief introduction.
+The _sys-sage_ library provides bindings for the Python programming language through the _py_sys_sage_ package. This documenation offers a brief introduction.
 
 ## Installation
 
-First make sure that `python` (>= 3.10) and `pybind11` are already installed on your system. You can then pass the `-DPY_SYS_SAGE=ON` flag to CMake when compiling the
-library to also build the module. The following command can be executed at the root of the repo
+The bindings depend on the _sys-sage_ library. First make sure that you have
+installed _sys-sage_ and `pybind11` on your system.
 
+The bindings can be installed through the pip package manager. We advice you to
+create an isolated virtual environment for the package by running
+
+```bash
+python3 -m venv <path_to_venv>
 ```
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DPY_SYS_SAGE=ON .
+
+You can also reuse an existing virtual environment or install it globally on
+your system depending on your platform. In the following, we'll procede with
+the installation into a virtual environment, but the steps are almost identical
+in other cases.
+
+From the project root directory of _sys-sage_, run
+
+```bash
+<path_to_venv>/bin/python -m pip install ./python
 ```
 
-## Module Import
+to install the package.
 
-After installation the module can now be imported:
+## Package Import
+
+The package is called `py_sys_sage` and it can be imported like this:
 
 ```Python
-import sys_sage
+import py_sys_sage as pysage
 ```
 
-## Object initialistaion
+## Object initialisation
 
 To create Component and Relation objects, you can utilize the provided initialization functions. For instance, a Component object can be instantiated as follows:
 
-```python
-c = sys_sage.Component(parent, 0, "Generic Component")
+```Python
+c = pysage.Component(parent, 0, "Generic Component")
 ```
 The _sys-sage_ library exposes all known constructors for `Component` and its subclasses as Python initialization functions, complete with their default values. In the example above, if the component type is not explicitly provided, it will automatically be assigned ```None``` during initialization.
 
@@ -44,7 +60,7 @@ However, certain attributes, such as id and name, are not accessible via standar
 All the default parsers of the _sys-sage_ library are also included in the Python module:
 
 ```python
-sys_sage.parseCapsNumaBenchmark(root,"benchmark.csv",";")
+pysage.parseCapsNumaBenchmark(root,"benchmark.csv",";")
 ```
 
 ## Attributes
@@ -104,7 +120,7 @@ The Python module provides a one-to-one correspondance to the known _sys-sage_ c
 An example would be:
 
 ```Python
-c.CountAllSubcomponentsByType(sys_sage.COMPONENT_NONE)
+c.CountAllSubcomponentsByType(pysage.COMPONENT_NONE)
 ```
 
 ### Properties
@@ -150,10 +166,10 @@ def search_custom_complex(key: str, value) -> str:
     # This function returns an XML fragment representing the complex attribute
     return f"<Attribute key=\"{key}\" value=\"{value}\"/>"
 ```
-After defining your custom user functions, the export process can be initiated by calling the sys_sage.export function, passing the root component, the desired export path, and your custom functions:
+After defining your custom user functions, the export process can be initiated by calling the pysage.export function, passing the root component, the desired export path, and your custom functions:
 
 ```Python
-sys_sage.export(root, path, search_custom_simple, search_custom_complex)
+pysage.export(root, path, search_custom_simple, search_custom_complex)
 ```
 
 ### XML Import

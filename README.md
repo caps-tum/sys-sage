@@ -34,9 +34,8 @@ The documentation is available [here](https://stepanvanecek.github.io/sys-sage/l
 ## Usage
 
 ```cpp
+#include <sys-sage.hpp>
 #include <iostream>
-
-#include "sys-sage.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -80,6 +79,7 @@ spack install sys-sage
 - libpqos (11+, only when building with the **INTEL_CAT** option)
 - numactl (only when building **caps-numa-benchmark data source**)
 - hwloc (2.9+, only when building **hwloc data source**)
+- papi (only when building with the **PAPI** option)
 
 #### Building from sources
 
@@ -89,16 +89,45 @@ cd sys-sage
 mkdir build && cd build
 cmake ..
 # build options:
-# -DINTEL_PQOS=ON           - builds with Intel CAT functionality. For that, Intel-specific pqos header/library are necessary.
-# -DNVIDIA_MIG=ON           - Build and install functionality regarding NVidia MIG(multi-instance GPU, ampere or newer).
-# -DPROC_CPUINFO=ON         - Build and install functionality regarding Linux cpuinfo (only x86) -- default ON.
-# -DDATA_SOURCES=ON         - builds all data sources from folder 'data-sources' listed below. Data sources are used to collecting HW-related information, so it only makes sense to compile that on the system where the topology information is queried.
-# -DDS_HWLOC=ON             - builds the hwloc data source for retrieving the CPU topology
-# -DDS_MT4g=ON              - builds the mt4g data source for retrieving GPU compute and memory topology. If turned on, includes hwloc.
-# -DDS_NUMA=ON              - builds the caps-numa-benchmark. If turned on, includes Linux-specific libraries.
-# -DPAPI=ON                 - builds with PAPI support. If turned on, includes PAPI library headers.
-# -DCMAKE_INSTALL_PREFIX=../inst-dir    - to install locally into the git repo folder
+# -DINTEL_PQOS=ON                        -- builds with Intel CAT functionality. For that, Intel-specific pqos header/library are necessary.
+# -DNVIDIA_MIG=ON                        -- Build and install functionality regarding NVidia MIG(multi-instance GPU, ampere or newer).
+# -DPROC_CPUINFO=ON                      -- Build and install functionality regarding Linux cpuinfo (only x86) -- default ON.
+# -DDATA_SOURCES=ON                      -- builds all data sources from folder 'data-sources' listed below. Data sources are used to collecting HW-related information, so it only makes sense to compile that on the system where the topology information is queried.
+# -DDS_HWLOC=ON                          -- builds the hwloc data source for retrieving the CPU topology
+# -DDS_MT4g=ON                           -- builds the mt4g data source for retrieving GPU compute and memory topology. If turned on, includes hwloc.
+# -DDS_NUMA=ON                           -- builds the caps-numa-benchmark. If turned on, includes Linux-specific libraries.
+# -DQDMI=ON                              -- builds with QDMI support. If turned on, includes QDMI library headers.
+# -DPAPI=ON                              -- builds with PAPI support. If turned on, includes PAPI library headers.
+# -DCMAKE_INSTALL_PREFIX=<prefix>        -- to set the install destination (default on UNIX platforms: /usr/local)
 make all install
+```
+
+If _sys-sage_ is installed locally on your system, don't forget to set the
+`LD_LIBRARY_PATH` environment variable and optionally the `CMAKE_PREFIX_PATH`
+and `PKG_CONFIG_PATH` if you want to find _sys-sage_ from CMake or pkg-config
+respectively (or whatever the equivalent is on your platform).
+
+An example on UNIX platforms with the install prefix `/opt/sys-sage` would be
+
+```bash
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/sys-sage/lib
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/opt/sys-sage
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/sys-sage/lib/pkgconfig
+```
+
+Other projects can then use _sys-sage_ in CMake through
+
+```cmake
+find_package(sys-sage REQUIRED)
+target_link_libraries(<target> PRIVATE sys-sage::sys-sage)
+```
+
+Alternatively, _sys-sage_'s include and library paths can manually be retrieved
+from pkg-config through
+
+```bash
+pkg-config --cflags sys-sage
+pkg-config --libs sys-sage
 ```
 
 ## Testing

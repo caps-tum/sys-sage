@@ -1,4 +1,4 @@
-import sys_sage as syge 
+import py_sys_sage as pysage 
 import sys
 import os
 
@@ -26,17 +26,17 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # create root Topology and one node
-    topo = syge.Topology()
-    n = syge.Node(topo, 1)
+    topo = pysage.Topology()
+    n = pysage.Node(topo, 1)
 
     print("-- Parsing Hwloc output from file", xmlPath)
-    if syge.parseHwlocOutput(n, xmlPath) != 0:  # adds topo to a next node
+    if pysage.parseHwlocOutput(n, xmlPath) != 0:  # adds topo to a next node
         usage(sys.argv[0])
         sys.exit(1)
     print("-- End parseHwlocOutput")
 
     print("-- Refresh frequency on core 1 (and do not store the timestamp). ")
-    c1 = n.GetSubcomponentById(1, syge.COMPONENT_CORE)
+    c1 = n.GetSubcomponentById(1, pysage.COMPONENT_CORE)
     if c1 is not None:
         c1.RefreshFreq(False)  #
         print("Frequency:", c1.freq)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         print("    ts:", ts, "frequency[MHz]:", freq)
 
     print("-- Export all information to xml", output_name)
-    syge.exportToXml(topo, output_name)
+    pysage.exportToXml(topo, output_name)
     
     topo.Delete(True)
 

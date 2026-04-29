@@ -1,4 +1,4 @@
-import sys_sage as syge 
+import py_sys_sage as pysage 
 import sys
 import os
 def usage(argv0):
@@ -19,22 +19,22 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # create root Topology and one node
-    topo = syge.Topology()
-    n = syge.Node(topo, 1)
+    topo = pysage.Topology()
+    n = pysage.Node(topo, 1)
 
     print("-- Parsing mt4g output from file", gpuTopoPath)
-    if syge.ParseMt4g_v0_1(n, gpuTopoPath, 0, ";") != 0:  # adds topo to a next node
+    if pysage.ParseMt4g_v0_1(n, gpuTopoPath, 0, ";") != 0:  # adds topo to a next node
         print("failed parsing mt4g output")
         usage(sys.argv[0])
         sys.exit(1)
     print("-- End parseGpuTopo")
 
-    print("Total num GPU cores:", topo.CountAllSubcomponentsByType(syge.COMPONENT_THREAD))
+    print("Total num GPU cores:", topo.CountAllSubcomponentsByType(pysage.COMPONENT_THREAD))
 
     output_name = "sys-sage_gpu_sample_output.xml"
     print("-------- Exporting as XML to", output_name, "--------")
 
-    syge.exportToXml(topo, output_name)
+    pysage.exportToXml(topo, output_name)
 
     topo.Delete(True)
 

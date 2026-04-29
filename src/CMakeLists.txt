@@ -44,7 +44,7 @@ endif()
 if(PROC_CPUINFO)
     list(APPEND SOURCES sys-sage/external_interfaces/proc_cpuinfo.cpp)
 endif()
-if(SS_PAPI)
+if(PAPI)
 	list(APPEND SOURCES sys-sage/external_interfaces/ss_papi.cpp)
 endif()
 
