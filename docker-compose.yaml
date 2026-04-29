@@ -6,18 +6,17 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/sys-sage
-    working_dir: /sys-sage
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_BUILD_TYPE=Debug -DPAPI=ON
-        cmake --build build --parallel
-        cmake --install build --prefix /usr
-        cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug
-        cmake --build test/build --parallel
-        ./test/build/test
-        python3 -m venv python/venv
-        python/venv/bin/python -m pip install ./python
-        python/venv/bin/python test/topology.py
-        python/venv/bin/python test/relation.py
-        python/venv/bin/python test/datapath.py
+        cmake -S /sys-sage -B /sys-sage-build -DCMAKE_BUILD_TYPE=Debug -DPAPI=ON
+        cmake --build /sys-sage-build --parallel
+        cmake --install /sys-sage-build --prefix /usr
+        cmake -S /sys-sage/test -B /test-build -DCMAKE_BUILD_TYPE=Debug
+        cmake --build /test-build --parallel
+        /test-build/test
+        python3 -m venv /venv
+        /venv/bin/python -m pip install /sys-sage/python
+        /venv/bin/python /sys-sage/test/topology.py
+        /venv/bin/python /sys-sage/test/relation.py
+        /venv/bin/python /sys-sage/test/datapath.py
