@@ -14,8 +14,8 @@ target_compile_definitions(test PRIVATE SYS_SAGE_TEST_RESOURCE_DIR="${CMAKE_CURR
 find_package(sys-sage REQUIRED)
 target_link_libraries(test PRIVATE sys-sage::sys-sage)
 
-find_package(ut REQUIRED)
-target_link_libraries(test PRIVATE Boost::ut)
+add_subdirectory(ut)
+target_link_libraries(test PRIVATE ut)
 
 if(${TEST_ASAN})
     target_compile_options(test PRIVATE -fsanitize=address -O0 -g3)
