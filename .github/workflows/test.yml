@@ -35,11 +35,9 @@ jobs:
       - name: Create virtual environment
         run: python3 -m venv python/venv
       - name: Build & Install Python module
-        run: |
-             python/venv/bin/python -m pip install ./python
+        run: python/venv/bin/python -m pip install ./python
       - name: run Python module tests
         run: |
-             #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
              python/venv/bin/python test/topology.py
              python/venv/bin/python test/relation.py
              python/venv/bin/python test/datapath.py
