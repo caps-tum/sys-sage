@@ -1,6 +1,8 @@
 #ifndef SYS_SAGE_ATTRIBUTE_HPP
 #define SYS_SAGE_ATTRIBUTE_HPP
 
+#include <utility>
+
 namespace sys_sage {
     /**
      * @class IAttribute

@@ -1,4 +1,5 @@
 if(DS_HWLOC)
+    enable_language(C)
     find_package(HWLOC REQUIRED)
 
     add_executable(hwloc-output hwloc-output.cpp)

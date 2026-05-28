@@ -1,6 +1,11 @@
 #include <sys-sage/Component.hpp>
+#include <sys-sage/Node.hpp>
+#include <sys-sage/Chip.hpp>
+#include <sys-sage/Core.hpp>
+#include <sys-sage/Thread.hpp>
 #include <chrono>
 #include <fcntl.h>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <tuple>

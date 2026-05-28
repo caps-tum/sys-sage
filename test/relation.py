@@ -39,10 +39,10 @@ class TestRelations(unittest.TestCase):
         r.RemoveComponent(foo)
         r.RemoveComponent(bar)
     def test_removal(self):
-        foo = sys_sage.Component()
-        bar = sys_sage.Component()
+        foo = pysage.Component()
+        bar = pysage.Component()
         v = [foo, bar]
-        r = sys_sage.Relation(v)
+        r = pysage.Relation(v)
         r.RemoveComponent(foo)
         r.RemoveComponent(bar)
         
