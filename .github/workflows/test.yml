@@ -19,9 +19,9 @@ jobs:
       - name: Get build tools
         run: sudo apt-get install -yy g++ cmake
       - name: Get dependecies
-        run: sudo apt-get install -yy libxml2-dev nlohmann-json3-dev python3-dev pybind11-dev libpapi-dev
+        run: sudo apt-get install -yy libxml2-dev nlohmann-json3-dev python3-dev pybind11-dev libpapi-dev hwloc libhwloc-common libhwloc-dev
       - name: Configure library
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPAPI=ON # TODO: add more flags in the future
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPROC_CPUINFO=ON -DDS_HWLOC=ON -DDS_NUMA=ON -DPAPI=ON
       - name: Build library
         run: cmake --build build --parallel
       - name: Install library

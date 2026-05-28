@@ -112,7 +112,7 @@ int sys_sage::_search_default_complex_attrib_key(xmlNodePtr n, Component *c) {
 	// freq_history is a vector of tuples containing the timestamp and the
 	// frequency
 	if (!key.compare("freq_history")) {
-		std::vector<std::tuple<long long, double>>* val = new std::vector<std::tuple<long long, double>>();
+		std::vector<std::tuple<long long, double>> val;
 		for (xmlNodePtr cur = n->children; cur != NULL; cur = cur->next) 
 		{
 			// skip text nodes
@@ -125,9 +125,9 @@ int sys_sage::_search_default_complex_attrib_key(xmlNodePtr n, Component *c) {
 			long long ts_ll = std::strtoll((const char *)ts.c_str(), NULL, 10);
 			double freq_d = std::stod(freq);
 
-			val->push_back(std::make_tuple(ts_ll, freq_d));
+			val.push_back(std::make_tuple(ts_ll, freq_d));
 		}
-		c->attrib[key] = reinterpret_cast<void*>(val);
+    c->SetAttribute(key, std::move(val));
 		return 1;
 	} 
 	//else if (!key.compare("GPU_Clock_Rate"))
@@ -166,11 +166,15 @@ int sys_sage::_collect_attrib(xmlNodePtr n, Component *c) {
 	// if custom function could not handle attribute, try default
 	if (attrib_value == NULL)
 		attrib_value = _search_default_attrib_key(n);
+  // The new attributes map was built with JSON support in mind. XML
+  // (de-)serialization is not supported. Remove XML support entirely in the
+  // future. Note: These changes might break the current XML functionality.
+  //
 	// if attribute was handled, add it to Component
-	if (attrib_value != NULL) {
-		std::string key = _getStringFromProp(n, "name");
-		c->attrib[key] = attrib_value;
-	}
+	//if (attrib_value != NULL) {
+	//	std::string key = _getStringFromProp(n, "name");
+	//	c->attrib[key] = attrib_value;
+	//}
 	int ret = 0;
 	// try custom complex attribute search function
 	if (attrib_value == NULL && load_custom_complex_attrib_fcn != NULL)
@@ -242,9 +246,9 @@ sys_sage::Component* sys_sage::_CreateComponentSubtree(xmlNodePtr n) {
 	}
 	if (nodeName.compare("Subdivision") == 0) {
 		c = new Subdivision(id);
-		int sd_type = std::stoi(_getStringFromProp(n, "type"));
+		int sd_type = std::stoi(_getStringFromProp(n, "category"));
 
-		static_cast<Subdivision*>(c)->SetSubdivisionType(sd_type);
+		static_cast<Subdivision*>(c)->SetSubdivisionCategory(sd_type);
 	}
 	if (nodeName.compare("NUMA") == 0) {
 		c = new Numa(id);
@@ -359,7 +363,7 @@ int sys_sage::_CreateRelations(xmlNodePtr relationNode) {
 		}
 		if (childName.compare("DataPath") == 0)
 		{
-			int dataPathType = std::stoi(_getStringFromProp(xml_child, "DataPathType"));
+			int dataPathType = std::stoi(_getStringFromProp(xml_child, "DataPathCategory"));
 			double bw = std::stod(_getStringFromProp(xml_child, "bw"));
 			double latency = std::stod(_getStringFromProp(xml_child, "latency"));
 			DataPathOrientation::type dpo = (ordered ? DataPathOrientation::Oriented : DataPathOrientation::Bidirectional);
@@ -371,7 +375,7 @@ int sys_sage::_CreateRelations(xmlNodePtr relationNode) {
 			int gate_size = std::stoi(_getStringFromProp(xml_child, "gate_size"));
 			std::string name = _getStringFromProp(xml_child, "name");
 			int gate_length = std::stoi(_getStringFromProp(xml_child, "gate_length"));
-			QuantumGateType::type gate_type = std::stoi(_getStringFromProp(xml_child, "gate_type"));
+			QuantumGateCategory::type gate_type = std::stoi(_getStringFromProp(xml_child, "gate_type"));
 			double fidelity = std::stod(_getStringFromProp(xml_child, "fidelity"));
 			std::string unitary = _getStringFromProp(xml_child, "unitary");
 
@@ -389,7 +393,7 @@ int sys_sage::_CreateRelations(xmlNodePtr relationNode) {
 }
 
 sys_sage::Component* sys_sage::importFromXml(
-	std::string path,
+	const std::string &path,
 	std::function<void*(xmlNodePtr)> _load_custom_attrib_fcn,
 	std::function<int(xmlNodePtr, Component *)> _load_custom_complex_attrib_fcn) 
 {

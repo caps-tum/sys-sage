@@ -28,11 +28,7 @@ namespace sys_sage {
         @param componentType=>SYS_SAGE_COMPONENT_NUMA
         */
         Numa(Component * parent, int _id = 0, long long _size = -1);
-        /**
-        * @private
-        * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
-        */
-        ~Numa() override = default;
+
         /**
         Get size of the Numa memory segment.
         @returns size of the Numa memory segment.
@@ -51,6 +47,29 @@ namespace sys_sage {
         @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
         */
         xmlNodePtr _CreateXmlSubtree() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
+
     private:
         long long size; /**< size of the Numa memory segment.*/
     };

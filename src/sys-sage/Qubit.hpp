@@ -24,7 +24,7 @@ namespace sys_sage {
          *
          * Sets componentType to sys_sage::ComponentType::Qubit.
          */
-        Qubit(int _id = 0, std::string _name = "Qubit");
+        Qubit(int _id = 0, const std::string &_name = "Qubit");
 
         /**
          * @brief Qubit constructor with insertion into the Component Tree as the parent's child (as long as parent is an existing Component).
@@ -34,7 +34,7 @@ namespace sys_sage {
          *
          * Sets componentType to sys_sage::ComponentType::Qubit.
          */
-        Qubit(Component * parent, int _id = 0, std::string _name = "Qubit");
+        Qubit(Component * parent, int _id = 0, const std::string &_name = "Qubit");
 
         /**
          * @brief Sets the properties of the qubit.
@@ -106,8 +106,27 @@ namespace sys_sage {
          */
         xmlNodePtr _CreateXmlSubtree() override;
 
-        /** Destructor for Qubir. */
-        ~Qubit() override = default;
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
 
     private:
         double q1_fidelity;      ///< 1Q (single-qubit gate) fidelity

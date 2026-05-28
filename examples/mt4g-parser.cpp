@@ -44,10 +44,9 @@ int main(int argc, char *argv[])
     std::string output_name = "sys-sage_gpu_sample_output.xml";
     cout << "-------- Exporting as XML to " << output_name << " --------" << endl;
     
-    //topo->DeleteSubtree();
     exportToXml(topo, output_name);
     
-    topo->Delete(true);
+    Component::DeleteSubtree(topo);
 
     return 0;
 }

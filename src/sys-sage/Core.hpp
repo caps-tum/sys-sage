@@ -17,7 +17,7 @@ namespace sys_sage {
         @param _name = name, default "Core"
         @param componentType=>SYS_SAGE_COMPONENT_CORE
         */
-        Core(int _id = 0, std::string _name = "Core");
+        Core(int _id = 0, const std::string &_name = "Core");
         /**
         Core constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component). Sets:
         @param parent = the parent 
@@ -25,16 +25,31 @@ namespace sys_sage {
         @param _name = name, default "Core"
         @param componentType=>SYS_SAGE_COMPONENT_CORE
         */
-        Core(Component * parent, int _id = 0, std::string _name = "Core");
+        Core(Component * parent, int _id = 0, const std::string &_name = "Core");
+
         /**
-        * @private
-        * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
-        */
-        ~Core() override = default;
-    private:
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
 
     #ifdef PROC_CPUINFO
-    public:
         /**
         * Refreshes the frequency of the core.
         */

@@ -11,7 +11,7 @@
 
 using namespace std;
 
-sys_sage::CccbenchParser::CccbenchParser(const char *csv_path)
+sys_sage::CccbenchParser::CccbenchParser(const std::string &csv_path)
     : c2cDatapoints((Vec2DArray<float> *)0)
 {
     fstream fs;
@@ -86,7 +86,7 @@ sys_sage::CccbenchParser::CccbenchParser(const char *csv_path)
 void sys_sage::CccbenchParser::applyDataPaths(Component *root)
 {
     auto corev = new vector<Component *>();
-    root->FindDescendantsByType(corev, sys_sage::ComponentType::Core);
+    root->FindDescendantsByType(*corev, sys_sage::ComponentType::Core);
     //auto corev = root->GetAllChildrenByType(SYS_SAGE_COMPONENT_CORE);
 
     for(auto xcore : *corev)
@@ -101,22 +101,21 @@ void sys_sage::CccbenchParser::applyDataPaths(Component *root)
             }
             auto xtoylatv = (*this->c2cDatapoints)[xci][yci];
             auto sum = accumulate(xtoylatv.begin(), xtoylatv.end(), 0.0);
-            auto mean = new float(sum / xtoylatv.size());
-            auto max = new float(*max_element(xtoylatv.begin(), xtoylatv.end()));
-            auto min = new float(*min_element(xtoylatv.begin(), xtoylatv.end()));
+            float mean =sum / xtoylatv.size();
+            float max = *max_element(xtoylatv.begin(), xtoylatv.end());
+            float min = *min_element(xtoylatv.begin(), xtoylatv.end());
             auto dtp = new DataPath(xcore, ycore, sys_sage::DataPathOrientation::Oriented,
-                                   sys_sage::DataPathType::C2C, 0, *mean);
-            dtp->attrib.insert(std::pair<string, void *>("latency_max", reinterpret_cast<void*>(max)));
-            dtp->attrib.insert(std::pair<string, void *>("latency_min", reinterpret_cast<void*>(min)));
-            dtp->attrib.insert(std::pair<string, void *>("latency", reinterpret_cast<void*>(mean)));
+                                   sys_sage::DataPathCategory::C2C, 0, mean);
+            dtp->SetAttribute("latency_max", max);
+            dtp->SetAttribute("latency_min", min);
+            dtp->SetAttribute("latency", mean);
         }
     }
 }
 
-int sys_sage::parseCccbenchOutput(Node* n, std::string cccPath)
+int sys_sage::parseCccbenchOutput(Node* n, const std::string &cccPath)
 {
-    const char *cstr_path = cccPath.c_str();
-    auto cccparser = new CccbenchParser(cstr_path);
+    auto cccparser = new CccbenchParser(cccPath);
     cccparser->applyDataPaths(n);
     delete cccparser;
     return 0;

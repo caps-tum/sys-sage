@@ -147,7 +147,7 @@ int sys_sage::Node::UpdateL3CATCoreCOS(){
             //TODO check if exists -> overwrite
 
             //add DataPath to thread and L3
-            DataPath* d = new DataPath(thread, c, sys_sage::DataPathOrientation::Bidirectional, sys_sage::DataPathType::L3CAT);
+            DataPath* d = new DataPath(thread, c, sys_sage::DataPathOrientation::Bidirectional, sys_sage::DataPathCategory::L3CAT);
             d->attrib.insert({"CATcos", reinterpret_cast<void*>(cos)});
             d->attrib.insert({"CATL3mask", reinterpret_cast<void*>(mask)});
         }

@@ -24,6 +24,7 @@ set(SOURCES
     sys-sage/QuantumGate.cpp
     sys-sage/CouplingMap.cpp
 
+    sys-sage/json_serialization.cpp
     sys-sage/xml_dump.cpp
     sys-sage/xml_load.cpp
 
@@ -108,7 +109,7 @@ install(FILES sys-sage.hpp
 )
 install(DIRECTORY sys-sage/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sys-sage
-    FILES_MATCHING PATTERN "*.hpp"
+    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.inl"
 )
 
 install(EXPORT sys-sage-targets

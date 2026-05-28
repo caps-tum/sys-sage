@@ -109,7 +109,7 @@
       <xs:extension base="component">
         <xs:attribute name="vendor" type="xs:string" />
         <xs:attribute name="model" type="xs:string" />
-        <xs:attribute name="type" type="xs:integer" />
+        <xs:attribute name="category" type="xs:integer" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -118,7 +118,7 @@
   <xs:complexType name="subdivision">
     <xs:complexContent>
       <xs:extension base="component">
-        <xs:attribute name="subdivision_type" type="xs:integer" />
+        <xs:attribute name="subdivision_category" type="xs:integer" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -229,7 +229,7 @@
   <xs:complexType name="data_path">
     <xs:complexContent>
       <xs:extension base="relation">
-        <xs:attribute name ="DataPathType" type="xs:integer" />
+        <xs:attribute name ="DataPathCategory" type="xs:integer" />
         <xs:attribute name ="bw" type="xs:double" />
         <xs:attribute name ="latency" type="xs:double" />
       </xs:extension>
@@ -242,7 +242,7 @@
         <xs:attribute name="gate_size" type="xs:integer" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="gate_length" type="xs:integer" />
-        <xs:attribute name="gate_type" type="xs:integer" />
+        <xs:attribute name="gate_category" type="xs:integer" />
         <xs:attribute name="fidelity" type="xs:double" />
         <xs:attribute name="unitary" type="xs:string" />
       </xs:extension>

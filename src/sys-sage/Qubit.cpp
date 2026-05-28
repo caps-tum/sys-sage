@@ -1,7 +1,7 @@
 #include <sys-sage/Qubit.hpp>
 
-sys_sage::Qubit::Qubit(int _id, std::string _name):Component(_id, _name, sys_sage::ComponentType::Qubit){}
-sys_sage::Qubit::Qubit(Component * parent, int _id, std::string _name):Component(parent, _id, _name, sys_sage::ComponentType::Qubit){}
+sys_sage::Qubit::Qubit(int _id, const std::string &_name):Component(_id, _name, sys_sage::ComponentType::Qubit){}
+sys_sage::Qubit::Qubit(Component * parent, int _id, const std::string &_name):Component(parent, _id, _name, sys_sage::ComponentType::Qubit){}
 
 //SVTODO maybe this is what the constructor in xml_load needs?
 void sys_sage::Qubit::SetProperties(double _t1, double _t2, double _readout_fidelity, double _q1_fidelity, double _readout_length)

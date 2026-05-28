@@ -19,7 +19,7 @@ namespace sys_sage {
     @param n - Pointer to an already existing Node where the hwloc topology will get parsed.
     @param xmlPath - Path to the XML output of hwloc that should be parsed and uploaded to sys-sage.
     */
-    int parseHwlocOutput(Node* n, std::string xmlPath);
+    int parseHwlocOutput(Node* n, const std::string &xmlPath);
     /// @private
     int xmlProcessChildren(Component* c, xmlNode* parent, int level);
     /// @private

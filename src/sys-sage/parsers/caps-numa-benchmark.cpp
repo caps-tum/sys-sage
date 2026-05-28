@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-int sys_sage::parseCapsNumaBenchmark(Component* rootComponent, std::string benchmarkPath, std::string delim)
+int sys_sage::parseCapsNumaBenchmark(Component* rootComponent, const std::string &benchmarkPath, const std::string &delim)
 {
     CSVReader reader(benchmarkPath, delim);
     std::vector<std::vector<std::string> > benchmarkData;
@@ -67,7 +67,7 @@ int sys_sage::parseCapsNumaBenchmark(Component* rootComponent, std::string bench
             bw = stoul(benchmarkData[i][bw_idx]);
             ldlat = stoul(benchmarkData[i][ldlat_idx]);
 
-            new DataPath(src, target, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Datatransfer, static_cast<double>(bw), static_cast<double>(ldlat));
+            new DataPath(src, target, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathCategory::Datatransfer, static_cast<double>(bw), static_cast<double>(ldlat));
 
         }
     }

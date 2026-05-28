@@ -30,7 +30,7 @@ static suite<"import"> _ = [] {
     expect(chip2 != nullptr);
     Numa* numa = (Numa*)chip2->GetDescendantById(2, ComponentType::Numa);
     expect(numa != nullptr);
-    std::vector<DataPath*> dp_out = numa->FindDataPaths(DataPathType::Any, DataPathDirection::Outgoing);
+    std::vector<DataPath*> dp_out = numa->FindDataPaths(DataPathCategory::Any, DataPathDirection::Outgoing);
     expect(dp_out.size() == 4);
     //find a all datapaths where target is other Numa
     std::set<int> found;

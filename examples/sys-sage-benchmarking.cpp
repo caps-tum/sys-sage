@@ -63,8 +63,7 @@ int imp_search_complex(xmlNodePtr n, Component *c) {
     const unsigned char *v = xmlGetProp(n, (const unsigned char *)"key");
     std::string key(reinterpret_cast<char const *>(v));
     v = xmlGetProp(n, (const unsigned char *)"value");
-    int* value = new int(std::stoi(reinterpret_cast<char const *>(v)));
-    c->attrib[key] = (void*) value;
+    c->SetAttribute(key, std::stoi(reinterpret_cast<char const *>(v)));
     return 1;
   } else {
     return 0;
@@ -103,7 +102,7 @@ int main(int argc, char *argv[])
     uint64_t time_createNewComponent = UINT64_MAX;
 
     for (int i = 0; i < 1000; i++) {
-        n->Delete(false);
+        Component::Delete(n);
         t_start = high_resolution_clock::now();
         n = new Node(t, 1);
         t_end = high_resolution_clock::now();
@@ -119,7 +118,7 @@ int main(int argc, char *argv[])
         t_start = high_resolution_clock::now();
         Component *f = importFromXml("test.xml",NULL,NULL);
         t_end = high_resolution_clock::now();
-        f->Delete(true);
+        Component::DeleteSubtree(f);
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
         if (time < time_importFromXml) {
@@ -132,13 +131,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < 1000000; i++) {
         t_start = high_resolution_clock::now();
-        [[ maybe_unused ]] int* l = new int(1);
-        if (n->attrib.find("test") != n->attrib.end()) {
-        int* oldValue = static_cast<int*>(n->attrib["test"]);
-        delete oldValue;  // Free the old value
-        }
-        int* newValue = new int(100);  // Allocate new value
-        n->attrib["test"] = static_cast<void*>(newValue);  // Update the map
+        n->UpdateAttribute("test", 100);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -153,7 +146,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < 1000000; i++) {
         t_start = high_resolution_clock::now();
-        [[ maybe_unused ]] int* l = static_cast<int*>(n->attrib["test"]);
+        [[ maybe_unused ]] int* l = n->GetAttribute<int>("test");
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -182,7 +175,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 1000; i++) {
         hwlocComponentList.clear();
         t_start = high_resolution_clock::now();
-        n->FindDescendantsByType(&hwlocComponentList, ComponentType::Any);
+        n->FindDescendantsByType(hwlocComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -209,7 +202,7 @@ int main(int argc, char *argv[])
     std::vector<DataPath*> capsDataPaths;
     for(Component* gpu_c: hwlocComponentList)
     {
-        capsDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+        capsDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathCategory::Any, sys_sage::DataPathDirection::Outgoing);
         // capsDataPaths = gpu_c->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
         caps_dataPaths += capsDataPaths.size();
     }
@@ -231,7 +224,7 @@ int main(int argc, char *argv[])
     unsigned int max_bw = 0;
     Component* max_bw_component = NULL;
     t_start = high_resolution_clock::now();
-    std::vector<DataPath*> dp_vec = numa->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+    std::vector<DataPath*> dp_vec = numa->FindDataPaths(sys_sage::DataPathCategory::Any, sys_sage::DataPathDirection::Outgoing);
     // vector<DataPath*>* dp = numa->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
     for(DataPath* dp : dp_vec)
     {
@@ -267,7 +260,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 100; i++) {
         mt4gComponentList.clear();
         t_start = high_resolution_clock::now();
-        gpu->FindDescendantsByType(&mt4gComponentList, ComponentType::Any);
+        gpu->FindDescendantsByType(mt4gComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() -
                         t_start.time_since_epoch().count() - timer_overhead;
@@ -282,7 +275,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 1000; i++) {
         allComponentList.clear();
         t_start = high_resolution_clock::now();
-        t->FindDescendantsByType(&allComponentList, ComponentType::Any);
+        t->FindDescendantsByType(allComponentList, ComponentType::Any);
         t_end = high_resolution_clock::now();
         uint64_t time = t_end.time_since_epoch().count() - t_start.time_since_epoch().count() - timer_overhead;
         if (time < time_GetAllComponentsList) {
@@ -295,7 +288,7 @@ int main(int argc, char *argv[])
     std::vector<DataPath*> componentDataPaths;
     for(Component* gpu_c: mt4gComponentList)
     {
-        componentDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathType::Any, sys_sage::DataPathDirection::Outgoing);
+        componentDataPaths = gpu_c->FindDataPaths(sys_sage::DataPathCategory::Any, sys_sage::DataPathDirection::Outgoing);
         // componentDataPaths = gpu_c->GetDataPaths(SYS_SAGE_DATAPATH_OUTGOING);
         mt4g_dataPaths += componentDataPaths.size();
     }

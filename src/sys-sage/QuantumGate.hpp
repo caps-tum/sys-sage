@@ -31,7 +31,7 @@ namespace sys_sage {
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
          */
-        QuantumGate(size_t _gate_size = 0, std::string _name = "", double _fidelity = 0.0, std::string _unitary = "");
+        QuantumGate(size_t _gate_size = 0, const std::string &_name = "", double _fidelity = 0.0, const std::string &_unitary = "");
 
         /**
          * @brief Constructor that initializes a quantum gate with a list of qubits.
@@ -48,7 +48,7 @@ namespace sys_sage {
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
          */
-        QuantumGate(size_t _gate_size, const std::vector<Qubit *> & _qubits, std::string _name, double _fidelity, std::string _unitary);
+        QuantumGate(size_t _gate_size, const std::vector<Qubit *> & _qubits, const std::string &_name, double _fidelity, const std::string &_unitary);
 
         /**
          * @brief Constructor for advanced initialization, including all properties and components.
@@ -58,18 +58,18 @@ namespace sys_sage {
          * @param _gate_size The number of qubits this gate operates on.
          * @param _name The name of the quantum gate.
          * @param _gate_length The length of the gate operation (e.g., in time or circuit depth).
-         * @param _gate_type The type of the quantum gate (see QuantumGateType::type).
+         * @param _gate_category The category of the quantum gate (see QuantumGateCategory::type).
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
          */
-        QuantumGate(const std::vector<Component*>& components, int _id = 0, bool _ordered = true, size_t _gate_size = 0, std::string _name = "", int _gate_length = 0, QuantumGateType::type _gate_type = QuantumGateType::Unknown, double _fidelity = 0, std::string _unitary = "");
+        QuantumGate(const std::vector<Component*>& components, int _id = 0, bool _ordered = true, size_t _gate_size = 0, const std::string &_name = "", int _gate_length = 0, QuantumGateCategory::type _gate_category = QuantumGateCategory::Unknown, double _fidelity = 0, const std::string &_unitary = "");
         /**
          * @brief Sets the properties of the quantum gate.
          * @param _name The name of the quantum gate.
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
          */
-        void SetGateProperties(std::string _name, double _fidelity, std::string _unitary);
+        void SetGateProperties(const std::string &_name, double _fidelity, const std::string &_unitary);
 
         /**
          * @brief Sets the coupling map for the quantum gate.
@@ -87,17 +87,17 @@ namespace sys_sage {
         void SetAdditionalProperties();
 
         /**
-         * @brief Sets the type of the quantum gate.
+         * @brief Sets the category of the quantum gate.
          * 
-         * Sets the specific type for quantum gates.
+         * Sets the specific category for quantum gates.
          */
-        void SetQuantumGateType();
+        void SetQuantumGateCategory();
 
         /**
-         * @brief Gets the type of the quantum gate.
-         * @return The type identifier for the quantum gate.
+         * @brief Gets the category of the quantum gate.
+         * @return The category identifier for the quantum gate.
          */
-        QuantumGateType::type GetQuantumGateType() const;
+        QuantumGateCategory::type GetQuantumGateCategory() const;
 
         /**
          * @brief Gets the fidelity of the quantum gate.
@@ -151,13 +151,13 @@ namespace sys_sage {
          * @brief Sets the name of the relationship.
          * @param _name The name of the relationship to set.
          */
-        void SetName(std::string _name);
+        void SetName(const std::string &_name);
 
         /**
          * @brief Gets the name of the relationship.
          * @return The current name of the relationship.
          */
-        std::string GetName() const;
+        const std::string &GetName() const;
 
         /**
          * @brief Prints the details of the quantum gate.
@@ -173,6 +173,30 @@ namespace sys_sage {
          * @return Pointer to the created XML entry node.
          */
         xmlNodePtr _CreateXmlEntry() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this relation.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this relation through JSON. Intended for internal
+         *        use.
+         *
+         * @param obj The JSON object containing the data.
+         * @param componentMap A map used for the relation graph.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj,
+                      const std::unordered_map<uintptr_t, Component *> &componentMap) override;
 
     private:
 
@@ -194,9 +218,9 @@ namespace sys_sage {
         int gate_length;
 
         /**
-         * @brief The type of the quantum gate (see QuantumGateType::type).
+         * @brief The category of the quantum gate (see QuantumGateCategory::type).
          */
-        QuantumGateType::type gate_type;
+        QuantumGateCategory::type gate_category;
         /**
          * @brief The fidelity of the quantum gate, indicating its accuracy or performance.
          */

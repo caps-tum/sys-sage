@@ -31,12 +31,8 @@ namespace sys_sage {
         @param _size = size/capacity of the memory element, default -1
         @param is_volatile = true if the memory is volatile, default false
         */
-        Memory(Component * parent, int id = 0, std::string _name = "Memory", long long _size = -1, bool is_volatile = false);
-        /**
-        * @private
-        * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
-        */
-        ~Memory() override = default;
+        Memory(Component * parent, int id = 0, const std::string &_name = "Memory", long long _size = -1, bool is_volatile = false);
+
         /**
          * Retrieves size/capacity of the memory element
          * @return size
@@ -65,6 +61,29 @@ namespace sys_sage {
         @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
         */
         xmlNodePtr _CreateXmlSubtree() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
+
     private:
         long long size; /**< size/capacity of the memory element*/
         bool is_volatile; /**< is volatile? */

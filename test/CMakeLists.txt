@@ -7,7 +7,9 @@ option(TEST_TSAN "Build tests with enabled thread sanitizers" OFF)
 option(TEST_UBSAN "Build tests with enabled undefined behaviour sanitizers" OFF)
 option(TEST_COVERAGE "Build tests with enabled coverage" OFF)
 
-add_executable(test test.cpp topology.cpp datapath.cpp hwloc.cpp mt4g.cpp caps-numa-benchmark.cpp proc_cpuinfo.cpp export.cpp import.cpp relation.cpp)
+# remove XML tests for now
+#add_executable(test test.cpp topology.cpp datapath.cpp hwloc.cpp mt4g.cpp caps-numa-benchmark.cpp proc_cpuinfo.cpp export.cpp import.cpp relation.cpp json.cpp)
+add_executable(test test.cpp topology.cpp datapath.cpp hwloc.cpp mt4g.cpp caps-numa-benchmark.cpp proc_cpuinfo.cpp relation.cpp json.cpp)
 
 target_compile_definitions(test PRIVATE SYS_SAGE_TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
 

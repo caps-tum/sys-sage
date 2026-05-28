@@ -2,11 +2,11 @@
 #include <cctype>
 
 sys_sage::Cache::Cache(int _id, int  _cache_level, long long _cache_size, int _associativity, int _cache_line_size): Component(_id, "Cache", sys_sage::ComponentType::Cache), cache_type(std::to_string(_cache_level)), cache_size(_cache_size), cache_associativity_ways(_associativity), cache_line_size(_cache_line_size){}
-sys_sage::Cache::Cache(Component * parent, int _id, std::string _cache_type, long long _cache_size, int _associativity, int _cache_line_size): Component(parent, _id, "Cache", sys_sage::ComponentType::Cache), cache_type(_cache_type), cache_size(_cache_size), cache_associativity_ways(_associativity), cache_line_size(_cache_line_size){}
+sys_sage::Cache::Cache(Component * parent, int _id, const std::string &_cache_type, long long _cache_size, int _associativity, int _cache_line_size): Component(parent, _id, "Cache", sys_sage::ComponentType::Cache), cache_type(_cache_type), cache_size(_cache_size), cache_associativity_ways(_associativity), cache_line_size(_cache_line_size){}
 sys_sage::Cache::Cache(Component * parent, int _id, int _cache_level, long long _cache_size, int _associativity, int _cache_line_size): Cache(parent, _id, std::to_string(_cache_level), _cache_size, _associativity, -1){}
 
 const std::string& sys_sage::Cache::GetCacheName() const{return cache_type;}
-void sys_sage::Cache::SetCacheName(std::string _name) { cache_type = _name;}
+void sys_sage::Cache::SetCacheName(const std::string &_name) { cache_type = _name;}
 
 int sys_sage::Cache::GetCacheLevel() const{
 

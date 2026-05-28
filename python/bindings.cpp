@@ -21,6 +21,28 @@ py::function print_complex_attributes;
 py::function read_attributes;
 py::function read_complex_attributes;
 
+// wrapper class to allow attributes iteration in Python
+template <typename T>
+class AttributeIteratorWrapper {
+public:
+    AttributeIteratorWrapper(T &_self, T::attribIterator _cur) : self (_self), cur (_cur) {}
+
+    py::object next()
+    {
+        if (cur == self.AttributesEnd())
+            throw py::stop_iteration();
+
+        auto &key = cur->first;
+        auto value = self.template GetAttribute<py::object>(cur++);
+
+        return py::make_tuple(key, *value);
+    }
+
+private:
+    T &self;
+    T::attribIterator cur;
+};
+
 int xmldumper(std::string key, void* value, std::string* ret_value_str) {
     //
     if(default_attribs.end() != std::find(default_attribs.begin(), default_attribs.end(), key))
@@ -90,165 +112,6 @@ int xmlloader_complex(xmlNodePtr node, sys_sage::Component *c) {
     return 0;
 }
 
-//TODO: Add dynamic allocation for values
-//TODO: Delete values only after success
-template <typename T>
-void set_attribute(T &self, const std::string &key, py::object &value) {
-    //std::cout << "set attribute: " << key << " = " << value << std::endl;
-
-    auto val = self.attrib.find(key);
-    
-    if (!key.compare("CATcos") || !key.compare("CATL3mask")) {
-        void * newval = static_cast<void*>(new uint64_t(py::cast<uint64_t>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<uint64_t*>(val->second);
-        self.attrib[key] = newval;
-    } else if (!key.compare("mig_size")) {
-        void* new_val = static_cast<void*>(new long long(py::cast<long long>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<long long*>(val->second);
-        self.attrib[key] = new_val;
-    } else if (!key.compare("Number_of_streaming_multiprocessors") || 
-               !key.compare("Number_of_cores_in_GPU") || 
-               !key.compare("Number_of_cores_per_SM") || 
-               !key.compare("Bus_Width_bit")) {
-        void* new_val = static_cast<void*>(new int(py::cast<int>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<int*>(val->second);
-        self.attrib[key] = new_val;
-    } else if (!key.compare("Clock_Frequency") || !key.compare("GPU_Clock_Rate")) {
-        void * new_val = static_cast<void*>(new double(py::cast<double>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<double*>(val->second);
-        self.attrib[key] = new_val;
-    } else if (!key.compare("latency") ||
-               !key.compare("latency_min") ||
-               !key.compare("latency_max")) {
-        void * new_val = static_cast<void*>(new float(py::cast<float>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<float*>(val->second);
-        self.attrib[key] = new_val;
-    } else if (!key.compare("CUDA_compute_capability") || 
-               !key.compare("mig_uuid")) {
-        void * new_val= static_cast<void*>(new std::string(py::cast<std::string>(value)));
-        if(val != self.attrib.end())
-            delete static_cast<std::string*>(val->second);
-        self.attrib[key] = new_val;
-    } else if (!key.compare("freq_history")) {
-        auto fh = new std::vector<std::tuple<long long, double>>;
-        py::dict fh_dict = py::cast<py::dict>(value);
-        for (auto [key, value] : fh_dict) {
-            fh->push_back(std::make_tuple(py::cast<long long>(key), py::cast<double>(value)));
-        }
-        void * new_val = static_cast<void*>(fh);
-        if(val != self.attrib.end())
-            delete static_cast<std::vector<std::tuple<long long, double>>*>(val->second);
-        self.attrib[key] = new_val;
-    //} else if (!key.compare("GPU_Clock_Rate")) {
-    //    std::cout << "Setting attribute: " << key << std::endl;
-    //    py::object freq = value["freq"];
-    //    py::str unit = value["unit"];
-    //    //double * f = new double(py::cast<double>(freq));
-    //    //std::string * u = new std::string(py::cast<std::string>(unit));
-    //    void * new_val = static_cast<void*>(new std::tuple<double, std::string>(py::cast<double>(freq), py::cast<std::string>(unit)));
-    //    if(val != self.attrib.end())
-    //        delete static_cast<std::tuple<double, std::string>*>(val->second);
-    //    self.attrib[key] = new_val;
-    } else {
-        void * new_val = static_cast<void*>(new std::shared_ptr<py::object>(
-            std::make_shared<py::object>(value)));
-        if (val != self.attrib.end())
-            delete static_cast<std::shared_ptr<py::object>*>(val->second);
-        self.attrib[key] = new_val;
-    }
-
-}
-
-template <typename T>
-py::object get_attribute(T &self, const std::string &key) {
-    auto val = self.attrib.find(key);
-    if (val != self.attrib.end()) {
-        if(!key.compare("CATcos") || !key.compare("CATL3mask")){
-            uint64_t retval = *(reinterpret_cast<uint64_t*>(val->second)); 
-            return py::cast(retval);
-        }
-        else if(!key.compare("mig_size") )
-        {
-            return py::cast(*reinterpret_cast<long long*>(val->second));
-        }
-        //val->secondue: int
-        else if(!key.compare("Number_of_streaming_multiprocessors") || 
-        !key.compare("Number_of_cores_in_GPU") || 
-        !key.compare("Number_of_cores_per_SM")  || 
-        !key.compare("Bus_Width_bit") )
-        {
-            return py::cast(*reinterpret_cast<int*>(val->second));
-        }
-        //value: double
-        else if(!key.compare("Clock_Frequency") || !key.compare("GPU_Clock_Rate"))
-        {
-            return py::cast(*reinterpret_cast<double*>(val->second));
-        }
-        //value: float
-        else if(!key.compare("latency") ||
-        !key.compare("latency_min") ||
-        !key.compare("latency_max") )
-        {
-            return py::cast(*reinterpret_cast<float*>(val->second));
-        }   
-        //value: string
-        else if(!key.compare("CUDA_compute_capability") || 
-        !key.compare("mig_uuid") )
-        {
-            return py::cast(*reinterpret_cast<std::string*>(val->second));
-        }
-        else if(!key.compare("freq_history") ){
-            std::vector<std::tuple<long long,double>>* value = reinterpret_cast<std::vector<std::tuple<long long,double>>*>(val->second);
-            py::dict freq_dict;
-             for(auto [ ts,freq ] : *value){
-                 freq_dict[py::cast(ts)] = py::cast(freq);
-                 //printf("ts:%lld freq:%f\n",ts,freq);
-             }
-             return freq_dict;
-        //}
-        //else if(!key.compare("GPU_Clock_Rate")){
-        //    auto value = static_cast<std::tuple<double, std::string>*>(val->second);
-        //    auto [ freq, unit ] = *value;
-        //    py::dict freq_dict;
-        //    freq_dict[py::str("freq")] = py::cast(freq);
-        //    freq_dict[py::str("unit")] = py::cast(unit);  
-        //    return freq_dict;     
-        }else{
-            auto * ptr = static_cast<std::shared_ptr<py::object>*>(val->second);
-            return *ptr->get();
-        }
-    } else {
-        throw py::attribute_error("Attribute '" + key + "' not found"); 
-    }
-}
-
-template <typename T>
-py::object get_attribute(T &self, int pos){
-    if (pos < 0 || static_cast<size_t>(pos) >= self.attrib.size())
-        throw py::index_error("Index out of bounds");
-    auto it = self.attrib.begin();
-    std::advance(it, pos);
-    return get_attribute(self, it->first);
-}
-
-
-template <typename T>
-void remove_attribute(T &self, const std::string &key) {
-    auto val = self.attrib.find(key);
-    if (val != self.attrib.end()) {
-        delete static_cast<std::shared_ptr<py::object>*>(val->second);
-        self.attrib.erase(val);
-    } else {
-        throw py::attribute_error("Attribute " + key + " not found");
-    }
-}
-
-
 PYBIND11_MODULE(_py_sys_sage, m) {
     using namespace sys_sage;
 
@@ -311,13 +174,13 @@ PYBIND11_MODULE(_py_sys_sage, m) {
     m.attr("COMPONENT_QUBIT") = ComponentType::Qubit;
     m.attr("COMPONENT_TOPOLOGY") = ComponentType::Topology;
 
-    m.attr("SUBDIVISION_TYPE_NONE") = SubdivisionType::None;
-    m.attr("SUBDIVISION_TYPE_GPU_SM") = SubdivisionType::GpuSM;
+    m.attr("SUBDIVISION_CATEGORY_NONE") = SubdivisionCategory::None;
+    m.attr("SUBDIVISION_CATEGORY_GPU_SM") = SubdivisionCategory::GpuSM;
 
-    m.attr("CHIP_TYPE_NONE") = ChipType::None;
-    m.attr("CHIP_TYPE_CPU") = ChipType::Cpu;
-    m.attr("CHIP_TYPE_CPU_SOCKET") = ChipType::CpuSocket;
-    m.attr("CHIP_TYPE_GPU") = ChipType::Gpu;
+    m.attr("CHIP_CATEGORY_NONE") = ChipCategory::None;
+    m.attr("CHIP_CATEGORY_CPU") = ChipCategory::Cpu;
+    m.attr("CHIP_CATEGORY_CPU_SOCKET") = ChipCategory::CpuSocket;
+    m.attr("CHIP_CATEGORY_GPU") = ChipCategory::Gpu;
 
     m.attr("RELATION_TYPE_ANY") = RelationType::Any;
     m.attr("RELATION_TYPE_RELATION") = RelationType::Relation;
@@ -331,14 +194,14 @@ PYBIND11_MODULE(_py_sys_sage, m) {
     m.attr("RELATION_CATEGORY_PAPI_METRICS") = RelationCategory::PAPI_Metrics;
 #endif
 
-    m.attr("DATAPATH_TYPE_ANY") = DataPathType::Any;
-    m.attr("DATAPATH_TYPE_NONE") = DataPathType::None;
-    m.attr("DATAPATH_TYPE_LOGICAL") = DataPathType::Logical;
-    m.attr("DATAPATH_TYPE_PHYSICAL") = DataPathType::Physical;
-    m.attr("DATAPATH_TYPE_DATATRANSFER") = DataPathType::Datatransfer;
-    m.attr("DATAPATH_TYPE_L3CAT") = DataPathType::L3CAT;
-    m.attr("DATAPATH_TYPE_MIG") = DataPathType::MIG;
-    m.attr("DATAPATH_TYPE_C2C") = DataPathType::C2C;
+    m.attr("DATAPATH_CATEGORY_ANY") = DataPathCategory::Any;
+    m.attr("DATAPATH_CATEGORY_NONE") = DataPathCategory::None;
+    m.attr("DATAPATH_CATEGORY_LOGICAL") = DataPathCategory::Logical;
+    m.attr("DATAPATH_CATEGORY_PHYSICAL") = DataPathCategory::Physical;
+    m.attr("DATAPATH_CATEGORY_DATATRANSFER") = DataPathCategory::Datatransfer;
+    m.attr("DATAPATH_CATEGORY_L3CAT") = DataPathCategory::L3CAT;
+    m.attr("DATAPATH_CATEGORY_MIG") = DataPathCategory::MIG;
+    m.attr("DATAPATH_CATEGORY_C2C") = DataPathCategory::C2C;
 
     m.attr("DATAPATH_DIRECTION_ANY") = DataPathDirection::Any;
     m.attr("DATAPATH_DIRECTION_OUTGOING") = DataPathDirection::Outgoing;
@@ -347,30 +210,55 @@ PYBIND11_MODULE(_py_sys_sage, m) {
     m.attr("DATAPATH_ORIENTATION_ORIENTED") = DataPathOrientation::Oriented;
     m.attr("DATAPATH_ORIENTATION_BIDIRECTIONAL") = DataPathOrientation::Bidirectional;
 
-    m.attr("QUANTUMGATE_TYPE_UNKNOWN") = QuantumGateType::Unknown;
-    m.attr("QUANTUMGATE_TYPE_ID") = QuantumGateType::Id;
-    m.attr("QUANTUMGATE_TYPE_X") = QuantumGateType::X;
-    m.attr("QUANTUMGATE_TYPE_RZ") = QuantumGateType::Rz;
-    m.attr("QUANTUMGATE_TYPE_CNOT") = QuantumGateType::Cnot;
-    m.attr("QUANTUMGATE_TYPE_SX") = QuantumGateType::Sx;
-    m.attr("QUANTUMGATE_TYPE_TOFFOLI") = QuantumGateType::Toffoli;
+    m.attr("QUANTUMGATE_CATEGORY_UNKNOWN") = QuantumGateCategory::Unknown;
+    m.attr("QUANTUMGATE_CATEGORY_ID") = QuantumGateCategory::Id;
+    m.attr("QUANTUMGATE_CATEGORY_X") = QuantumGateCategory::X;
+    m.attr("QUANTUMGATE_CATEGORY_RZ") = QuantumGateCategory::Rz;
+    m.attr("QUANTUMGATE_CATEGORY_CNOT") = QuantumGateCategory::Cnot;
+    m.attr("QUANTUMGATE_CATEGORY_SX") = QuantumGateCategory::Sx;
+    m.attr("QUANTUMGATE_CATEGORY_TOFFOLI") = QuantumGateCategory::Toffoli;
+
+    py::class_<AttributeIteratorWrapper<Component>>(m, "ComponentAttributeIterator")
+        .def("__iter__", [](AttributeIteratorWrapper<Component> &self) -> AttributeIteratorWrapper<Component> & { return self; })
+        .def("__next__", &AttributeIteratorWrapper<Component>::next);
+
+    py::class_<AttributeIteratorWrapper<Relation>>(m, "RelationAttributeIterator")
+        .def("__iter__", [](AttributeIteratorWrapper<Relation> &self) -> AttributeIteratorWrapper<Relation> & { return self; })
+        .def("__next__", &AttributeIteratorWrapper<Relation>::next);
 
     //bind component class
     py::class_<Component, std::unique_ptr<Component, py::nodelete>>(m, "Component")
         .def(py::init<int, std::string>(), py::arg("id") = 0, py::arg("name") = "unknown")
         .def(py::init<Component *, int, std::string>(), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "unknown")
-        .def("__setitem__", [](Component& self, const std::string& name, py::object value) {
-            set_attribute<Component>(self,name, value);
-        })
-        .def("__getitem__", [](Component& self, const std::string& name) {
-            return get_attribute<Component>(self,name);
-        })
-        .def("__getitem__", [](Component& self, int pos) {
-            return get_attribute<Component>(self,pos);
-        })
-        .def("__delitem__", [](Component& self, const std::string& name) {
-            remove_attribute<Component>(self,name);
-        })
+        /*
+         * The iterators and methods that take an iterator as a parameter are
+         * not exposed since there is no 1-to-1 correspondance of an iterator
+         * in Python. Normal iteration inside a for-loop is enabled through a
+         * helper class. Keys should be used instead of iterators like in
+         * `Component::GetAttribute(attribIterator it)`.
+         * 
+         * Furthermore, the method `Component::UpdateAttribute` is not exposed
+         * since the underlying `py::object` needs to be freed and a new one
+         * needs to be allocated anyways.
+         *
+         * JSON serialization for attributes in Python can be supported through
+         * https://github.com/pybind/pybind11_json
+         * However, this uses `nlohmann::json` while we use
+         * `nlohmann::ordered_json`. -> TODO: how to fix this?
+         *
+         * All of the above also holds for the `Relation` class.
+         */
+        .def("SetAttribute", [](Component &self, const std::string &key, py::object value) -> py::object { return *self.SetAttribute<py::object>(key, std::move(value)); })
+        .def("GetAttribute", [](Component &self, const std::string &key) -> py::object
+            {
+                auto value = self.GetAttribute<py::object>(key);
+                return value ? *value : py::none();
+            }
+        )
+        .def("GetAttributesSize", &Component::GetAttributesSize)
+        .def("IterateAttributes", [](Component &self) -> AttributeIteratorWrapper<Component> { return AttributeIteratorWrapper(self, self.AttributesBegin()); })
+        .def("EraseAttribute", (void (Component::*)(const std::string &))(&Component::EraseAttribute), py::arg("key"))
+        .def("ClearAttributes", &Component::ClearAttributes)
         .def("InsertChild", &Component::InsertChild, py::arg("child"), "Insert a child component")
         .def("InsertBetweenParentAndChild", &Component::InsertBetweenParentAndChild, py::arg("parent"), py::arg("child"), py::arg("alreadyParentsChild"),"Insert a component between parent and child")
         .def("InsertBetweenParentAndChildren", &Component::InsertBetweenParentAndChildren, py::arg("parent"), py::arg("children"), py::arg("alreadyParentsChildren"), "Insert a component between parent and children")
@@ -427,7 +315,7 @@ PYBIND11_MODULE(_py_sys_sage, m) {
 // -- DEPRECATED GetComponentsInSubtree (used up until version 1.0.0)
         .def("GetComponentsInSubtree", [] (Component &self) {
             std::vector<Component *> v;
-            self.FindDescendantsByType(&v, ComponentType::Any);
+            self.FindDescendantsByType(v, ComponentType::Any);
             return v;
         }, "Get all the components in the subtree of the component")
 // --
@@ -443,11 +331,11 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("GetAllRelationsBy", &Component::FindRelations, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Get all relations of that type and position")
 // --
         .def("FindRelations", &Component::FindRelations, py::arg("type") = RelationType::Any, py::arg("position") = -1, "Find the relations of that type and position")
-        .def("GetDataPathByType", &Component::GetDataPathByType, py::arg("type"), py::arg("direction") = DataPathDirection::Any,"Get the first data path associated with the component by type")
+        .def("GetDataPathByCategory", &Component::GetDataPathByCategory, py::arg("category"), py::arg("direction") = DataPathDirection::Any,"Get the first data path associated with the component by type")
 // -- DEPRECATED GetAllDataPaths (used up until version 1.0.0)
-        .def("GetAllDataPaths", (std::vector<DataPath *> (Component::*) (DataPathType::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Get all datapaths of that type and direction")
+        .def("GetAllDataPaths", (std::vector<DataPath *> (Component::*) (DataPathCategory::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("category") = DataPathCategory::Any, py::arg("direction") = DataPathDirection::Any, "Get all datapaths of that category and direction")
 // --
-        .def("FindDataPaths", (std::vector<DataPath *> (Component::*) (DataPathType::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("type") = DataPathType::Any, py::arg("direction") = DataPathDirection::Any, "Find the datapaths of that type and direction")
+        .def("FindDataPaths", (std::vector<DataPath *> (Component::*) (DataPathCategory::type, DataPathDirection::type) const) &Component::FindDataPaths, py::arg("category") = DataPathCategory::Any, py::arg("direction") = DataPathDirection::Any, "Find the datapaths of that category and direction")
 // -- DEPRECATED CheckComponentTreeConsistency (used up until version 1.0.0)
         .def("CheckComponentTreeConsistency", &Component::CheckSubtreeConsistency,"Check if the component tree is consistent")
 // --
@@ -472,13 +360,10 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("GetDepth", &Component::CalcDepth,py::arg("refresh"),"Get the depth of the component, if refresh is true it will update the depth")
 // --
         .def("CalcDepth", &Component::CalcDepth, py::arg("refresh"), "Calculate the depth of the component, if refresh is true it will update the depth")
-        .def("DeleteRelation", &Component::DeleteRelation, py::arg("relation"), "Delete the given relation from the component")
 // -- DEPRECATED DeleteAllRelations (used up until version 1.0.0)
         .def("DeleteAllRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any,"Delete all relations of that type from the component")
 // --
         .def("DeleteRelations", &Component::DeleteRelations, py::arg("type") = RelationType::Any, "Delete the relations of that type from the component")
-        .def("DeleteSubtree", &Component::DeleteSubtree,"Delete the subtree of the component")
-        .def("Delete", &Component::Delete,py::arg("withSubtree") = true,"Delete the component")
 #ifdef SS_PAPI
         .def("PrintPAPImetricsInSubtree", &Component::PrintPAPImetricsInSubtree, py::arg("eventSet") = PAPI_NULL)
         .def("FindPAPIrelationsInSubtree", (std::vector<Relation *> (Component::*)() const) &Component::FindPAPIrelationsInSubtree)
@@ -525,11 +410,11 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("GetMIGNumSMs", &Chip::GetMIGNumSMs, py::arg("uuid"))
         .def("UpdateMIGSettings", &Chip::UpdateMIGSettings, py::arg("uuid"))
         #endif
-        .def(py::init<int,std::string,ChipType::type,std::string,std::string>(), py::arg("id") = 0, py::arg("name") = "Chip", py::arg("chipType")= ChipType::None, py::arg("vendor") = "", py::arg("model") = "")
-        .def(py::init<Component*,int,std::string,ChipType::type,std::string,std::string>(), py::arg("parent"),py::arg("id") = 0, py::arg("name") = "Chip", py::arg("chipType") = ChipType::None, py::arg("vendor") = "", py::arg("model") = "")
+        .def(py::init<int,std::string,ChipCategory::type,std::string,std::string>(), py::arg("id") = 0, py::arg("name") = "Chip", py::arg("chipType")= ChipCategory::None, py::arg("vendor") = "", py::arg("model") = "")
+        .def(py::init<Component*,int,std::string,ChipCategory::type,std::string,std::string>(), py::arg("parent"),py::arg("id") = 0, py::arg("name") = "Chip", py::arg("chipType") = ChipCategory::None, py::arg("vendor") = "", py::arg("model") = "")
         .def_property("vendor", &Chip::GetVendor, &Chip::SetVendor, "The vendor of the chip")
         .def_property("model", &Chip::GetModel, &Chip::SetModel, "The model of the chip")
-        .def_property("chipType", &Chip::GetChipType, &Chip::SetChipType, "The type of the chip");
+        .def_property("chipType", &Chip::GetChipCategory, &Chip::SetChipCategory, "The type of the chip");
 
     py::class_<Cache, std::unique_ptr<Cache, py::nodelete>, Component>(m, "Cache")
         #ifdef NVIDIA_MIG
@@ -547,7 +432,7 @@ PYBIND11_MODULE(_py_sys_sage, m) {
     py::class_<Subdivision, std::unique_ptr<Subdivision, py::nodelete>, Component>(m, "Subdivision")
         .def(py::init<int,std::string>(), py::arg("id") = 0, py::arg("name") = "Subdivision")
         .def(py::init<Component*,int,std::string>(), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "Subdivision")
-        .def_property("subdivisionType", &Subdivision::GetSubdivisionType, &Subdivision::SetSubdivisionType, "The type of the subdivision");
+        .def_property("subdivisionType", &Subdivision::GetSubdivisionCategory, &Subdivision::SetSubdivisionCategory, "The type of the subdivision");
 
     py::class_<Numa,std::unique_ptr<Numa, py::nodelete>, Subdivision>(m, "Numa")
         .def(py::init<int, long long>(), py::arg("id") = 0, py::arg("size") = -1)
@@ -641,18 +526,17 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def_property_readonly("category", &Relation::GetCategory)
         .def_property_readonly("ordered", &Relation::IsOrdered)
         .def_property_readonly("components", &Relation::GetComponents)
-        .def("__setitem__", [](Relation& self, const std::string& name, py::object value) {
-            set_attribute<Relation>(self,name, value);
-        })
-        .def("__getitem__", [](Relation& self, const std::string& name) {
-            return get_attribute<Relation>(self,name);
-        })
-        .def("__getitem__", [](Relation& self, int pos) {
-            return get_attribute<Relation>(self,pos);
-        })
-        .def("__delitem__", [](Relation& self, const std::string& name) {
-            remove_attribute<Relation>(self,name);
-        })
+        .def("SetAttribute", [](Relation &self, const std::string &key, py::object value) -> py::object { return *self.SetAttribute<py::object>(key, std::move(value)); })
+        .def("GetAttribute", [](Relation &self, const std::string &key) -> py::object
+            {
+                auto value = self.GetAttribute<py::object>(key);
+                return value ? *value : py::none();
+            }
+        )
+        .def("GetAttributesSize", &Relation::GetAttributesSize)
+        .def("IterateAttributes", [](Relation &self) -> AttributeIteratorWrapper<Relation> { return AttributeIteratorWrapper(self, self.AttributesBegin()); })
+        .def("EraseAttribute", (void (Relation::*)(const std::string &))(&Relation::EraseAttribute), py::arg("key"))
+        .def("ClearAttributes", &Relation::ClearAttributes)
 #ifdef SS_PAPI
         .def("GetPAPImetric", &Relation::GetPAPImetric, py::arg("eventCode"), py::arg("cpuNum") = -1, py::arg("timestamp") = 0)
         .def("GetAllPAPImetrics", &Relation::GetAllPAPImetrics, py::arg("eventCode"), py::arg("cpuNum"))
@@ -667,38 +551,37 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("GetComponent", &Relation::GetComponent, py::arg("index"), "Get a component at a specific position")
         .def("Print", &Relation::Print, "Prin basic information about this relation")
         .def("AddComponent", &Relation::AddComponent, py::arg("component"), "Add this component to the relation")
+        .def("RemoveComponent", (int (Relation::*) (size_t)) &Relation::RemoveComponent, py::arg("index"), "Removes the component at the given index")
+        .def("RemoveComponent", (int (Relation::*) (Component *)) &Relation::RemoveComponent, py::arg("component"), "Removes the given component from the relation")
         .def("UpdateComponent", (int (Relation::*) (int, Component *)) &Relation::UpdateComponent, py::arg("index"), py::arg("new_component"), "Tries to replace the component at the given index with the new component")
-        .def("UpdateComponent", (int (Relation::*) (Component *, Component *)) &Relation::UpdateComponent, py::arg("old_component"), py::arg("new_component"), "Tries to find the old component to replace it with the new component")
-        .def("Delete", &Relation::Delete, "Delete this relation");
+        .def("UpdateComponent", (int (Relation::*) (Component *, Component *)) &Relation::UpdateComponent, py::arg("old_component"), py::arg("new_component"), "Tries to find the old component to replace it with the new component");
 
     py::class_<DataPath, std::unique_ptr<DataPath, py::nodelete>, Relation>(m,"DataPath")
-        .def(py::init<Component*, Component*, DataPathOrientation::type, DataPathType::type>(), py::arg("source"), py::arg("target"), py::arg("oriented"), py::arg("type") = sys_sage::DataPathType::None)
+        .def(py::init<Component*, Component*, DataPathOrientation::type, DataPathCategory::type>(), py::arg("source"), py::arg("target"), py::arg("oriented"), py::arg("type") = sys_sage::DataPathCategory::None)
         .def(py::init<Component*, Component*, DataPathOrientation::type, double, double>(), py::arg("source"), py::arg("target"), py::arg("oriented"), py::arg("bw"), py::arg("latency"))
-        .def(py::init<Component*, Component*, DataPathOrientation::type, DataPathType::type, double, double>(), py::arg("source"), py::arg("target"), py::arg("oriented"), py::arg("type"), py::arg("bw"), py::arg("latency"))
+        .def(py::init<Component*, Component*, DataPathOrientation::type, DataPathCategory::type, double, double>(), py::arg("source"), py::arg("target"), py::arg("oriented"), py::arg("type"), py::arg("bw"), py::arg("latency"))
         .def_property("bandwidth", &DataPath::GetBandwidth, &DataPath::SetBandwidth, "The bandwidth of the data path")
         .def_property("latency", &DataPath::GetLatency, &DataPath::SetLatency, "The latency of the data path")
-        .def_property_readonly("dp_type", &DataPath::GetDataPathType, "The type of the data path")
+        .def_property_readonly("dp_category", &DataPath::GetDataPathCategory, "The type of the data path")
         .def_property_readonly("orientation", &DataPath::GetOrientation, "The orientation of the data path")
         .def_property("source", &DataPath::GetSource, &DataPath::UpdateSource, "The source of the data path")
         .def_property("target", &DataPath::GetTarget, &DataPath::UpdateTarget, "The target of the data path")
-        .def("Print", &DataPath::Print, "Print basic information of the data path to stdout")
-        .def("Delete", &DataPath::Delete, "Delete the data path");
+        .def("Print", &DataPath::Print, "Print basic information of the data path to stdout");
 
     py::class_<CouplingMap, std::unique_ptr<CouplingMap, py::nodelete>, Relation>(m, "CouplingMap")
         .def(py::init<Qubit *, Qubit *>(), py::arg("q1"), py::arg("q2"))
         .def(py::init<const std::vector<Component*>&, int, bool>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = false)
-        .def_property("fidelity", &CouplingMap::GetFidelity, &CouplingMap::SetFidelity)
-        .def("Delete", &CouplingMap::Delete, "Delete the coupling map");
+        .def_property("fidelity", &CouplingMap::GetFidelity, &CouplingMap::SetFidelity);
 
     py::class_<QuantumGate, std::unique_ptr<QuantumGate, py::nodelete>, Relation>(m, "QuantumGate")
         .def(py::init<size_t, std::string, double, std::string>(), py::arg("size") = 0, py::arg("name") = "", py::arg("fidelity") = 0.0, py::arg("unitary") = "")
         .def(py::init<size_t, const std::vector<Qubit *> &>(), py::arg("size"), py::arg("qubits"))
         .def(py::init<size_t, const std::vector<Qubit *> &, std::string, double, std::string>(), py::arg("size"), py::arg("qubits"), py::arg("name"), py::arg("fidelity"), py::arg("unitary"))
-        .def(py::init<const std::vector<Component *> &, int, bool, size_t, std::string, int, QuantumGateType::type, double, std::string>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true, py::arg("size") = 0, py::arg("name") = "", py::arg("length") = 0, py::arg("type") = QuantumGateType::Unknown, py::arg("fidelity") = 0, py::arg("unitary") = "")
+        .def(py::init<const std::vector<Component *> &, int, bool, size_t, std::string, int, QuantumGateCategory::type, double, std::string>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true, py::arg("size") = 0, py::arg("name") = "", py::arg("length") = 0, py::arg("type") = QuantumGateCategory::Unknown, py::arg("fidelity") = 0, py::arg("unitary") = "")
         .def_property("gate_size", &QuantumGate::GetGateSize, &QuantumGate::SetGateSize)
         .def_property("name", &QuantumGate::GetName, &QuantumGate::SetName)
         .def_property("gate_length", &QuantumGate::GetGateLength, &QuantumGate::SetGateLength)
-        .def_property("gate_type", &QuantumGate::GetQuantumGateType, &QuantumGate::SetQuantumGateType)
+        .def_property("gate_type", &QuantumGate::GetQuantumGateCategory, &QuantumGate::SetQuantumGateCategory)
         .def_property("fidelity", &QuantumGate::GetFidelity, &QuantumGate::SetFidelity)
         .def_property("unitary", &QuantumGate::GetUnitary, &QuantumGate::SetUnitary)
         .def("SetGateProperties", &QuantumGate::SetGateProperties, py::arg("name"), py::arg("fidelity"), py::arg("unitary"), "Sets the name, fidelity, unitary and type of the quantum gate")
@@ -714,8 +597,8 @@ PYBIND11_MODULE(_py_sys_sage, m) {
 
     m.def("parseCapsNumaBenchmark", &parseCapsNumaBenchmark,  py::arg("root"), py::arg("benchmarkPath"), py::arg("delim") = ";");
 
-    m.def("parseIQM", (int (*) (Component *, std::string, int, int)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1);
-    m.def("parseIQM", (int (*) (QuantumBackend *, std::string, int, int, bool)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1, py::arg("createTopo") = true);
+    m.def("parseIQM", (int (*) (Component *, const std::string &, int, int)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1);
+    m.def("parseIQM", (int (*) (QuantumBackend *, const std::string&, int, int, bool)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1, py::arg("createTopo") = true);
 
     // TODO: QDMI parser logic is missing in src/parsers/qdmi-parser.hpp
 

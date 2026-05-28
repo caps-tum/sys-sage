@@ -120,7 +120,7 @@ static suite<"export"> _ = []
     {
         auto topo = new Component(42, "a name");
         exportToXml(topo, "test.xml");
-        topo->Delete(false);
+        delete topo;
         validate("test.xml");
     };
 

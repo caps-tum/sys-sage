@@ -70,11 +70,12 @@ int _readCpuinfoFreq(std::vector<sys_sage::Thread*> threads, bool keep_history =
                     if(keep_history)
                     {
                         //check if freq_history exists; if not, create it -- vector of tuples <timestamp,frequency>
-                        if (c->attrib.find("freq_history") == c->attrib.end()) {
-                            c->attrib["freq_history"] = reinterpret_cast<void*>(new std::vector<std::tuple<long long,double>>());
-                        }
+                        auto freqHistory = c->GetAttribute<std::vector<std::tuple<long long, double>>>("freq_history");
+                        if (freqHistory == nullptr)
+                            freqHistory = c->SetAttribute<std::vector<std::tuple<long long, double>>>("freq_history", {});
+
                         long long ts = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                        static_cast<std::vector<std::tuple<long long,double>>*>(c->attrib["freq_history"])->push_back(std::make_tuple(ts,freq));
+                        freqHistory->push_back(std::make_tuple(ts, freq));
                     }
                     //cout << "----------------Core " << c->GetId() << " (HW thread " << threads[current_thread_pos]->GetId() << ") frequency: " << freq << endl;
                     threads_processed++;
@@ -99,8 +100,8 @@ int sys_sage::Node::RefreshCpuCoreFrequency(bool keep_history)
     std::vector<Thread*> cpu_hw_threads, hw_threads_to_refresh;
     for(Component * socket : sockets)
     {
-        if(static_cast<Chip*>(socket)->GetChipType() == ChipType::CpuSocket || static_cast<Chip*>(socket)->GetChipType() == ChipType::Cpu)
-            socket->FindDescendantsByType(reinterpret_cast<std::vector<Component*>*>(&cpu_hw_threads), ComponentType::Thread);
+        if(static_cast<Chip*>(socket)->GetChipCategory() == ChipCategory::CpuSocket || static_cast<Chip*>(socket)->GetChipCategory() == ChipCategory::Cpu)
+            socket->FindDescendantsByType(*reinterpret_cast<std::vector<Component*>*>(&cpu_hw_threads), ComponentType::Thread);
     }
 
     //remove duplicate threads of the same core (hyperthreading -- 2 threads on the same core have the same freq)

@@ -7,6 +7,7 @@
 using std::cout;
 using std::endl;
 
+sys_sage::Relation::Relation(int _id, bool _ordered, RelationCategory::type _category) : ordered(_ordered), id(_id), type(RelationType::Relation), category(_category) {}
 sys_sage::Relation::Relation(RelationType::type _relation_type, RelationCategory::type _relation_category): type(_relation_type), category(_relation_category) {}
 sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category): ordered(_ordered), id(_id), type(_relation_type), category(_relation_category)
 {
@@ -15,6 +16,7 @@ sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id,
     }
 }
 sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationCategory::type _relation_category): Relation(components, _id, _ordered, sys_sage::RelationType::Relation, _relation_category) {}
+sys_sage::Relation::Relation(int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category) : ordered(_ordered), id(_id), type(_relation_type), category(_relation_category) {}
 
 void sys_sage::Relation::SetId(int _id) {id = _id;}
 int sys_sage::Relation::GetId() const{ return id; }
@@ -56,15 +58,17 @@ void sys_sage::Relation::_PrintRelationComponentInfo() const
 }
 void sys_sage::Relation::_PrintRelationAttrib() const
 {
-    if(!attrib.empty())
-    {
-        cout << " -- attrib: ";
-        for (const auto& n : attrib) {
-            // TODO: fix undefined behaviour caused by strict aliasing rule violation
-            uint64_t* val = reinterpret_cast<uint64_t*>(n.second);
-            std::cout << n.first << " = " << *val << "; ";
-        }
-    }
+    // Comment out this code for now. Printing of the attributes will be
+    // handeled through future JSON support.
+    //if(!attributes.empty())
+    //{
+    //    cout << " -- attrib: ";
+    //    for (const auto& n : attrib) {
+    //        // TODO: fix undefined behaviour caused by strict aliasing rule violation
+    //        uint64_t* val = reinterpret_cast<uint64_t*>(n.second);
+    //        std::cout << n.first << " = " << *val << "; ";
+    //    }
+    //}
 }
 void sys_sage::Relation::Print() const
 {
@@ -74,21 +78,25 @@ void sys_sage::Relation::Print() const
     cout << endl;
 }
 
-void sys_sage::Relation::Delete()
+sys_sage::Relation::~Relation()
 {
     for(Component* c : components)
     {
         std::vector<Relation*>& component_relation_vector = c->_GetRelationsByType(type);
         component_relation_vector.erase(std::remove(component_relation_vector.begin(), component_relation_vector.end(), this), component_relation_vector.end());
     }
-    delete this;
 }
+
+void sys_sage::Relation::Delete(Relation *rel)
+{
+    delete rel;
+}
+
 sys_sage::RelationType::type sys_sage::Relation::GetType() const{ return type;}
 sys_sage::RelationCategory::type sys_sage::Relation::GetCategory() const{ return category;}
-std::string sys_sage::Relation::GetTypeStr() const
+const std::string &sys_sage::Relation::GetTypeStr() const
 {
-    std::string ret(sys_sage::RelationType::ToString(type));
-    return ret;
+    return sys_sage::RelationType::ToString(type);
 }
 
 int sys_sage::Relation::UpdateComponent(int index, Component * _new_component)
@@ -130,4 +138,57 @@ int sys_sage::Relation::RemoveComponent(size_t index)
     components.erase(components.begin() + index);
 
     return 0;
+}
+
+int sys_sage::Relation::RemoveComponent(Component *component)
+{
+    auto it = std::find(components.begin(), components.end(), component);
+    if (it == components.end())
+        return -1;
+    components.erase(it);
+
+    auto &relations = component->_GetRelationsByType(type);
+    relations.erase(std::remove(relations.begin(), relations.end(), this), relations.end());
+
+    return 0;
+}
+
+sys_sage::Relation::attribSizeType sys_sage::Relation::GetAttributesSize() const
+{
+    return attributes.size();
+}
+
+sys_sage::Relation::attribIterator sys_sage::Relation::AttributesBegin()
+{
+    return attributes.begin();
+}
+
+sys_sage::Relation::constAttribIterator sys_sage::Relation::AttributesBegin() const
+{
+    return attributes.begin();
+}
+
+sys_sage::Relation::attribIterator sys_sage::Relation::AttributesEnd()
+{
+    return attributes.end();
+}
+
+sys_sage::Relation::constAttribIterator sys_sage::Relation::AttributesEnd() const
+{
+    return attributes.end();
+}
+
+void sys_sage::Relation::EraseAttribute(const std::string &key)
+{
+    attributes.erase(key);
+}
+
+sys_sage::Relation::attribIterator sys_sage::Relation::EraseAttribute(Relation::attribIterator it)
+{
+    return attributes.erase(it);
+}
+
+void sys_sage::Relation::ClearAttributes()
+{
+    attributes.clear();
 }

@@ -66,6 +66,6 @@ int main(int argc, char *argv[])
     exportToXml(topo, output_name);
 
     cout << "--------Clearing up the tree--------" << endl;
-    topo->Delete(true);
+    Component::DeleteSubtree(topo);
     return 0;
 }

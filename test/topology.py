@@ -272,20 +272,20 @@ class TestComponents(unittest.TestCase):
 
     def test_attrib(self):
         c = pysage.Component()
-        c["foo"] = 1
-        c["bar"] = 2.0
-        c["foobar"] = "test"
-        self.assertEqual(c["foo"], 1)
-        self.assertEqual(c["bar"], 2.0)
-        self.assertEqual(c["foobar"], "test")
-        with self.assertRaises(AttributeError):
-            c["fail"]
-        # indexing follows lexicographical order of keys
-        self.assertEqual(c[0], 2.0)
-        self.assertEqual(c[1], 1)
-        self.assertEqual(c[2], "test")
-        with self.assertRaises(TypeError):
-            c[1] = 2
+
+        c.SetAttribute("foo", 1)
+        c.SetAttribute("bar", 2.0)
+        c.SetAttribute("foobar", "test")
+
+        self.assertEqual(c.GetAttribute("foo"), 1)
+        self.assertEqual(c.GetAttribute("bar"), 2.0)
+        self.assertEqual(c.GetAttribute("foobar"), "test")
+
+        c.EraseAttribute("foo")
+        self.assertEqual(c.GetAttribute("foo"), None)
+
+        c.ClearAttributes()
+        self.assertEqual(c.GetAttributesSize(), 0)
 
 if __name__ == "__main__":
     unittest.main()

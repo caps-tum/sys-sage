@@ -36,7 +36,15 @@ class TestRelations(unittest.TestCase):
         bar = pysage.Component()
         v = [foo, bar]
         r = pysage.Relation(v)
-        r.Delete()
+        r.RemoveComponent(foo)
+        r.RemoveComponent(bar)
+    def test_removal(self):
+        foo = sys_sage.Component()
+        bar = sys_sage.Component()
+        v = [foo, bar]
+        r = sys_sage.Relation(v)
+        r.RemoveComponent(foo)
+        r.RemoveComponent(bar)
         
         self.assertEqual(len(foo.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
         self.assertEqual(len(bar.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
@@ -77,26 +85,25 @@ class TestRelations(unittest.TestCase):
     def test_attributes(self):
         r = pysage.Relation([])
 
-        r["foo"] = 1
-        r["bar"] = 2.0
-        r["foobar"] = "test"
-        self.assertEqual(r["foo"], 1)
-        self.assertEqual(r["bar"], 2.0)
-        self.assertEqual(r["foobar"], "test")
-        with self.assertRaises(AttributeError):
-            r["fail"]
-        # indexing follows lexicographical order of keys
-        self.assertEqual(r[0], 2.0)
-        self.assertEqual(r[1], 1)
-        self.assertEqual(r[2], "test")
-        with self.assertRaises(TypeError):
-            r[1] = 2
+        r.SetAttribute("foo", 1)
+        r.SetAttribute("bar", 2.0)
+        r.SetAttribute("foobar", "test")
+
+        self.assertEqual(r.GetAttribute("foo"), 1)
+        self.assertEqual(r.GetAttribute("bar"), 2.0)
+        self.assertEqual(r.GetAttribute("foobar"), "test")
+
+        r.EraseAttribute("foo")
+        self.assertEqual(r.GetAttribute("foo"), None)
+
+        r.ClearAttributes()
+        self.assertEqual(r.GetAttributesSize(), 0)
 
     def test_inheritance_data_path(self):
         foo = pysage.Component()
         bar = pysage.Component()
 
-        r = pysage.DataPath(foo, bar, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_TYPE_ANY)
+        r = pysage.DataPath(foo, bar, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_CATEGORY_ANY)
         # test if inherited class can access members of the base class
         self.assertEqual(r.type, pysage.RELATION_TYPE_DATAPATH)
 
@@ -109,7 +116,7 @@ class TestRelations(unittest.TestCase):
         self.assertEqual(r.type, pysage.RELATION_TYPE_QUANTUMGATE)
 
         r.SetGateProperties("cx", 1.0, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]")
-        self.assertEqual(r.gate_type, pysage.QUANTUMGATE_TYPE_CNOT)
+        self.assertEqual(r.gate_type, pysage.QUANTUMGATE_CATEGORY_CNOT)
         self.assertEqual(r.fidelity, 1.0)
         self.assertEqual(r.unitary, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]")
 

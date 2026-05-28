@@ -41,7 +41,7 @@ namespace sys_sage {
         constexpr type Topology = 14; /**< class Topology */
 
         //SVTODO this should remain private???
-        static const std::unordered_map<type, const char*> names = {
+        static const std::unordered_map<type, const std::string> names = {
             {Generic, "GenericComponent"},
             {Thread, "HW_Thread"},
             {Core, "Core"},
@@ -66,35 +66,41 @@ namespace sys_sage {
          * @return String representation of the component type
          * 
          */
-        inline const char* ToString(type rt) {
+        inline const std::string &ToString(type rt) {
+            static const std::string unknown ("Unknown");
+
             auto it = names.find(rt);
             if (it != names.end()) return it->second;
-            return "Unknown";
+            return unknown;
         }
     }
 
     /**
-     * @namespace SubdivisionType
-     * @brief Enumerates subdivision types for components (e.g., GPU SMs).
+     * @namespace SubdivisionCategory
+     * @brief Enumerates subdivision categories for components (e.g., GPU SMs).
+     *        Provides finer difference between subdivisions with no connection
+     *        to the data type of the component.
      */
-    namespace SubdivisionType {
-        using type = int32_t; /**< SubdivisionType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+    namespace SubdivisionCategory {
+        using type = int32_t; /**< SubdivisionCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
-        constexpr type None = 1; /**< Generic Subdivision type. */
+        constexpr type None = 1; /**< Generic Subdivision category. */
         constexpr type GpuSM = 2; /**< Subdivision type for GPU SMs */
     }
 
     /**
-     * @namespace ChipType
-     * @brief Enumerates chip types (CPU, GPU, etc.).
+     * @namespace ChipCategory
+     * @brief Enumerates chip types (CPU, GPU, etc.). Provides finer difference
+     *        between chips with no connection to the data type of the
+     *        component.
      */
-    namespace ChipType {
-        using type = int32_t; /**< ChipType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+    namespace ChipCategory {
+        using type = int32_t; /**< ChipCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
-        constexpr type None = 1; /**< Generic Chip type. */
-        constexpr type Cpu = 2; /**< Chip type used for a CPU. */
-        constexpr type CpuSocket = 3; /**< Chip type used for one CPU socket. */
-        constexpr type Gpu = 4; /**< Chip type used for a GPU.*/
+        constexpr type None = 1; /**< Generic Chip category. */
+        constexpr type Cpu = 2; /**< Chip category used for a CPU. */
+        constexpr type CpuSocket = 3; /**< Chip category used for one CPU socket. */
+        constexpr type Gpu = 4; /**< Chip category used for a GPU.*/
     }
 
 ////////////////////////////////////////////////////////////
@@ -127,7 +133,7 @@ namespace sys_sage {
         };
 
         //SVTODO this should remain private???
-        static const std::unordered_map<type, const char*> names = {
+        static const std::unordered_map<type, const std::string> names = {
             {Any, "Any"},
             {Relation, "Relation"},
             {DataPath, "DataPath"},
@@ -142,10 +148,12 @@ namespace sys_sage {
          * @param rt RelationType value
          * @return String representation of the relation type
          */
-        inline const char* ToString(type rt) {
+        inline const std::string &ToString(type rt) {
+            static const std::string unknown ("Unknown");
+          
             auto it = names.find(rt);
             if (it != names.end()) return it->second;
-            return "Unknown";
+            return unknown;
         }
     }
 
@@ -174,13 +182,15 @@ namespace sys_sage {
     }
 
     /**
-     * @namespace DataPathType
-     * @brief Enumerates types of DataPaths (logical, physical, etc.).
+     * @namespace DataPathCategory
+     * @brief Enumerates categories of DataPaths (logical, physical, etc.).
+     *        Provides finer difference between datapaths with no connection
+     *        to the data type of the relation.
      *
      * Used to specify the semantics of a DataPath between components.
      */
-    namespace DataPathType{
-        using type = int32_t; /**< DataPathType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+    namespace DataPathCategory{
+        using type = int32_t; /**< DataPathCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
         constexpr type Any = -1;
         constexpr type None = 0; /**< Generic type of DataPath */
@@ -215,11 +225,12 @@ namespace sys_sage {
         constexpr type Bidirectional = 2; /**< DataPath has no direction. */
     }
     /**
-     * @namespace QuantumGateType
-     * @brief Enumerates quantum gate types.
+     * @namespace QuantumGateCategory
+     * @brief Enumerates quantum gate types. Provides finer difference between
+     *        quantum gates with no connection to the data type of the relation.
      */
-    namespace QuantumGateType{
-        using type = int32_t; /**< QuantumGateType datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
+    namespace QuantumGateCategory{
+        using type = int32_t; /**< QuantumGateCategory datatype -- to indicate a parameter should be from this enum/namespace (as there are no hard restrictions from C++). */
 
         constexpr type Unknown = 0; /**< Unknown Gate */
         constexpr type Id = 1; /**< Identity Gate */
@@ -241,9 +252,9 @@ namespace sys_sage {
         };
 
         /**
-         * @brief Converts a QuantumGateType value to a human-readable string.
-         * //TODO: Use QuantumGate::GetQuantumGateTypeStr() for a more convenient way to get the string representation.
-         * @param rt QuantumGateType value
+         * @brief Converts a QuantumGateCategory value to a human-readable string.
+         * //TODO: Use QuantumGate::GetQuantumGateCategoryStr() for a more convenient way to get the string representation.
+         * @param rt QuantumGateCategory value
          * @return String representation of the quantum gate type
          */
         inline const char* ToString(type rt) {

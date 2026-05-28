@@ -23,6 +23,8 @@
 #include <sys-sage/QuantumGate.hpp>
 #include <sys-sage/CouplingMap.hpp>
 
+#include <sys-sage/attribute.hpp>
+#include <sys-sage/json_serialization.hpp>
 #include <sys-sage/xml_dump.hpp>
 #include <sys-sage/xml_load.hpp>
 

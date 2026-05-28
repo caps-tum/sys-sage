@@ -18,9 +18,6 @@ using namespace sys_sage;
 
 void calculateQubitWeight(Qubit* q, int tsForHistory = -1, double T1_max = 1, double  T2_max = 1, double  q1_fidelity_max = 1, double readout_fidelity_max = 1, double two_q_fidelity_max = 1 )
 {
-    if(!q->attrib.contains("qubit_weight"))
-        q->attrib["qubit_weight"] = new double();
-
     double min_t = q->GetT1() > q->GetT2()? q->GetT2(): q->GetT1();
     double max_t_max = T1_max > T2_max ? T1_max : T2_max;
 
@@ -35,13 +32,13 @@ void calculateQubitWeight(Qubit* q, int tsForHistory = -1, double T1_max = 1, do
     }
     q_weight += (coupling_map_fidelity/two_q_fidelity_max)/num_neighbours;
 
-    *static_cast<double*>(q->attrib["qubit_weight"]) = q_weight;
+    q->UpdateAttribute("qubit_weight", q_weight);
     if(tsForHistory > 0)
     {
         //check if weight_history exists; if not, create it -- vector of tuples <timestamp,weight>
-        if(! q->attrib.contains("weight_history"))
-            q->attrib["weight_history"] = reinterpret_cast<void*>(new std::vector<std::tuple<int,double>>());
-        auto rh = reinterpret_cast<std::vector<std::tuple<int,double>>*>(q->attrib["weight_history"]);
+        std::vector<std::tuple<int,double>> *rh = q->GetAttribute<std::vector<std::tuple<int,double>>>("weight_history");
+        if(!rh)
+            rh = q->SetAttribute("weight_history", std::vector<std::tuple<int,double>>());
         rh->emplace_back(tsForHistory, q_weight);
     }
 
@@ -49,11 +46,11 @@ void calculateQubitWeight(Qubit* q, int tsForHistory = -1, double T1_max = 1, do
 
 int calculateAllWeights(QuantumBackend* backend, int tsForHistory = -1)
 {
-    double T1_max = *static_cast<double*>(backend->attrib["T1_max"]);
-    double T2_max = *static_cast<double*>(backend->attrib["T2_max"]);
-    double q1_fidelity_max = *static_cast<double*>(backend->attrib["q1_fidelity_max"]);
-    double readout_fidelity_max = *static_cast<double*>(backend->attrib["readout_fidelity_max"]);
-    double two_q_fidelity_max = *static_cast<double*>(backend->attrib["two_q_fidelity_max"]);
+    double T1_max = *backend->GetAttribute<double>("T1_max");
+    double T2_max = *backend->GetAttribute<double>("T2_max");
+    double q1_fidelity_max = *backend->GetAttribute<double>("q1_fidelity_max");
+    double readout_fidelity_max = *backend->GetAttribute<double>("readout_fidelity_max");
+    double two_q_fidelity_max = *backend->GetAttribute<double>("two_q_fidelity_max");
     for(Component* c : backend->GetChildren())
     {
         if(c->GetComponentType() == sys_sage::ComponentType::Qubit)
@@ -135,7 +132,7 @@ int main()
                 CouplingMap* cm = static_cast<CouplingMap*>(r); 
                 std::cout << (cm->GetComponent(0) == q ? cm->GetComponent(1)->GetId() : cm->GetComponent(0)->GetId() )<< " ";
             }
-            std::cout << "} and weight = " << *static_cast<double*>(q->attrib["qubit_weight"]) << "\n";
+            std::cout << "} and weight = " << *q->GetAttribute<double>("qubit_weight") << "\n";
         }
     }
     
@@ -150,9 +147,8 @@ int main()
     file << std::fixed << std::setprecision(14);
     for(Component * c : b->GetChildren() )
     {
-        if(c->attrib.contains("weight_history"))
+        if(auto rh = c->GetAttribute<std::vector<std::tuple<int,double>>>("weight_history"))
         {
-            auto rh = reinterpret_cast<std::vector<std::tuple<int,double>>*>(c->attrib["weight_history"]);
             for(auto entry: *rh)
                 file << std::get<0>(entry) << "," << c->GetId() << "," << c->GetRelationsByType(sys_sage::RelationType::CouplingMap).size() << "," << std::get<1>(entry) << "\n";
         }

@@ -28,11 +28,7 @@ namespace sys_sage {
         @param _size = size/capacity of the storage device, default -1
         */
         Storage(Component * parent, long long _size = -1);
-        /**
-        * @private
-        * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
-        */
-        ~Storage() override = default;
+
         /**
          * Retrieves size/capacity of the storage device
          * @return size
@@ -50,6 +46,29 @@ namespace sys_sage {
         @see exportToXml(Component* root, string path = "", std::function<int(string,void*,string*)> custom_search_attrib_key_fcn = NULL);
         */
         xmlNodePtr _CreateXmlSubtree() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
+
     private:
         long long size; /**< size/capacity of the storage device */
     };

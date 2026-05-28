@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
             cout << "Component with id " << id << " and type " << type
                 << " not found in imported topology" << endl;
 
-            topo->Delete(true);
-            topo2->Delete(true);
+            Component::DeleteSubtree(topo);
+            Component::DeleteSubtree(topo2);
 
             // Delete output.xml
             //std::remove("output.xml");
@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
     topo2->PrintSubtree();
     cout << "\nAll components found!" << endl;
 
-    topo->Delete(true);
-    topo2->Delete(true);
+    Component::DeleteSubtree(topo);
+    Component::DeleteSubtree(topo2);
 
     // Delete output.xml
     std::remove("output.xml");

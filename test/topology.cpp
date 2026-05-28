@@ -84,8 +84,8 @@ static suite<"topology"> _ = []
         expect(that % ComponentType::Subdivision == node.GetComponentType());
         expect(that % "Subdivision"sv == node.GetComponentTypeStr());
 
-        node.SetSubdivisionType(3);
-        expect(that % 3 == node.GetSubdivisionType());
+        node.SetSubdivisionCategory(3);
+        expect(that % 3 == node.GetSubdivisionCategory());
     };
 
     "Numa"_test = []
@@ -98,8 +98,8 @@ static suite<"topology"> _ = []
         expect(that % ComponentType::Numa == node.GetComponentType());
         expect(that % "NUMA"sv == node.GetComponentTypeStr());
 
-        node.SetSubdivisionType(3);
-        expect(that % 3 == node.GetSubdivisionType());
+        node.SetSubdivisionCategory(3);
+        expect(that % 3 == node.GetSubdivisionCategory());
     };
 
     "Chip"_test = []
@@ -111,7 +111,7 @@ static suite<"topology"> _ = []
         expect(that % "foo"sv == node.GetName());
         expect(that % ComponentType::Chip == node.GetComponentType());
         expect(that % "Chip"sv == node.GetComponentTypeStr());
-        expect(that % 5 == node.GetChipType());
+        expect(that % 5 == node.GetChipCategory());
 
         node.SetModel("model");
         expect(that % "model"sv == node.GetModel());
@@ -119,8 +119,8 @@ static suite<"topology"> _ = []
         node.SetVendor("vendor");
         expect(that % "vendor"sv == node.GetVendor());
 
-        node.SetChipType(6);
-        expect(that % 6 == node.GetChipType());
+        node.SetChipCategory(6);
+        expect(that % 6 == node.GetChipCategory());
     };
 
     "Memory"_test = []
@@ -272,7 +272,7 @@ static suite<"topology"> _ = []
         c.InsertChild(&d);
 
         std::vector<Component *> array;
-        a.FindNthDescendants(&array, 1);
+        a.FindNthDescendants(array, 1);
         expect(that % 2_u == array.size());
     };
 
@@ -288,7 +288,7 @@ static suite<"topology"> _ = []
         c.InsertChild(&d);
 
         std::vector<Component *> array;
-        a.FindDescendantsByType(&array, ComponentType::Chip);
+        a.FindDescendantsByType(array, ComponentType::Chip);
         expect(that % 2_u == array.size());
     };
 
@@ -322,7 +322,7 @@ static suite<"topology"> _ = []
         a.InsertChild(&c);
 
         std::vector<Component *> array;
-        a.FindDescendantsByType(&array, ComponentType::Any);
+        a.FindDescendantsByType(array, ComponentType::Any);
         expect(that % array == (std::vector<Component *>{&a, &b, &d, &c}));
     };
 

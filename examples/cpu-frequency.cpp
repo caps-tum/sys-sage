@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     }
 
     cout << "-- Print out frequency history on core 1 of Node 1. " << endl;
-    std::vector<std::tuple<long long,double>>* fh = (std::vector<std::tuple<long long,double>>*)c1->attrib["freq_history"];
+    std::vector<std::tuple<long long,double>> *fh = c1->GetAttribute<std::vector<std::tuple<long long,double>>>("freq_history");
     for(auto [ ts,freq ] : *fh)
     {
         cout << "    ts: " << ts << " frequency[MHz]: " << freq << endl;

@@ -40,7 +40,7 @@ namespace sys_sage {
          *
          * Sets componentType to sys_sage::ComponentType::Cache.
          */
-        Cache(Component * parent, int _id, std::string _cache_type, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
+        Cache(Component * parent, int _id, const std::string &_cache_type, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
 
         /**
          * @brief Cache constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component).
@@ -54,11 +54,6 @@ namespace sys_sage {
          * Sets componentType to sys_sage::ComponentType::Cache.
          */
         Cache(Component * parent, int _id = 0, int _cache_level = 0, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
-        /**
-         * @private
-         * @brief Use Delete() or DeleteSubtree() for deleting and deallocating the components.
-         */
-        ~Cache() override = default;
 
         /**
          * @brief Get the cache level (e.g., 1 for L1, 2 for L2).
@@ -85,7 +80,7 @@ namespace sys_sage {
          * @brief Set the cache name/type (e.g., "L1", "texture").
          * @param _name Value for cache_type.
          */
-        void SetCacheName(std::string _name);
+        void SetCacheName(const std::string &_name);
 
         /**
          * @brief Retrieves size/capacity of the cache.
@@ -127,6 +122,29 @@ namespace sys_sage {
          * @return Pointer to the created XML subtree node.
          */
         xmlNodePtr _CreateXmlSubtree() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
+
     private:
         std::string cache_type;           ///< Cache level or cache type (e.g., "L1", "texture")
         long long cache_size;             ///< Size/capacity of the cache in bytes

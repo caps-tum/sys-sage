@@ -18,7 +18,7 @@ namespace sys_sage {
         @param _name = name, default "Node"
         @param componentType=>sys_sage::ComponentType::Node
         */
-        Node(int _id = 0, std::string _name = "Node");
+        Node(int _id = 0, const std::string &_name = "Node");
         /**
         Node constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component). Sets:
         @param parent = the parent 
@@ -26,12 +26,30 @@ namespace sys_sage {
         @param _name = name, default "Node"
         @param componentType=>sys_sage::ComponentType::Node
         */
-        Node(Component * parent, int _id = 0, std::string _name = "Node");
+        Node(Component * parent, int _id = 0, const std::string &_name = "Node");
+
         /**
-        * @private
-        * Use Delete() or DeleteSubtree() for deleting and deallocating the components. 
-        */
-        ~Node() override = default;
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj) override;
+
     #ifdef PROC_CPUINFO
     public:
         /**
@@ -50,8 +68,6 @@ namespace sys_sage {
         */
         int UpdateL3CATCoreCOS();
     #endif
-
-    private:
     };
 
 }

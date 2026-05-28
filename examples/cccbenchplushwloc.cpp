@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 
     auto allcores = new std::vector<Component *>();
-    topo->FindDescendantsByType(allcores, sys_sage::ComponentType::Core);    
+    topo->FindDescendantsByType(*allcores, sys_sage::ComponentType::Core);    
     //auto allcores = topo->GetAllChildrenByType(SYS_SAGE_COMPONENT_CORE);
 
     for(auto c0 : *allcores)

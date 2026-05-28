@@ -23,7 +23,7 @@ namespace sys_sage {
      * @param search_custom_complex_attrib_key_fcn Optional user-provided function for custom attribute deserialization (complex attributes, e.g., XML nodes).
      * @return Pointer to the root Component of the imported tree.
      */
-    Component* importFromXml(std::string path, std::function<void*(xmlNodePtr)> search_custom_attrib_key_fcn = NULL, std::function<int(xmlNodePtr, Component*)> search_custom_complex_attrib_key_fcn = NULL);
+    Component* importFromXml(const std::string &path, std::function<void*(xmlNodePtr)> search_custom_attrib_key_fcn = nullptr, std::function<int(xmlNodePtr, Component*)> search_custom_complex_attrib_key_fcn = nullptr);
 
     /**
      * @private

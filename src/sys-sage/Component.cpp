@@ -16,22 +16,6 @@
 #include <algorithm>
 #include <iostream>
 
-// Component::~Component() { 
-//     DeleteAllDataPaths();
-//     if(GetParent() != NULL)
-//         GetParent()->RemoveChild(this);
-//     else{
-//         while(children.size() > 0)
-//         {
-//             RemoveChild(children[0]);
-//             children[0]->SetParent(NULL);
-//         }
-//     }
-//     for(auto& pair : this->attrib){
-//         //TODO: delete attribs somehow
-//     }
-//  }
-
 using std::string;
 using std::vector;
 using std::cout;
@@ -66,7 +50,7 @@ void sys_sage::Component::PrintAllRelationsInSubtree(RelationType::type relation
 void sys_sage::Component::PrintRelationsInSubtree(RelationType::type relationType)
 {
     vector<Component*> subtreeList;
-    FindDescendantsByType(&subtreeList, ComponentType::Any);
+    FindDescendantsByType(subtreeList, ComponentType::Any);
     for(Component * c : subtreeList)
     {   
         for(RelationType::type rt : RelationType::RelationTypeList)
@@ -161,6 +145,7 @@ int sys_sage::Component::RemoveChild(Component * child)
 {
     int orig_size = children.size();
     children.erase(std::remove(children.begin(), children.end(), child), children.end());
+    child->SetParent(nullptr);
     return orig_size - children.size();
     //return std::erase(children, child); -- not supported in some compilers
 }
@@ -191,28 +176,28 @@ sys_sage::Component* sys_sage::Component::GetChildByType(int _componentType) con
 std::vector<sys_sage::Component*> sys_sage::Component::GetAllChildrenByType(ComponentType::type _componentType) const
 {
     vector<Component*> ret;
-    FindChildrenByType(&ret, _componentType);
+    FindChildrenByType(ret, _componentType);
     return ret;
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::FindChildrenByType(ComponentType::type _componentType) const
 {
     vector<Component*> ret;
-    FindChildrenByType(&ret, _componentType);
+    FindChildrenByType(ret, _componentType);
     return ret;
 }
 
 void sys_sage::Component::GetAllChildrenByType(std::vector <Component *> *_outArray, ComponentType::type _componentType) const
 {
-    FindChildrenByType(_outArray, _componentType);
+    FindChildrenByType(*_outArray, _componentType);
 }
 
-void sys_sage::Component::FindChildrenByType(std::vector <Component *> *_outArray, ComponentType::type _componentType) const
+void sys_sage::Component::FindChildrenByType(std::vector <Component *> &_outArray, ComponentType::type _componentType) const
 {
     for(Component * child : children)
     {
         if(child->GetComponentType() == _componentType)
-            _outArray->push_back(child);
+            _outArray.push_back(child);
     }
     return;
 }
@@ -261,15 +246,15 @@ sys_sage::Component* sys_sage::Component::GetNthAncestor(int n)
 
 void sys_sage::Component::GetNthDescendents(std::vector<Component*>* outArray, int depth)
 {
-    FindNthDescendants(outArray, depth);
+    FindNthDescendants(*outArray, depth);
 }
 
-void sys_sage::Component::FindNthDescendants(std::vector<Component*>* outArray, int depth)
+void sys_sage::Component::FindNthDescendants(std::vector<Component*> &outArray, int depth)
 {
     
     if(depth <= 0)
     {   
-        outArray->push_back(this);
+        outArray.push_back(this);
         // depth++;
         return;
     }
@@ -285,38 +270,38 @@ void sys_sage::Component::FindNthDescendants(std::vector<Component*>* outArray, 
 std::vector<sys_sage::Component*> sys_sage::Component::GetNthDescendents(int depth)
 {
     vector<Component*> outArray;
-    FindNthDescendants(&outArray, depth);
+    FindNthDescendants(outArray, depth);
     return outArray;
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::FindNthDescendants(int depth)
 {
     vector<Component*> outArray;
-    FindNthDescendants(&outArray, depth);
+    FindNthDescendants(outArray, depth);
     return outArray;
 }
 
 void sys_sage::Component::GetSubcomponentsByType(std::vector<Component*>* outArray, sys_sage::ComponentType::type _componentType)
 {
-    FindDescendantsByType(outArray, _componentType);
+    FindDescendantsByType(*outArray, _componentType);
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::GetSubcomponentsByType(sys_sage::ComponentType::type _componentType)
 {
     vector<Component*> ret;
-    FindDescendantsByType(&ret, _componentType);
+    FindDescendantsByType(ret, _componentType);
     return ret;
 }
 
 void sys_sage::Component::GetComponentsInSubtree(std::vector<Component*>* outArray)
 {
-    FindDescendantsByType(outArray, ComponentType::Any);
+    FindDescendantsByType(*outArray, ComponentType::Any);
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::GetComponentsInSubtree()
 {
     vector<Component*> outArray;
-    FindDescendantsByType(&outArray, ComponentType::Any);
+    FindDescendantsByType(outArray, ComponentType::Any);
     return outArray;
 }
 
@@ -344,26 +329,26 @@ sys_sage::Component *sys_sage::Component::GetDescendantById(int _id, ComponentTy
 std::vector<sys_sage::Component*> sys_sage::Component::GetAllSubcomponentsByType(ComponentType::type _componentType)
 {
     vector<Component*> ret;
-    FindDescendantsByType(&ret, _componentType);
+    FindDescendantsByType(ret, _componentType);
     return ret;
 }
 
 std::vector<sys_sage::Component*> sys_sage::Component::FindDescendantsByType(ComponentType::type _componentType)
 {
     vector<Component*> ret;
-    FindDescendantsByType(&ret, _componentType);
+    FindDescendantsByType(ret, _componentType);
     return ret;
 }
 
 void sys_sage::Component::GetAllSubcomponentsByType(std::vector<Component*>* outArray, ComponentType::type _componentType)
 {
-    FindDescendantsByType(outArray, _componentType);
+    FindDescendantsByType(*outArray, _componentType);
 }
 
-void sys_sage::Component::FindDescendantsByType(std::vector<Component*>* outArray, ComponentType::type _componentType)
+void sys_sage::Component::FindDescendantsByType(std::vector<Component*> &outArray, ComponentType::type _componentType)
 {
     if(_componentType == ComponentType::Any || componentType == _componentType){
-        outArray->push_back(this);
+        outArray.push_back(this);
     }
     for(Component * child : children)
     {
@@ -435,7 +420,7 @@ void sys_sage::Component::_AddRelation(RelationType::type relationType, Relation
     (*relations)[relationType]->push_back(r);
 }
 
-sys_sage::DataPath* sys_sage::Component::GetDataPathByType(DataPathType::type  dp_type, DataPathDirection::type direction) const
+sys_sage::DataPath* sys_sage::Component::GetDataPathByCategory(DataPathCategory::type  dp_category, DataPathDirection::type direction) const
 {
     for(Relation* r: *(*relations)[RelationType::DataPath])
     {
@@ -446,7 +431,7 @@ sys_sage::DataPath* sys_sage::Component::GetDataPathByType(DataPathType::type  d
             (direction == DataPathDirection::Incoming && r->GetComponent(1) == this))
         {
             DataPath* dp = reinterpret_cast<DataPath*>(r);
-            if(dp->GetDataPathType() == dp_type)
+            if(dp->GetDataPathCategory() == dp_category)
                 return dp;
         }
     }
@@ -515,12 +500,12 @@ std::vector<sys_sage::Relation*> sys_sage::Component::FindRelations(RelationType
     return out_vector;
 }
 
-void sys_sage::Component::GetAllDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type, DataPathDirection::type direction) const
+void sys_sage::Component::GetAllDataPaths(std::vector<DataPath*>* outDpArr, DataPathCategory::type dp_category, DataPathDirection::type direction) const
 {
-    FindDataPaths(outDpArr, dp_type, direction);
+    FindDataPaths(*outDpArr, dp_category, direction);
 }
 
-void sys_sage::Component::FindDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type, DataPathDirection::type direction) const
+void sys_sage::Component::FindDataPaths(std::vector<DataPath*> &outDpArr, DataPathCategory::type dp_category, DataPathDirection::type direction) const
 {
     if (relations == nullptr || (*relations)[RelationType::DataPath] == nullptr)
         return;
@@ -534,31 +519,32 @@ void sys_sage::Component::FindDataPaths(std::vector<DataPath*>* outDpArr, DataPa
             (direction == DataPathDirection::Incoming && r->GetComponent(1) == this))
         {
             DataPath* dp = reinterpret_cast<DataPath*>(r);
-            if(dp_type == DataPathType::Any || dp->GetDataPathType() == dp_type)
-                outDpArr->push_back(dp);
+            if(dp_category == DataPathCategory::Any || dp->GetDataPathCategory() == dp_category)
+                outDpArr.push_back(dp);
         }
     }
     return;
 }
 
-std::vector<sys_sage::DataPath*> sys_sage::Component::GetAllDataPaths(DataPathType::type dp_type, DataPathDirection::type direction) const
+std::vector<sys_sage::DataPath*> sys_sage::Component::GetAllDataPaths(DataPathCategory::type dp_category, DataPathDirection::type direction) const
 {
     vector<DataPath*> outDpArr;
-    FindDataPaths(&outDpArr, dp_type, direction);
+    FindDataPaths(outDpArr, dp_category, direction);
     return outDpArr;
 }
 
-std::vector<sys_sage::DataPath*> sys_sage::Component::FindDataPaths(DataPathType::type dp_type, DataPathDirection::type direction) const
+std::vector<sys_sage::DataPath*> sys_sage::Component::FindDataPaths(DataPathCategory::type dp_category, DataPathDirection::type direction) const
 {
     vector<DataPath*> outDpArr;
-    FindDataPaths(&outDpArr, dp_type, direction);
+    FindDataPaths(outDpArr, dp_category, direction);
     return outDpArr;
 }
 
-std::string sys_sage::Component::GetComponentTypeStr() const
+const std::string &sys_sage::Component::GetComponentTypeStr() const
 {
-    std::string ret(ComponentType::ToString(componentType));
-    return ret;
+    //std::string ret(ComponentType::ToString(componentType));
+    //return ret;
+    return ComponentType::ToString(componentType);
 }
 
 int sys_sage::Component::CheckComponentTreeConsistency() const
@@ -584,21 +570,22 @@ int sys_sage::Component::CheckSubtreeConsistency() const
 int sys_sage::Component::GetTopologySize(unsigned * out_component_size, unsigned * out_RelationSize) const
 {
     std::set<Relation *> countedRelations;
-    return _CalcSubtreeSize(out_component_size, out_RelationSize, &countedRelations);
+    return _CalcSubtreeSize(out_component_size, out_RelationSize, countedRelations);
 }
 
 int sys_sage::Component::CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize) const
 {
     std::set<Relation *> countedRelations;
-    return _CalcSubtreeSize(out_component_size, out_RelationSize, &countedRelations);
+    return _CalcSubtreeSize(out_component_size, out_RelationSize, countedRelations);
 }
 
 int sys_sage::Component::_GetTopologySize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*>* countedRelations) const
 {
-    return _CalcSubtreeSize(out_component_size, out_RelationSize, countedRelations);
+    return _CalcSubtreeSize(out_component_size, out_RelationSize, *countedRelations);
 }
 
-int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*>* countedRelations) const
+// TODO: fix this
+int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*> &countedRelations) const
 {
     int component_size = 0;
     switch(componentType)
@@ -637,8 +624,11 @@ int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigne
             component_size += sizeof(Topology);
         break;
     }
-    component_size += attrib.size()*(sizeof(std::string)+sizeof(void*)); //TODO improve
-    component_size += children.size()*sizeof(Component*);
+    // Only consider the keys of the attributes. We can not measure the size of
+    // arbitrary values. Maybe remove the size measurement of the attributes or
+    // remove this function entirely?
+    component_size += sizeof(attributes) + attributes.size() * sizeof(std::string);
+    component_size += sizeof(children) + children.size()*sizeof(Component*);
     //relations -- only counting the vector/array sizes
     if(relations)
     {
@@ -661,28 +651,26 @@ int sys_sage::Component::_CalcSubtreeSize(unsigned * out_component_size, unsigne
         std::vector<Relation*> rv = GetRelationsByType(rt);
         for(Relation* r: rv)
         {
-            if(countedRelations->find(r) == countedRelations->end())
+            if(countedRelations.find(r) == countedRelations.end())
             {
+
+                relationsSize += r->GetAttributesSize() * sizeof(std::string);
                 switch(rt)
                 {
                     case RelationType::Relation:
                         relationsSize += sizeof(Relation);
-                        relationsSize += r->attrib.size() * (sizeof(string)+sizeof(void*)); //TODO improve
                         break;
                     case RelationType::DataPath:
                         relationsSize += sizeof(DataPath);
-                        relationsSize += r->attrib.size() * (sizeof(string)+sizeof(void*)); //TODO improve
                         break;
                     case RelationType::QuantumGate:
                         relationsSize += sizeof(QuantumGate);
-                        relationsSize += r->attrib.size() * (sizeof(string)+sizeof(void*)); //TODO improve
                         break;
                     case RelationType::CouplingMap:
                         relationsSize += sizeof(CouplingMap);
-                        relationsSize += r->attrib.size() * (sizeof(string)+sizeof(void*)); //TODO improve
                         break;
                 }
-                countedRelations->insert(r);
+                countedRelations.insert(r);
             }
         }
     }
@@ -718,26 +706,6 @@ int sys_sage::Component::CalcDepth(bool refresh)
     return depth;
 }
 
-void sys_sage::Component::DeleteRelation(Relation * r)
-{
-    int32_t rt = r->GetType();
-    if(rt == RelationType::Relation)
-        r->Delete();
-    else if(rt == RelationType::DataPath){
-        DataPath* dp = reinterpret_cast<DataPath*>(r);
-        dp->Delete();
-    } else if(rt == RelationType::QuantumGate){
-        QuantumGate* qg = reinterpret_cast<QuantumGate*>(r);
-        qg->Delete();
-    } else if(rt == RelationType::CouplingMap){
-        CouplingMap* cm = reinterpret_cast<CouplingMap*>(r);
-        cm->Delete();
-    } else{ //this should never happen
-        std::cout << "ERROR void sys_sage::Component::DeleteRelation(Relation * r)" << std::endl;
-        exit(1);
-    }    
-}
-
 void sys_sage::Component::DeleteAllRelations(RelationType::type relationType)
 {
     DeleteRelations(relationType);
@@ -745,28 +713,26 @@ void sys_sage::Component::DeleteAllRelations(RelationType::type relationType)
 
 void sys_sage::Component::DeleteRelations(RelationType::type relationType)
 {
+    if (!relations) // no relations
+        return;
+
     for(RelationType::type rt : RelationType::RelationTypeList)
     {
         if(relationType == RelationType::Any || relationType == rt)
         {
-            while(true)
+            std::vector<Relation *> *rel = (*relations)[rt];
+            if(rel) // no relation of that specific type
             {
-                vector<Relation*> vec_r = GetRelationsByType(rt);
-                if(vec_r.size() > 0)
+                while(rel->size() > 0)
                 {
-                    DeleteRelation(vec_r[0]);
+                    Relation::Delete(rel->back()); // it might be faster to remove from behind
                 }
-                else
-                    break;
+
+                delete rel;
+                (*relations)[rt] = nullptr; // mark as deleted
             }
         }
     }
-}
-
-
-void sys_sage::Component::DeleteDataPath(DataPath * dp)
-{
-    DeleteRelation(dp);
 }
 
 void sys_sage::Component::DeleteAllDataPaths()
@@ -774,53 +740,43 @@ void sys_sage::Component::DeleteAllDataPaths()
     DeleteRelations(RelationType::DataPath);
 }
 
-void sys_sage::Component::DeleteSubtree() const
+sys_sage::Component::~Component()
 {
-    while(children.size() > 0)
-    {       
-        children[0]->Delete(true); // Recursively free children
-    }
-    return;
+    if (parent)
+        parent->RemoveChild(this);
+    for (auto child : children)
+        child->SetParent(nullptr);
 }
 
-void sys_sage::Component::Delete(bool withSubtree)
+void sys_sage::Component::Delete(Component *comp)
 {
-    // Delete subtree and all data paths
-    if (withSubtree)
-    {
-        DeleteSubtree();
+    if (comp->relations) {
+        comp->DeleteRelations();
+        delete comp->relations;
     }
 
-    DeleteRelations();
-    
-    //Free all the children
-    if(GetParent()!= NULL) 
-    {
-        Component *myParent = GetParent();
-        myParent->RemoveChild(this);
-        if (!withSubtree)
-        {
-            for(Component* child: children)
-            {   
-                child->SetParent(myParent);
-                myParent->InsertChild(child);
-            }
-        }    
-    }
-    else //if(GetParent() == NULL && !withSubtree)
-    {
-        while(children.size() > 0)
-        {       
-            RemoveChild(children[0]); // Recursively free children
-            children[0]->SetParent(NULL);
-        }
-    }
-    // Delete the component itself
-    delete this;
+    delete comp;
+}
+
+static void HelperDeleteSubtree(sys_sage::Component *comp)
+{
+    auto &children = comp->GetChildren();
+    while (children.size() > 0)
+        HelperDeleteSubtree(children.back());
+    sys_sage::Component::Delete(comp);
+}
+
+void sys_sage::Component::DeleteSubtree(Component *root, bool keepRoot)
+{
+    while (root->children.size() > 0)
+        HelperDeleteSubtree(root->children.back());
+
+    if (!keepRoot)
+        Component::Delete(root);
 }
 
 const std::string& sys_sage::Component::GetName() const {return name;}
-void sys_sage::Component::SetName(std::string _name){ name = _name; }
+void sys_sage::Component::SetName(const std::string &_name){ name = _name; }
 sys_sage::Component* sys_sage::Component::GetParent() const {return parent;}
 void sys_sage::Component::SetParent(Component* _parent){parent = _parent;}
 const std::vector<sys_sage::Component*>& sys_sage::Component::GetChildren() const {return children;}
@@ -829,12 +785,12 @@ sys_sage::ComponentType::type sys_sage::Component::GetComponentType() const {ret
 int sys_sage::Component::GetId() const {return id;}
 void sys_sage::Component::SetId(int _id) { id = _id; }
 
-sys_sage::Component::Component(int _id, std::string _name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
+sys_sage::Component::Component(int _id, const std::string &_name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
 {
     count = -1;
     SetParent(NULL);
 }
-sys_sage::Component::Component(Component * parent, int _id, std::string _name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
+sys_sage::Component::Component(Component * parent, int _id, const std::string &_name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
 {
     count = -1;
     SetParent(parent);
@@ -842,5 +798,45 @@ sys_sage::Component::Component(Component * parent, int _id, std::string _name, C
         parent->InsertChild(this);
     }
 }
-sys_sage::Component::Component(int _id, std::string _name): Component(_id, _name, sys_sage::ComponentType::Generic) {}
-sys_sage::Component::Component(Component * parent, int _id, std::string _name): Component(parent, _id, _name, sys_sage::ComponentType::Generic) {}
+sys_sage::Component::Component(int _id, const std::string &_name): Component(_id, _name, sys_sage::ComponentType::Generic) {}
+sys_sage::Component::Component(Component * parent, int _id, const std::string &_name): Component(parent, _id, _name, sys_sage::ComponentType::Generic) {}
+
+sys_sage::Component::attribSizeType sys_sage::Component::GetAttributesSize() const
+{
+    return attributes.size();
+}
+
+sys_sage::Component::attribIterator sys_sage::Component::AttributesBegin()
+{
+    return attributes.begin();
+}
+
+sys_sage::Component::constAttribIterator sys_sage::Component::AttributesBegin() const
+{
+    return attributes.begin();
+}
+
+sys_sage::Component::attribIterator sys_sage::Component::AttributesEnd()
+{
+    return attributes.end();
+}
+
+sys_sage::Component::constAttribIterator sys_sage::Component::AttributesEnd() const
+{
+    return attributes.end();
+}
+
+void sys_sage::Component::EraseAttribute(const std::string &key)
+{
+    attributes.erase(key);
+}
+
+sys_sage::Component::attribIterator sys_sage::Component::EraseAttribute(Component::attribIterator it)
+{
+    return attributes.erase(it);
+}
+
+void sys_sage::Component::ClearAttributes()
+{
+    attributes.clear();
+}

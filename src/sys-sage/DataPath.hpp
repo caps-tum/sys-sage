@@ -18,24 +18,34 @@ namespace sys_sage {
      * navigation between Components and access to data stored in Components or DataPaths.
      *
      * DataPaths can be oriented (directed) or bidirectional, and can carry additional information such as bandwidth,
-     * latency, and user-defined types. They are essential for modeling memory hierarchies, interconnects, and other
+     * latency, and user-defined categories. They are essential for modeling memory hierarchies, interconnects, and other
      * logical or physical data flows in heterogeneous systems.
      */
     class DataPath : public Relation {
 
     public:
         /**
+         * @private
+         *
+         * @brief DataPath default constructor.
+         * @param _dp_category Type of the DataPath.
+         * @param _bw Bandwidth from the source (provides the data) to the target (requests the data)
+         * @param _latency Data load latency from the source (provides the data) to the target (requests the data)
+         */
+        DataPath(DataPathCategory::type _dp_category = DataPathCategory::None, double _bw = -1, double _latency = -1);
+
+        /**
          * @brief DataPath constructor.
          * @param _source Pointer to the source Component. (If _oriented == DataPathOrientation::Bidirectional, there is no difference between _source and _target)
          * @param _target Pointer to the target Component.
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
-         * @param _dp_type (optional) Type of the Data Path (user-defined, default: DataPathType::None).
-         *        Predefined types: DataPathType::None, DataPathType::Logical, DataPathType::Physical, DataPathType::Datatransfer, DataPathType::L3CAT, DataPathType::MIG, DataPathType::C2C .
-         *        Each user can define an arbitrary type in the DataPathType namespace.
+         * @param _dp_category (optional) Category of the Data Path (user-defined, default: DataPathCategory::None).
+         *        Predefined categories: DataPathCategory::None, DataPathCategory::Logical, DataPathCategory::Physical, DataPathCategory::Datatransfer, DataPathCategory::L3CAT, DataPathCategory::MIG, DataPathCategory::C2C .
+         *        Each user can define an arbitrary category in the DataPathCategory namespace.
         */
-        DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type = sys_sage::DataPathType::None);
+        DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category = sys_sage::DataPathCategory::None);
         /**
-         * @brief DataPath constructor. DataPath type is set to DataPathType::None.
+         * @brief DataPath constructor. DataPath category is set to DataPathCategory::None.
          * @param _source Pointer to the source Component. (If _oriented == DataPathOrientation::Bidirectional, there is no difference between _source and _target)
          * @param _target Pointer to the target Component.
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
@@ -49,13 +59,13 @@ namespace sys_sage {
          * @param _source Pointer to the source Component. (If _oriented == DataPathOrientation::Bidirectional, there is no difference between _source and _target)
          * @param _target Pointer to the target Component.
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
-         * @param _dp_type (optional) Type of the Data Path (user-defined, default: DataPathType::None).
-         *        Predefined types: DataPathType::None, DataPathType::Logical, DataPathType::Physical, DataPathType::Datatransfer, DataPathType::L3CAT, DataPathType::MIG, DataPathType::C2C .
-         *        Each user can define an arbitrary type in the DataPathType namespace.
+         * @param _dp_category (optional) Category of the Data Path (user-defined, default: DataPathCategory::None).
+         *        Predefined categories: DataPathCategory::None, DataPathCategory::Logical, DataPathCategory::Physical, DataPathCategory::Datatransfer, DataPathCategory::L3CAT, DataPathCategory::MIG, DataPathCategory::C2C .
+         *        Each user can define an arbitrary category in the DataPathCategory namespace.
          * @param _bw Bandwidth from the source (provides the data) to the target (requests the data)
          * @param _latency Data load latency from the source (provides the data) to the target (requests the data)
          */
-        DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type, double _bw, double _latency);
+        DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category, double _bw, double _latency);
 
         /**
          * @brief Retrieves the source Component.
@@ -104,10 +114,10 @@ namespace sys_sage {
         int UpdateTarget(Component * _new_target);
         
         /**
-         * @returns Type of the Data Path (DataPathType). Do not mix with RelationType!
-         * @see type
+         * @returns Category of the Data Path (DataPathCategory). Do not mix with RelationType!
+         * @see category
          */
-        DataPathType::type GetDataPathType() const;
+        DataPathCategory::type GetDataPathCategory() const;
 
         /**
          * @brief Retrieves the orientation of the DataPath (DataPathOrientation::Oriented or DataPathOrientation::Bidirectional).
@@ -129,13 +139,33 @@ namespace sys_sage {
          * @return Pointer to the created XML entry node.
          */
         xmlNodePtr _CreateXmlEntry() override;
+
         /**
-         * @brief Deletes and de-allocates the DataPath pointer from the list (std::vector) of outgoing and incoming DataPaths of source and target Components.
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this relation.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
          */
-        void Delete() override;
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this relation through JSON. Intended for internal
+         *        use.
+         *
+         * @param obj The JSON object containing the data.
+         * @param componentMap A map used for the relation graph.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj,
+                      const std::unordered_map<uintptr_t, Component *> &componentMap) override;
 
     private:
-        DataPathType::type dp_type; /**< type of the datapath */
+        DataPathCategory::type dp_category; /**< category of the datapath */
 
         double bw; /**< Bandwidth from the source(provides the data) to the target(requests the data) */
         double latency; /**< Data load latency from the source(provides the data) to the target(requests the data) */

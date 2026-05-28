@@ -53,7 +53,7 @@ int sys_sage::ParseMt4g_v0_1(Component* parent, const std::string &path, int gpu
         std::cerr << "parseMt4gTopo: parent is null" << std::endl;
         return 1;
     }
-    Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipType::Gpu);
+    Chip * gpu = new Chip(parent, gpuId, "GPU", sys_sage::ChipCategory::Gpu);
 
     return ParseMt4g_v0_1(gpu, path, delim);
 }
@@ -264,8 +264,7 @@ int Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
                 cerr << "parseCOMPUTE_RESOURCE_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
                 return 1;
             }
-            std::string * val = new std::string(data[i+1]);
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
+            root->SetAttribute(data[i], data[i + 1]);
             i++;
         }
         else if(data[i]== "Number_of_streaming_multiprocessors" ||
@@ -276,19 +275,18 @@ int Mt4gParser::parseCOMPUTE_RESOURCE_INFORMATION()
                 cerr << "parseCOMPUTE_RESOURCE_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 1 additional value." << endl;
                 return 1;
             }
-            int * val = new int(std::stoi(data[i+1]));
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
+            root->SetAttribute(data[i], std::stoi(data[i + 1]));
 
             i++;
         }
     }
 
-    for(int i = 0; i < *reinterpret_cast<int*>(root->attrib["Number_of_streaming_multiprocessors"]); i++)
+    for(int i = 0; i < *root->GetAttribute<int>("Number_of_streaming_multiprocessors"); i++)
     {
         //cout << "adding SM " << i << std::endl;
         Subdivision * sm = new Subdivision(root, i, "SM (Streaming Multiprocessor)");
-        sm->SetSubdivisionType(sys_sage::SubdivisionType::GpuSM);
-        for(int j = 0; j<*reinterpret_cast<int*>(root->attrib["Number_of_cores_per_SM"]); j++)
+        sm->SetSubdivisionCategory(sys_sage::SubdivisionCategory::GpuSM);
+        for(int j = 0; j < *root->GetAttribute<int>("Number_of_cores_per_SM"); j++)
         {
             new Thread(sm, j, "GPU Core");
         }
@@ -339,15 +337,15 @@ int Mt4gParser::parseADDITIONAL_INFORMATION()
                 cerr << "parseADDITIONAL_INFORMATION: \"" << data[i] << "\" is supposed to be followed by 2 additional values." << endl;
                 return 1;
             }
-            double * val = new double(std::stod(data[i+1]));
+            double val = std::stod(data[i+1]);
             std::string unit = data[i+2];
             if(unit == "KHz")
-                *val *= 1000;
+                val *= 1000;
             else if(unit == "MHz")
-                *val *= 1000*1000;
+                val *= 1000*1000;
             else if(unit == "GHz")
-                *val *= 1000*1000*1000;
-            root->attrib.insert({data[i], reinterpret_cast<void*>(val)});
+                val *= 1000*1000*1000;
+            root->SetAttribute(data[i], val);
             i+=2;
         }
     }
@@ -420,18 +418,16 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
 
         Memory * mem = new Memory(root, 0, memory_name, (long long)size);
         if(Memory_Clock_Frequency > -1){
-            double * mfreq = new double(Memory_Clock_Frequency);
-            mem->attrib.insert({"Clock_Frequency", reinterpret_cast<void*>(mfreq)});
+            mem->SetAttribute("Clock_Frequency", Memory_Clock_Frequency);
         }
         if(Memory_Bus_Width > -1){
-            int * busW = new int(Memory_Bus_Width);
-            mem->attrib.insert({"Bus_Width", reinterpret_cast<void*>(busW)});
+            mem->SetAttribute("Bus_Width", Memory_Bus_Width);
         }
           
         //make SMs as main memory's children and insert DP with latency
         std::vector<Component*> memory_children;
         for(Component* sm : root->GetChildren())
-            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
+            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionCategory() == sys_sage::SubdivisionCategory::GpuSM)
                 memory_children.push_back(sm);
 
         if((ret = mem->InsertBetweenParentAndChildren(root, memory_children, true)) != 0)
@@ -443,7 +439,7 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
             for(Component* sm: memory_children)
                 for(Component * c : sm->GetChildren())
                     if(c->GetComponentType() == sys_sage::ComponentType::Thread)
-                        new DataPath(mem, c, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency); 
+                        new DataPath(mem, c, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathCategory::Logical, 0, latency); 
     }
     else if(header_name == "SHARED_MEMORY") //very similar to parseCaches
     {   //shared memory is shared on an SM level
@@ -453,10 +449,10 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
         }
 
         std::vector<Component*> parents;
-        root->FindDescendantsByType(&parents, sys_sage::ComponentType::Subdivision);
+        root->FindDescendantsByType(parents, sys_sage::ComponentType::Subdivision);
         for(Component * parent : parents)
         {
-            if(static_cast<Subdivision*>(parent)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
+            if(static_cast<Subdivision*>(parent)->GetSubdivisionCategory() == sys_sage::SubdivisionCategory::GpuSM)
             {
                 if(!L2_shared_on_gpu)
                 {
@@ -476,7 +472,7 @@ int Mt4gParser::parseMemory(std::string header_name, std::string memory_name)
                 {
                     std::vector<Component*> threads = parent->FindDescendantsByType(sys_sage::ComponentType::Thread);
                     for(Component* t: threads)
-                        new DataPath(mem, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
+                        new DataPath(mem, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathCategory::Logical, 0, latency);
                 }
             }
         }
@@ -670,7 +666,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
 
         std::vector<Component*> sms;
         for(Component* sm : parent->GetChildren())
-            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
+            if(sm->GetComponentType() == sys_sage::ComponentType::Subdivision && static_cast<Subdivision*>(sm)->GetSubdivisionCategory() == sys_sage::SubdivisionCategory::GpuSM)
                 sms.push_back(sm);
         
         if((ret = cache->InsertBetweenParentAndChildren(parent, sms, true)) != 0)
@@ -683,7 +679,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
         {
             std::vector<Component*> threads = parent->FindDescendantsByType(sys_sage::ComponentType::Thread);
             for(Component* t: threads)
-                new DataPath(cache, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
+                new DataPath(cache, t, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathCategory::Logical, 0, latency);
         }
     }
     else if(shared_on == 1) //shared on SM
@@ -692,7 +688,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
         cout << endl << endl << endl << "=====      ===== ENTERING elseif for  - " << header_name << "sms (size=:" << sms.size() << endl << endl << endl;
         for(Component * sm : sms)
         {
-            if(static_cast<Subdivision*>(sm)->GetSubdivisionType() == sys_sage::SubdivisionType::GpuSM)
+            if(static_cast<Subdivision*>(sm)->GetSubdivisionCategory() == sys_sage::SubdivisionCategory::GpuSM)
             {
                 Component* parent = sm;
                 //if L2 is not shared on GPU, it will be the parent
@@ -727,7 +723,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
                     if(cache_line_size != -1)
                         cache->SetCacheLineSize(cache_line_size);
 
-                    int cores_per_cache = (*reinterpret_cast<int*>(root->attrib["Number_of_cores_per_SM"]))/caches_per_sm;
+                    int cores_per_cache = (*root->GetAttribute<int>("Number_of_cores_per_SM")) / caches_per_sm;
 
                     for(Component * thread : threads)
                     {
@@ -753,7 +749,7 @@ int Mt4gParser::parseCaches(std::string header_name, std::string cache_type)
                             }
 
                             if(latency != -1)
-                                new DataPath(cache, thread, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathType::Logical, 0, latency);
+                                new DataPath(cache, thread, sys_sage::DataPathOrientation::Oriented, sys_sage::DataPathCategory::Logical, 0, latency);
                         }
                     }
                     cout << threads.size() << " - threads.size()" << ",   processing " << header_name << " == exited the (Component * thread : threads) " << endl;

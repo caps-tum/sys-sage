@@ -30,6 +30,18 @@ namespace sys_sage {
          * This constructor is typically used for pairwise couplings in quantum hardware.
          */
         CouplingMap(Qubit* q1, Qubit*q2);
+
+        /**
+         * @private
+         *
+         * @brief Default-intitilizes a CouplingMap.
+         * @param _id Optional relation ID (default 0).
+         * @param _ordered Whether the coupling is ordered/directed (default true).
+         *
+         * This constructor allows for more general coupling relations, including multi-qubit couplings.
+         */
+        CouplingMap(int _id = 0, bool _ordered = true);
+
         /**
          * @brief Constructs a CouplingMap between a set of components.
          * @param components Vector of pointers to components (e.g., qubits) involved in the coupling.
@@ -51,11 +63,7 @@ namespace sys_sage {
          * @return The fidelity (typically between 0 and 1).
          */
         double GetFidelity() const;
-        /**
-         * @brief Deletes this coupling relation and performs any necessary cleanup.
-         * Overrides the base Relation::Delete().
-         */
-        void Delete() override;
+
         /**
          * @private
          * @brief Helper function for XML export.
@@ -64,6 +72,31 @@ namespace sys_sage {
          * @return Pointer to the created XML entry node.
          */
         xmlNodePtr _CreateXmlEntry() override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this relation.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
+         */
+        void _ToJson(nlohmann::ordered_json &obj) const override;
+
+        /**
+         * @private
+         *
+         * @brief Initializes this relation through JSON. Intended for internal
+         *        use.
+         *
+         * @param obj The JSON object containing the data.
+         * @param componentMap A map used for the relation graph.
+         *
+         * @return 0 on success, 1 otherwise.
+         */
+        int _FromJson(const nlohmann::ordered_json &obj,
+                      const std::unordered_map<uintptr_t, Component *> &componentMap) override;
+
     private:
         double fidelity; ///< Fidelity of the coupling (e.g., two-qubit gate fidelity)
     };

@@ -1,14 +1,20 @@
 #ifndef SYS_SAGE_COMPONENT_HPP
 #define SYS_SAGE_COMPONENT_HPP
 
+#include <sys-sage/attribute.hpp>
 #include <sys-sage/defines.hpp>
 #include <sys-sage/enums.hpp>
 #include <libxml/tree.h>
+#include <nlohmann/json.hpp>
 #include <array>
 #include <map>
-#include <vector>
+#include <memory>
 #include <set>
 #include <string>
+#include <typeinfo>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace sys_sage { //forward declaration
     class Relation;
@@ -36,7 +42,7 @@ namespace sys_sage {
          *
          * Sets componentType to sys_sage::ComponentType::Generic.
          */
-        Component(int _id = 0, std::string _name = "unknown");
+        Component(int _id = 0, const std::string &_name = "unknown");
         /**
          * @brief Generic Component constructor with insertion into the Component Tree as the parent's child.
          * Usually one of the derived subclasses for different Component Types will be created.
@@ -46,13 +52,45 @@ namespace sys_sage {
          *
          * Sets componentType to sys_sage::ComponentType::Generic.
          */
-        Component(Component * parent, int _id = 0, std::string _name = "unknown");
+        Component(Component * parent, int _id = 0, const std::string &_name = "unknown");
+
+        /**
+         * @brief Prohibit shallow copies by deleting the implicit copy constructor.
+         */
+        Component(const Component &) = delete;
+
+        /**
+         * @brief Prohibit shallow copies by deleting the implicit copy
+         *        assignment operator.
+         */
+        Component &operator=(const Component &) = delete;
+
         //SVTODO reevaluate the delete vs destructor
         /**
-         * @private
-         * @brief Use Delete() or DeleteSubtree() for deleting and deallocating the components.
+         * @brief Destructor for components.
+         *        Unlinks this component from its parent and children and additionally frees resources.
+         *        The destructor does not delete the entire subtree.
+         *        Refer to `Component::DeleteSubtree()` for the latter.
          */
-        virtual ~Component() = default;
+        virtual ~Component();
+
+        /**
+         * @brief Deletes the given component and all relations it is associated with.
+         *        This assumes that the component and the relations are all HEAP-ALLOCATED.
+         *
+         * @param comp The component to be deleted.
+         */
+        static void Delete(Component *comp);
+
+        /**
+         * @brief Deletes the whole subtree spanned by the given component and all associated relations.
+         *        This assumes that the components in the subtree and the relations are all HEAP-ALLOCATED.
+         *
+         * @param root The root of the subtree.
+         * @param keepRoot If set to `false`, the given component will be deleted as well.
+         */
+        static void DeleteSubtree(Component *root, bool keepRoot = false);
+
         /**
          * @brief Inserts a child component to this component (in the Component Tree).
          * The child pointer will be inserted at the end of the children vector.
@@ -93,7 +131,8 @@ namespace sys_sage {
         int InsertBetweenParentAndChildren(Component* parent, std::vector<Component*> children, bool alreadyParentsChild);
 
         /**
-         * @brief Removes the passed component from the list of children, without completely deleting (and deallocating) the child itself
+         * @brief Removes the passed component from the list of children, without completely deleting (and deallocating) the child itself.
+         *        The child's parent pointer will be set to `nullptr`.
          * @param child Child to remove
          * @return Number of elements deleted (normally 0 or 1)
          */
@@ -156,7 +195,7 @@ namespace sys_sage {
          * @param _name Name of the component
          * @see name
          */
-        void SetName(std::string _name);
+        void SetName(const std::string &_name);
         /**
          * @brief Returns id of the component.
          * @return id
@@ -183,15 +222,15 @@ namespace sys_sage {
          * @return String representation of the component type.
          * @see componentType
          */
-        std::string GetComponentTypeStr() const;
+        const std::string &GetComponentTypeStr() const;
         /**
-         * @brief Returns a const reference to std::vector containing all children of the component (empty vector if no children).
+         * @brief Returns a reference to const std::vector containing all children of the component (empty vector if no children).
          * @return const std::vector<Component *> & with children
          */
         const std::vector<Component*>& GetChildren() const;
         /**
          * @private
-         * @brief Returns a non-const reference to the children vector (internal use).
+         * @brief Returns a reference to the non-const children vector (internal use).
          */
         std::vector<Component*>& _GetChildren();
         /**
@@ -253,7 +292,7 @@ namespace sys_sage {
             \n An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
             \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
         */
-        void FindChildrenByType(std::vector<Component *> *_outArray, ComponentType::type _componentType) const;
+        void FindChildrenByType(std::vector<Component *> &_outArray, ComponentType::type _componentType) const;
 
         /**
         * @brief Searches the subtree to find a component with a matching id and componentType, i.e. looks for a certain component with a matching ID. The search is a DFS. The search starts with the calling component.
@@ -293,7 +332,7 @@ namespace sys_sage {
             \n An input is pointer to a std::std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
             \n The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
         */
-        void FindDescendantsByType(std::vector<Component*>* outArray, ComponentType::type _componentType);
+        void FindDescendantsByType(std::vector<Component*> &outArray, ComponentType::type _componentType);
 
         /**
          * @brief Searches for all the subcomponents (children, their children and so on) matching the given component type.
@@ -397,7 +436,7 @@ namespace sys_sage {
          *   An input is pointer to a std::vector<Component *>, in which the elements will be pushed. It must be allocated before the call (but does not have to be empty).
          *   The method pushes back the found elements -- i.e. the elements(pointers) can be found in this array after the method returns. (If no found, nothing will be pushed into the vector.)
          */
-        void FindNthDescendants(std::vector<Component*>* outArray, int depth);
+        void FindNthDescendants(std::vector<Component*> &outArray, int depth);
 
         /**
          * @brief Retrieves a std::vector of Component pointers, which reside 'depth' levels deeper. 
@@ -458,7 +497,7 @@ namespace sys_sage {
          * @brief Returns a (const) reference to the internal vector of relations for a given type.
          * @param relationType Type of relation (see RelationType for available types). Only use specific Relation Types, not RelationType::Any (you will get an empty vector).
          * @return const std::vector<Relation*>& (reference to internal structure)
-         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
+         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/Relation::Delete() to modify the list of Relations.
          * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
          */
         [[ deprecated("Use GetRelationsByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
@@ -468,7 +507,7 @@ namespace sys_sage {
          * @brief Returns a (const) reference to the internal vector of relations for a given type.
          * @param relationType Type of relation (see RelationType for available types). Only use specific Relation Types, not RelationType::Any (you will get an empty vector).
          * @return const std::vector<Relation*>& (reference to internal structure)
-         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
+         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/Relation::Delete() to modify the list of Relations.
          * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
          */
         const std::vector<Relation*>& GetRelationsByType(RelationType::type relationType) const;
@@ -487,7 +526,7 @@ namespace sys_sage {
          * @brief Returns a (const) reference to the internal vector of relations for a given type.
          * @param relationType Type of relation (see RelationType for available types). Only use specific Relation Types, not RelationType::Any (you will get an empty vector).
          * @return const std::vector<Relation*>& (reference to internal structure)
-         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/DeleteRelation() to modify the list of Relations, or access the Relations' API directly.
+         * @note The vector is const so that the Relations of a Component cannot be manipulated this way. Use new Relation()/Relation::Delete() to modify the list of Relations.
          * @see FindAllRelationsBy(RelationType::type relationType = RelationType::Any, int thisComponentPosition = -1) as an alternative offering more flexibility at the price of increased overhead through generating a new output vector.
          */
         std::vector<Relation*>& _GetRelationsByType(RelationType::type relationType) const;
@@ -520,13 +559,13 @@ namespace sys_sage {
         void _AddRelation(RelationType::type relationType, Relation* r);
 
         /**
-         * @brief Retrieves a DataPath* from the list of this component's data paths with matching DataPathType and DataPathDirection.
+         * @brief Retrieves a DataPath* from the list of this component's data paths with matching DataPathCategory and DataPathDirection.
          * The first match is returned.
-         * @param dp_type DataPath type to search for
+         * @param dp_category DataPath category to search for
          * @param direction Orientation (default: Any)
          * @return Pointer to the found DataPath, or nullptr if not found
          */
-        DataPath* GetDataPathByType(DataPathType::type dp_type, DataPathDirection::type direction = DataPathDirection::Any) const;
+        DataPath* GetDataPathByCategory(DataPathCategory::type dp_category, DataPathDirection::type direction = DataPathDirection::Any) const;
         
         /**
          * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation.
@@ -534,11 +573,11 @@ namespace sys_sage {
          * @param outDpArr - output parameter (vector with results)
          * An input is pointer to a std::vector<DataPath *>, in which the data paths will be pushed. It must be allocated before the call (but does not have to be empty).
          * The method pushes back the found data paths -- i.e. the data paths(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
-         * @param dp_type DataPath type to search for (default: Any)
+         * @param dp_category DataPath category to search for (default: Any)
          * @param direction Orientation/direction of a DataPath (default: Any)
          */
         [[ deprecated("Use FindDataPaths instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        void GetAllDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+        void GetAllDataPaths(std::vector<DataPath*>* outDpArr, DataPathCategory::type dp_category = DataPathCategory::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
          * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation.
@@ -546,29 +585,29 @@ namespace sys_sage {
          * @param outDpArr - output parameter (vector with results)
          * An input is pointer to a std::vector<DataPath *>, in which the data paths will be pushed. It must be allocated before the call (but does not have to be empty).
          * The method pushes back the found data paths -- i.e. the data paths(pointers) can be found in this array after the method returns. (If no found, the vector is not changed.)
-         * @param dp_type DataPath type to search for (default: Any)
+         * @param dp_category DataPath type to search for (default: Any)
          * @param direction Orientation/direction of a DataPath (default: Any)
          */
-        void FindDataPaths(std::vector<DataPath*>* outDpArr, DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+        void FindDataPaths(std::vector<DataPath*> &outDpArr, DataPathCategory::type dp_category = DataPathCategory::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
          * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation/direction.
          * Results are returned in a std::vector<DataPath*>*.
-         * @param dp_type DataPath type to search for (default: Any)
+         * @param dp_category DataPath type to search for (default: Any)
          * @param direction Orientation (default: Any)
          * @return Vector of matching DataPaths
          */
         [[ deprecated("Use FindDataPaths instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        std::vector<DataPath*> GetAllDataPaths(DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+        std::vector<DataPath*> GetAllDataPaths(DataPathCategory::type dp_category = DataPathCategory::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
          * @brief Retrieves all DataPath* from the list of this component's data paths with matching type and orientation/direction.
          * Results are returned in a std::vector<DataPath*>*.
-         * @param dp_type DataPath type to search for (default: Any)
+         * @param dp_category DataPath type to search for (default: Any)
          * @param direction Orientation (default: Any)
          * @return Vector of matching DataPaths
          */
-        std::vector<DataPath*> FindDataPaths(DataPathType::type dp_type = DataPathType::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
+        std::vector<DataPath*> FindDataPaths(DataPathCategory::type dp_category = DataPathCategory::Any, DataPathDirection::type direction = DataPathDirection::Any) const;
 
         /**
         @brief Checks the consistency of the component tree starting from this component.
@@ -637,7 +676,7 @@ namespace sys_sage {
          * @return The total size in bytes
          * @see GetTopologySize(unsigned * out_component_size, unsigned * out_dataPathSize);
          */
-        int _CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*>* countedRelations) const;
+        int _CalcSubtreeSize(unsigned * out_component_size, unsigned * out_RelationSize, std::set<Relation*> &countedRelations) const;
 
         /**
          * @brief Retrieves the depth (level) of a component in the topology.
@@ -664,20 +703,28 @@ namespace sys_sage {
          * @return Pointer to the created XML subtree node.
          */
         virtual xmlNodePtr _CreateXmlSubtree();
-        
+
         /**
-         * @brief Deletes a Relation from this component as well as the Relation itself.
-         * @param r Pointer to the relation to delete
-         * @see Relation/DataPath/QuantumGate Delete()
+         * @private
+         *
+         * @brief Initializes a JSON object that represents this component.
+         *        Intended for internal use.
+         *
+         * @param obj The JSON object to be initialized.
          */
-        void DeleteRelation(Relation * r);
+        virtual void _ToJson(nlohmann::ordered_json &obj) const;
+
         /**
-         * @deprecated Use void DeleteRelation(Relation * r) instead.
-         * @brief Deletes and deallocates the DataPath pointer from the list of outgoing/incoming DataPaths.
-         * @param dp DataPath to delete
+         * @private
+         *
+         * @brief Initializes this component through JSON. Intended for
+         *        internal use.
+         *
+         * @param obj The JSON object containing the data.
+         *
+         * @return 0 on success, 1 otherwise.
          */
-        [[deprecated("DeleteDataPath is deprecated. Use void DeleteRelation(Relation * r) instead (used up until version 0.5.2).")]]
-        void DeleteDataPath(DataPath * dp);
+        virtual int _FromJson(const nlohmann::ordered_json &obj);
 
         /**
          * @brief Deletes all relations of this component (optionally filtered by type).
@@ -688,6 +735,8 @@ namespace sys_sage {
 
         /**
          * @brief Deletes all relations of this component (optionally filtered by type).
+         *        This assumes that all the relations are HEAP-ALLOCATED.
+         *
          * @param relationType Relation type to delete (default: Any)
          */
         void DeleteRelations(RelationType::type relationType = RelationType::Any);
@@ -698,16 +747,6 @@ namespace sys_sage {
          */
         [[ deprecated("Use DeleteRelations instead. This function will be removed in the future (used up until version 1.0.0).") ]]
         void DeleteAllDataPaths();
-        /**
-        Deletes the whole subtree (all the children) of the component.
-        */
-        void DeleteSubtree() const;
-        /**
-         * @brief Deletes a component, its children (if withSubtree = true), and all associated Relations.
-         * If only the component itself is deleted, its children are inserted into its parent's children list.
-         * @param withSubtree If true, the whole subtree is deleted; otherwise only the component itself.
-         */
-        void Delete(bool withSubtree = true);
 
 #ifdef SS_PAPI
         /**
@@ -737,79 +776,179 @@ namespace sys_sage {
 #endif
 
         /**
-        * A map for storing arbitrary pieces of information or data.
-        * - The `key` denotes the name of the attribute.
-        * - The `value` points to the data, stored as a `void*`.
-        *
-        * This data structure is designed to store a wide variety of data types by
-        * utilizing pointers to void. Due to its flexibility, it is essential to manage
-        * the types and memory allocation/deallocation carefully to avoid issues such
-        * as memory leaks or undefined behavior.
-        *
-        * Usage:
-        * 
-        * 1. Adding a new key-value pair:
-        * 
-        * ```cpp
-        * std::string key = "exampleKey";
-        * int* value = new int(42); // Dynamically allocate memory for the value
-        * attrib[key] = static_cast<void*>(value); // Store the value in the map
-        * ```
-        * 
-        * 2. Retrieving data from an existing key:
-        * 
-        * ```cpp
-        * std::string key = "exampleKey";
-        * if (attrib.find(key) != attrib.end()) {
-        *     int* retrievedValue = static_cast<int*>(attrib[key]);
-        *     std::cout << "Value: " << *retrievedValue << std::endl;
-        * } else {
-        *     std::cout << "Key not found." << std::endl;
-        * }
-        * ```
-        * 
-        * 3. Checking for the existence of a key:
-        * 
-        * ```cpp
-        * std::string key = "exampleKey";
-        * if (attrib.find(key) != attrib.end()) {
-        *     std::cout << "Key exists." << std::endl;
-        * } else {
-        *     std::cout << "Key does not exist." << std::endl;
-        * }
-        * ```
-        * 
-        * 4. Removing a key-value pair and freeing memory:
-        * 
-        * ```cpp
-        * std::string key = "exampleKey";
-        * if (attrib.find(key) != attrib.end()) {
-        *     int* value = static_cast<int*>(attrib[key]);
-        *     delete value; // Free the dynamically allocated memory
-        *     attrib.erase(key); // Remove the key-value pair from the map
-        * }
-        * ```
-        * 
-        * 5. Updating the value for an existing key:
-        * 
-        * ```cpp
-        * std::string key = "exampleKey";
-        * if (attrib.find(key) != attrib.end()) {
-        *     int* oldValue = static_cast<int*>(attrib[key]);
-        *     delete oldValue; // Free the old value
-        *     int* newValue = new int(100); // Allocate new value
-        *     attrib[key] = static_cast<void*>(newValue); // Update the map
-        * }
-        * ```
-        * 
-        * Note:
-        * - Proper memory management is crucial when using `void*` pointers. Always ensure
-        *   that dynamically allocated memory is freed when no longer needed.
-        * - Type safety is not enforced, so it is important to cast pointers to the correct
-        *   type when retrieving values from the map.
-        */
-        std::map<std::string, void*> attrib;
-        
+         * @brief Iterator type for attributes iteration.
+         */
+        using attribIterator = std::map<std::string, std::unique_ptr<IAttribute>>::iterator;
+
+        /**
+         * @brief Constant iterator type for attributes iteration.
+         */
+        using constAttribIterator = std::map<std::string, std::unique_ptr<IAttribute>>::const_iterator;
+
+        /**
+         * @brief Size type for estimating the number of stored attributes.
+         */
+        using attribSizeType = std::map<std::string, std::unique_ptr<IAttribute>>::size_type;
+
+        /**
+         * @brief Inserts an attribute using a key-value pair.
+         *
+         * @param key The key that is associated with the attribute.
+         * @param value The value of the attribute.
+         *
+         * @return A pointer to the respective object storing the value of the
+         *         new attribute.
+         */
+        template <typename T>
+        std::decay_t<T> *SetAttribute(const std::string &key, T &&value);
+
+        /**
+         * @brief Retrieves the stored value of the attribute that is
+         *        associated with the given key.
+         *
+         * @param key The key that is associated with the attribute.
+         *
+         * @return A pointer to the respective object storing the value of the
+         *         attribute. May be `nullptr` if no attribute is associated
+         *         with the given key or the requested type doesn't match the
+         *         stored type.
+         */
+        template <typename T>
+        T *GetAttribute(const std::string &key);
+
+        /**
+         * @brief Retrieves the stored value of the constant attribute that is
+         *        associated with the given key.
+         *
+         * @param key The key that is associated with the constant attribute.
+         *
+         * @return A pointer to the respective object storing the value of the
+         *         constant attribute. May be `nullptr` if no attribute is
+         *         associated with the given key or the requested type doesn't
+         *         match the stored type.
+         */
+        template <typename T>
+        const T *GetAttribute(const std::string &key) const;
+
+        /**
+         * @brief Retrieves the stored value of the attribute iterator.
+         *
+         * @param it The iterator of the attribute.
+         *
+         * @return A pointer to the respective object storing the value of the
+         *         attribute. May be `nullptr` if no attribute is associated
+         *         with the given iterator or the requested type doesn't match
+         *         the stored type.
+         */
+        template <typename T>
+        T *GetAttribute(attribIterator it);
+
+        /**
+         * @brief Retrieves the stored value of the constant attribute iterator.
+         *
+         * @param it The iterator of the constant attribute.
+         *
+         * @return A pointer to the respective object storing the value of the
+         *         constant attribute. May be `nullptr` if no attribute is
+         *         associated with the given iterator or the requested type
+         *         doesn't match the stored type.
+         */
+        template <typename T>
+        const T *GetAttribute(constAttribIterator it) const;
+
+        /**
+         * @brief Updates an existing attribute that is associated with the
+         *        given key with a new value. May reuse existing memory and can
+         *        be more resource-efficient. If no such attribute exists, the
+         *        key-value pair is used to insert a new one.
+         *
+         * @param key The key that is associated with the attribute.
+         * @param value The new value of the attribute.
+         *
+         * @return A pointer to the respective object storing the updated value
+         *         of the attribute. May be `nullptr` if the type of the new
+         *         value does not match the stored type of the existing
+         *         attribute. Use the `Component::SetAttribute` method to
+         *         update in this case.
+         */
+        template <typename T>
+        std::decay_t<T> *UpdateAttribute(const std::string &key, T &&value);
+
+        /**
+         * @brief Updates an existing attribute that is associated with the
+         *        given iterator with a new value. May reuse existing memory
+         *        and can be more resource-efficient.
+         *
+         * @param it The iterator that is associated with the attribute.
+         * @param value The new value of the attribute.
+         *
+         * @return A pointer to the respective object storing the updated value
+         *         of the attribute. May be `nullptr` if no attribute is
+         *         associated with the given iterator or the type of the new
+         *         value does not match the stored type. Use the
+         *         `Component::SetAttribute` method to update in the latter
+         *         case.
+         */
+        template <typename T>
+        std::decay_t<T> *UpdateAttribute(attribIterator it, T &&value);
+
+        /**
+         * @brief Returns the number of stored attributes.
+         *
+         * @return The respective size.
+         */
+        attribSizeType GetAttributesSize() const;
+
+        /**
+         * @brief Returns an iterator to the beginning of the attributes.
+         *
+         * @return The iterator of the first attribute.
+         */
+        attribIterator AttributesBegin();
+
+        /**
+         * @brief Returns an iterator to the beginning of the constant
+         *        attributes.
+         *
+         * @return The iterator of the first constant attribute.
+         */
+        constAttribIterator AttributesBegin() const;
+
+        /**
+         * @brief Returns an iterator to the end of the attributes.
+         *
+         * @return The iterator of the last attribute.
+         */
+        attribIterator AttributesEnd();
+
+        /**
+         * @brief Returns an iterator to the end of the constant attributes.
+         *
+         * @return The iterator of the last constant attribute.
+         */
+        constAttribIterator AttributesEnd() const;
+
+        /**
+         * @brief Removes the attribute that is associated to the given key.
+         *
+         * @param key The key that is associated to the attribute.
+         */
+        void EraseAttribute(const std::string &key);
+
+        /**
+         * @brief Removes the attribute of the given iterator.
+         *
+         * @param key The iterator of the attribute.
+         *
+         * @return The iterator to the next attribute.
+         */
+        attribIterator EraseAttribute(attribIterator it);
+
+        /**
+         * @brief Removes all attributes.
+         */
+        void ClearAttributes();
+
     protected:
         /**
          * @brief Protected constructor for derived classes (no automatic insertion in the Component Tree).
@@ -817,7 +956,7 @@ namespace sys_sage {
          * @param _name Name of the component
          * @param _componentType Component type (of type sys_sage::ComponentType::type)
          */
-        Component(int _id, std::string _name, ComponentType::type _componentType);
+        Component(int _id, const std::string &_name, ComponentType::type _componentType);
 
         /**
          * @brief Protected constructor for derived classes with insertion into the Component Tree.
@@ -826,7 +965,7 @@ namespace sys_sage {
          * @param _name Name of the component
          * @param _componentType Component type (of type sys_sage::ComponentType::type)
          */
-        Component(Component * parent, int _id, std::string _name, ComponentType::type _componentType);
+        Component(Component * parent, int _id, const std::string &_name, ComponentType::type _componentType);
 
         int id; /**< Numeric ID of the component. There is no requirement for uniqueness of the ID, however it is advised to have unique IDs at least in the realm of parent's children (siblings). Some tree search functions, which take the id as a search parameter search for first match, so the user is responsible to manage uniqueness in the realm of the search subtree (or should be aware of the consequences of not doing so). Component's ID is set by the constructor, and is retrieved via int GetId(); */
         int depth; /**< Depth (level) of the Component in the Component Tree */
@@ -847,8 +986,15 @@ namespace sys_sage {
          * Each element of the array is a pointer to a std::vector<Relation*> that contains all Relations of that type. (also lazy-allocated)
          */
         std::array<std::vector<Relation*>*, RelationType::_num_relation_types>* relations = nullptr;
+
+        /**
+         * The attributes map.
+         */
+        std::map<std::string, std::unique_ptr<IAttribute>> attributes;
     };
 
-} //namespace sys_sage 
+}
+
+#include <sys-sage/Component.inl>
 
 #endif

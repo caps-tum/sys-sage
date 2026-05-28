@@ -10,7 +10,7 @@ double sys_sage::DataPath::GetBandwidth() const {return bw;}
 void sys_sage::DataPath::SetBandwidth(double _bandwidth) { bw = _bandwidth;}
 double sys_sage::DataPath::GetLatency() const {return latency;}
 void sys_sage::DataPath::SetLatency(double _latency) { latency = _latency; }
-sys_sage::DataPathType::type sys_sage::DataPath::GetDataPathType() const {return dp_type;}
+sys_sage::DataPathCategory::type sys_sage::DataPath::GetDataPathCategory() const {return dp_category;}
 sys_sage::DataPathOrientation::type sys_sage::DataPath::GetOrientation() const {return ordered ? sys_sage::DataPathOrientation::Oriented : sys_sage::DataPathOrientation::Bidirectional;}
 
 int sys_sage::DataPath::UpdateSource(Component * _new_source)
@@ -23,9 +23,10 @@ int sys_sage::DataPath::UpdateTarget(Component * _new_target)
     return UpdateComponent(1, _new_target);
 }
 
-sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type): DataPath(_source, _target, _oriented, _dp_type, -1, -1) {}
-sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, double _bw, double _latency): DataPath(_source, _target, _oriented, sys_sage::DataPathType::None, _bw, _latency) {}
-sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathType::type _dp_type, double _bw, double _latency) : Relation(sys_sage::RelationType::DataPath, sys_sage::RelationCategory::Default), dp_type(_dp_type), bw(_bw), latency(_latency)
+sys_sage::DataPath::DataPath(DataPathCategory::type _dp_category, double _bw, double _latency) : Relation(sys_sage::RelationType::DataPath, sys_sage::RelationCategory::Default), dp_category(_dp_category), bw(_bw), latency(_latency) {}
+sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category): DataPath(_source, _target, _oriented, _dp_category, -1, -1) {}
+sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, double _bw, double _latency): DataPath(_source, _target, _oriented, sys_sage::DataPathCategory::None, _bw, _latency) {}
+sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category, double _bw, double _latency) : Relation(sys_sage::RelationType::DataPath, sys_sage::RelationCategory::Default), dp_category(_dp_category), bw(_bw), latency(_latency)
 {
     if(_oriented == sys_sage::DataPathOrientation::Bidirectional)
         ordered = false;
@@ -38,12 +39,6 @@ sys_sage::DataPath::DataPath(Component* _source, Component* _target, sys_sage::D
     else
         components.emplace_back(_target);
 }
-
-void sys_sage::DataPath::Delete()
-{
-    Relation::Delete();
-}
-
 
 void sys_sage::DataPath::Print() const
 {

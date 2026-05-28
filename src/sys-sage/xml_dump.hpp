@@ -23,7 +23,7 @@ namespace sys_sage{
      * @param search_custom_complex_attrib_key_fcn Optional user-provided function for custom attribute serialization (complex attributes, e.g., XML nodes).
      * @return 0 on success, nonzero on error.
      */
-    int exportToXml(Component *root, std::string path = "", std::function<int(std::string, void *, std::string *)> search_custom_attrib_key_fcn = NULL, std::function<int(std::string, void *, xmlNodePtr)> search_custom_complex_attrib_key_fcn = NULL);
+    int exportToXml(Component *root, const std::string &path = "", std::function<int(std::string, void *, std::string *)> search_custom_attrib_key_fcn = nullptr, std::function<int(std::string, void *, xmlNodePtr)> search_custom_complex_attrib_key_fcn = nullptr);
     /**
      * @private
      * @brief Default handler for complex attribute serialization. Can be used as a reference for creating custom handlers.
