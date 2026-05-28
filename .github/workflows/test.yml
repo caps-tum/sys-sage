@@ -33,11 +33,11 @@ jobs:
       - name: Run library tests
         run: ./test/build/test
       - name: Create virtual environment
-        run: python3 -m venv python/venv
+        run: python3 -m venv ./virt
       - name: Build & Install Python module
-        run: python/venv/bin/python -m pip install ./python
+        run: ./virt/bin/python -m pip install ./python
       - name: run Python module tests
         run: |
-             python/venv/bin/python test/topology.py
-             python/venv/bin/python test/relation.py
-             python/venv/bin/python test/datapath.py
+             ./virt/bin/python test/topology.py
+             ./virt/bin/python test/relation.py
+             ./virt/bin/python test/datapath.py

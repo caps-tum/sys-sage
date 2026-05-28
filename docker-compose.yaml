@@ -15,8 +15,8 @@ services:
         cmake -S /sys-sage/test -B /test-build -DCMAKE_BUILD_TYPE=Debug
         cmake --build /test-build --parallel
         /test-build/test
-        python3 -m venv /venv
-        /venv/bin/python -m pip install /sys-sage/python
-        /venv/bin/python /sys-sage/test/topology.py
-        /venv/bin/python /sys-sage/test/relation.py
-        /venv/bin/python /sys-sage/test/datapath.py
+        python3 -m venv /virt
+        /virt/bin/python -m pip install /sys-sage/python
+        /virt/bin/python /sys-sage/test/topology.py
+        /virt/bin/python /sys-sage/test/relation.py
+        /virt/bin/python /sys-sage/test/datapath.py
