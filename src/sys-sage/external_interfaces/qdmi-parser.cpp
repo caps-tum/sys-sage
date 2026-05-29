@@ -3,7 +3,7 @@
  * @brief sys-sage's interface to QDMI.
  */
 
-#include <sys-sage/parsers/qdmi-parser.hpp>
+#include <sys-sage/external_interfaces/qdmi-parser.hpp>
 #include <sys-sage/Topolog.hpp>
 #include <sys-sage/QuantumBackend.hpp>
 #include <sys-sage/QuantumGate.hpp>

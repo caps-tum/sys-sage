@@ -3,8 +3,8 @@
 * @brief sys-sage's interface to QDMI.
 */
 
-#ifndef SYS_SAGE_PARSERS_QDMI_PARSER_HPP
-#define SYS_SAGE_PARSERS_QDMI_PARSER_HPP
+#ifndef SYS_SAGE_EXTERNAL_INTERFACES_QDMI_PARSER_HPP
+#define SYS_SAGE_EXTERNAL_INTERFACES_QDMI_PARSER_HPP
 
 #include <sys-sage/defines.hpp>
 

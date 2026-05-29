@@ -600,7 +600,7 @@ PYBIND11_MODULE(_py_sys_sage, m) {
     m.def("parseIQM", (int (*) (Component *, const std::string &, int, int)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1);
     m.def("parseIQM", (int (*) (QuantumBackend *, const std::string&, int, int, bool)) &parseIQM, "parseIQM", py::arg("parent"), py::arg("dataSourcePath"), py::arg("qcId"), py::arg("tsForHistory") = -1, py::arg("createTopo") = true);
 
-    // TODO: QDMI parser logic is missing in src/parsers/qdmi-parser.hpp
+    // TODO: QDMI parser logic is missing in src/external_interfaces/qdmi-parser.hpp
 
     m.def("exportToXml", [](Component& root, std::string xmlPath, std::optional<py::function> print_att = std::nullopt, std::optional<py::function> print_catt = std::nullopt) {
         if(print_att)

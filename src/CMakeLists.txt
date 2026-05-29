@@ -48,9 +48,8 @@ endif()
 if(PAPI)
 	list(APPEND SOURCES sys-sage/external_interfaces/ss_papi.cpp)
 endif()
-
 if(QDMI)
-    list(APPEND SOURCES sys-sage/parsers/qdmi-parser.cpp)
+    list(APPEND SOURCES sys-sage/external_interfaces/qdmi-parser.cpp)
 endif()
 
 add_library(sys-sage SHARED ${SOURCES})
