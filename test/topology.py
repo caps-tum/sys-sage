@@ -136,7 +136,7 @@ class TestComponents(unittest.TestCase):
 
         self.assertEqual(qb.GetNumberofGates(), s)
         self.assertEqual(qb.GetAllGateTypes(), gates)
-        self.assertEqual(qb.GetGatesBySize(0), gates)
+        self.assertEqual(qb.FindGatesBySize(0), gates)
         self.assertEqual(qb.GetComponentTypeStr(), "QuantumBackend")
 
     def test_atom_site(self):
@@ -189,10 +189,10 @@ class TestComponents(unittest.TestCase):
         a.InsertChild(b)
         b.InsertChild(c)
         
-        self.assertEqual(0, a.CheckComponentTreeConsistency())
+        self.assertEqual(0, a.CheckSubtreeConsistency())
         
         c.SetParent(a)
-        self.assertEqual(1, a.CheckComponentTreeConsistency())
+        self.assertEqual(1, a.CheckSubtreeConsistency())
         
     def test_get_deeper_components(self):
         a = pysage.Node()
@@ -203,7 +203,7 @@ class TestComponents(unittest.TestCase):
         a.InsertChild(c)
         c.InsertChild(d)
         array = []
-        array += a.GetNthDescendents(1)
+        array += a.FindNthDescendants(1)
         self.assertEqual(2, len(array))
         
     def test_get_subcomponents_by_type(self):
@@ -217,7 +217,7 @@ class TestComponents(unittest.TestCase):
         c.InsertChild(d)
         
         array = []
-        array += a.GetSubcomponentsByType(pysage.COMPONENT_CHIP)
+        array += a.FindDescendantsByType(pysage.COMPONENT_CHIP)
         
         self.assertEqual(2, len(array))
     
@@ -235,7 +235,7 @@ class TestComponents(unittest.TestCase):
         d.InsertChild(e)
         d.InsertChild(f)
         
-        self.assertEqual(3, a.CountAllSubcomponentsByType(pysage.COMPONENT_THREAD))
+        self.assertEqual(3, a.CountDescendantsByType(pysage.COMPONENT_THREAD))
     
     def test_linearize_subtree(self):
         a = pysage.Node()
@@ -248,7 +248,7 @@ class TestComponents(unittest.TestCase):
         a.InsertChild(c)
         
         array = []
-        array += a.GetComponentsInSubtree()
+        array += a.FindDescendantsByType(pysage.COMPONENT_ANY)
         
         self.assertEqual(array, [a, b, d, c])
         
@@ -268,7 +268,7 @@ class TestComponents(unittest.TestCase):
         e.InsertChild(f)
         a.InsertChild(g)
         
-        self.assertEqual(3, a.GetSubtreeDepth())
+        self.assertEqual(3, a.CalcSubtreeDepth())
 
     def test_attrib(self):
         c = pysage.Component()
