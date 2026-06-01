@@ -2,7 +2,6 @@ if(DS_HWLOC)
     message(STATUS "DS_HWLOC - hwloc data source")
 
     enable_language(C)
-    find_package(HWLOC REQUIRED)
 
     add_executable(hwloc-output hwloc-output.cpp)
 
@@ -19,8 +18,6 @@ if(DS_HWLOC)
 endif()
 
 if(DS_NUMA)
-    find_package(numactl REQUIRED)
-
     add_executable(caps-numa-benchmark caps-numa-benchmark.cpp)
 
     target_include_directories(caps-numa-benchmark PRIVATE ${NUMACTL_INCLUDE_DIRS})

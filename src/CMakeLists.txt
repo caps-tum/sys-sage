@@ -66,23 +66,15 @@ target_include_directories(sys-sage PUBLIC
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-find_package(nlohmann_json 3.10 REQUIRED)
 target_link_libraries(sys-sage PUBLIC nlohmann_json::nlohmann_json)
-
-find_package(LibXml2 REQUIRED)
 target_link_libraries(sys-sage PUBLIC LibXml2::LibXml2)
 
 if(NVIDIA_MIG)
-    find_package(CUDAToolkit 10.0 REQUIRED)
-
     target_include_directories(sys-sage PUBLIC CUDA::nvml)
     target_link_libraries(sys-sage PUBLIC CUDA::nvml)
 endif()
 
 if(QDMI)
-    find_package(backends REQUIRED)
-    find_package(qinfo REQUIRED)
-
     target_link_libraries(sys-sage PUBLIC
         backend_ibm
         qdmi
@@ -91,8 +83,6 @@ if(QDMI)
 endif()
 
 if(PAPI)
-    find_package(PAPI REQUIRED)
-
     target_include_directories(sys-sage PUBLIC ${PAPI_INCLUDE_DIRS})
     target_link_libraries(sys-sage PUBLIC ${PAPI_LIBRARIES})
 endif()
