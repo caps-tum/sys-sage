@@ -1,4 +1,6 @@
 if(DS_HWLOC)
+    message(STATUS "DS_HWLOC - hwloc data source")
+
     enable_language(C)
     find_package(HWLOC REQUIRED)
 
