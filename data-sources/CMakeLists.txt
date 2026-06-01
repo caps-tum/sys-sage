@@ -1,8 +1,6 @@
 if(DS_HWLOC)
     message(STATUS "DS_HWLOC - hwloc data source")
 
-    enable_language(C)
-
     add_executable(hwloc-output hwloc-output.cpp)
 
     target_include_directories(hwloc-output PRIVATE ${HWLOC_INCLUDE_DIRS})

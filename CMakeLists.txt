@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0048 NEW)
 cmake_minimum_required(VERSION 3.22)
 
-project(sys-sage VERSION 1.0.0 LANGUAGES CXX)
+project(sys-sage VERSION 1.0.0 LANGUAGES C CXX)
 
 option(INTEL_PQOS "Build with Intel L3 CAT support" OFF)
 option(NVIDIA_MIG "Build with NVIDIA MIG support" OFF)
