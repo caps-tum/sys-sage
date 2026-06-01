@@ -21,6 +21,8 @@ if(DATA_SOURCES)
     set(DS_NUMA ON)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 find_package(nlohmann_json 3.10 REQUIRED)
 find_package(LibXml2 REQUIRED)
 
@@ -44,8 +46,6 @@ endif()
 if(PAPI)
     find_package(PAPI REQUIRED)
 endif()
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 add_subdirectory(src)
 add_subdirectory(data-sources)
