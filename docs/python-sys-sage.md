@@ -4,11 +4,11 @@ The _sys-sage_ library provides bindings for the Python programming language thr
 
 ## Installation
 
-The bindings depend on the _sys-sage_ library. First make sure that you have
-installed _sys-sage_ and `pybind11` on your system.
+The bindings depend on the _sys-sage_ library. **First make sure that you have
+installed _sys-sage_ and `pybind11` on your system**.
 
-The bindings can be installed through the pip package manager. We advice you to
-create an isolated virtual environment for the package by running
+The bindings can be installed through the pip package manager. To manage your
+packages locally, you can create an isolated virtual environment by running
 
 ```bash
 python3 -m venv <path_to_venv>

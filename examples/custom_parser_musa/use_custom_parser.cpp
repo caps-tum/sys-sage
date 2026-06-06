@@ -1,4 +1,6 @@
 #include "musa_parser.hpp"
+
+#include <sys-sage.hpp>
 #include <iostream>
 
 using namespace sys_sage;

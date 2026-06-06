@@ -1,3 +1,4 @@
+###### hwloc
 if(DS_HWLOC)
     message(STATUS "DS_HWLOC - hwloc data source")
 
@@ -15,7 +16,10 @@ if(DS_HWLOC)
     install(TARGETS hwloc-output DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
+###### numa
 if(DS_NUMA)
+    message(STATUS "DS_NUMA - caps-numa-benchmark data source")
+
     add_executable(caps-numa-benchmark caps-numa-benchmark.cpp)
 
     target_include_directories(caps-numa-benchmark PRIVATE ${NUMACTL_INCLUDE_DIRS})
@@ -25,7 +29,10 @@ if(DS_NUMA)
     install(TARGETS caps-numa-benchmark DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
+###### mt4g
 if(DS_MT4G)
+    message(STATUS "DS_MT4G - mt4g data source")
+
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mt4g/CMakeLists.txt")
         find_package(Git QUIET)
         if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
