@@ -35,6 +35,7 @@ add_executable(iqm-test iqm-test.cpp)
 target_link_libraries(iqm-test PRIVATE sys-sage::sys-sage)
 
 add_executable(xml_import xml_import.cpp)
+target_compile_definitions(xml_import PRIVATE EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/example_data")
 target_link_libraries(xml_import PRIVATE sys-sage::sys-sage)
 
 if(sys-sage-INTEL_PQOS)
