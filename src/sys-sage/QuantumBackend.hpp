@@ -88,25 +88,7 @@ namespace sys_sage {
         * @param _gate_size The size of the gates to retrieve.
         * @return A vector of quantum gates with the specified size.
         */
-        [[ deprecated("Use FindGatesBySize instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        std::vector<QuantumGate*> GetGatesBySize(size_t _gate_size) const;
-
-        /**
-        * @brief Gets the quantum gates by their size.
-        * 
-        * @param _gate_size The size of the gates to retrieve.
-        * @return A vector of quantum gates with the specified size.
-        */
         std::vector<QuantumGate*> FindGatesBySize(size_t _gate_size) const;
-
-        /**
-        * @brief Gets the quantum gates by their type.
-        * 
-        * @param _gate_type The type of the gates to retrieve.
-        * @return A vector of quantum gates with the specified type.
-        */
-        [[ deprecated("Use FindGatesByType instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        std::vector<QuantumGate*> GetGatesByType(QuantumGateCategory::type _gate_type) const;
 
         /**
         * @brief Gets the quantum gates by their type.
@@ -129,14 +111,6 @@ namespace sys_sage {
         * @return The number of quantum gates.
         */
         size_t GetNumberofGates() const;
-
-        /**
-        * @brief Gets all qubits in the quantum backend.
-        * 
-        * @return A vector of pointers to all qubits.
-        */
-        [[ deprecated("Use FindAllQubits instead. This function will be removed in the future (used up until version 1.0.0).") ]]
-        std::vector<Qubit *> GetAllQubits();
 
         /**
         * @brief Gets all qubits in the quantum backend.

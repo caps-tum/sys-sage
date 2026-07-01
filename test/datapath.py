@@ -34,19 +34,19 @@ class TestDatapaths(unittest.TestCase):
         a = pysage.Component()
         b = pysage.Component()
         dp = pysage.DataPath(a,b, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_CATEGORY_PHYSICAL)
-        self.assertEqual([], a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
-        self.assertEqual([dp], a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
+        self.assertEqual([], a.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
+        self.assertEqual([dp], a.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
         
-        self.assertEqual([dp], b.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
-        self.assertEqual([], b.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
+        self.assertEqual([dp], b.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
+        self.assertEqual([], b.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
     def test_bidirectional_data_path(self):
         a = pysage.Component()
         b = pysage.Component()
         dp = pysage.DataPath(a,b, pysage.DATAPATH_ORIENTATION_BIDIRECTIONAL, pysage.DATAPATH_CATEGORY_PHYSICAL)
-        self.assertEqual([dp], a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
-        self.assertEqual([dp], a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
-        self.assertEqual([dp], b.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
-        self.assertEqual([dp], b.GetAllDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
+        self.assertEqual([dp], a.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
+        self.assertEqual([dp], a.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
+        self.assertEqual([dp], b.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_INCOMING))
+        self.assertEqual([dp], b.FindDataPaths(pysage.DATAPATH_CATEGORY_ANY, pysage.DATAPATH_DIRECTION_OUTGOING))
         
     def test_get_data_path_by_type(self):
         a = pysage.Component()
@@ -71,19 +71,19 @@ class TestDatapaths(unittest.TestCase):
         dp3 = pysage.DataPath(a, b, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_CATEGORY_PHYSICAL)
         dp4 = pysage.DataPath(b, a, pysage.DATAPATH_ORIENTATION_ORIENTED, pysage.DATAPATH_CATEGORY_PHYSICAL)
 
-        v = a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_LOGICAL, pysage.DATAPATH_DIRECTION_INCOMING)
+        v = a.FindDataPaths(pysage.DATAPATH_CATEGORY_LOGICAL, pysage.DATAPATH_DIRECTION_INCOMING)
         self.assertEqual([], v)
 
-        v = a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_INCOMING)
+        v = a.FindDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_INCOMING)
         self.assertEqual([dp4], v)
 
-        v = a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_LOGICAL, pysage.DATAPATH_DIRECTION_OUTGOING)
+        v = a.FindDataPaths(pysage.DATAPATH_CATEGORY_LOGICAL, pysage.DATAPATH_DIRECTION_OUTGOING)
         self.assertEqual([dp1], v)
 
-        v = a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_OUTGOING)
+        v = a.FindDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_OUTGOING)
         self.assertEqual([dp2, dp3], v)
 
-        v = a.GetAllDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_ANY)
+        v = a.FindDataPaths(pysage.DATAPATH_CATEGORY_PHYSICAL, pysage.DATAPATH_DIRECTION_ANY)
         self.assertEqual([dp2, dp3, dp4], v)
 
 if __name__ == "__main__":

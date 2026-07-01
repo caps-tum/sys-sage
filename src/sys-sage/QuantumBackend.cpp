@@ -16,11 +16,6 @@ void sys_sage::QuantumBackend::addGate(QuantumGate *_gate)
     gate_types.push_back(_gate);
 }
 
-std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::GetGatesBySize(size_t _gate_size) const 
-{
-    return FindGatesBySize(_gate_size);
-}
-
 std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::FindGatesBySize(size_t _gate_size) const 
 {
     std::vector<QuantumGate*> gates;
@@ -33,11 +28,6 @@ std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::FindGatesBySize(si
     }
     
     return gates;
-}
-
-std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::GetGatesByType(QuantumGateCategory::type _gate_type) const 
-{
-    return FindGatesByType(_gate_type);
 }
 
 std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::FindGatesByType(QuantumGateCategory::type _gate_type) const 
@@ -60,11 +50,6 @@ std::vector<sys_sage::QuantumGate*> sys_sage::QuantumBackend::GetAllGateTypes() 
 }
 
 size_t sys_sage::QuantumBackend::GetNumberofGates() const { return gate_types.size(); }
-
-std::vector<sys_sage::Qubit *> sys_sage::QuantumBackend::GetAllQubits()
-{
-    return FindAllQubits();
-}
 
 std::vector<sys_sage::Qubit *> sys_sage::QuantumBackend::FindAllQubits()
 {

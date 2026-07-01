@@ -24,8 +24,6 @@ namespace sys_sage {
 
         constexpr type Any = -1;
         constexpr type Generic = 1; /**< class Component (do not use normally)*/
-        [[ deprecated("Use ComponentType::Generic instead. This constant will be removed in the future (used up until version 1.0.0).") ]]
-        constexpr type None = Generic; /**< class Component (do not use normally)*/
         constexpr type Thread = 2; /**< class Thread */
         constexpr type Core = 3; /**< class Core */
         constexpr type Cache = 4; /**< class Cache */

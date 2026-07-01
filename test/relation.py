@@ -28,8 +28,8 @@ class TestRelations(unittest.TestCase):
         #    self.assertEqual(r.GetComponent(2), None)
         self.assertEqual(r.GetComponent(2), None)
         self.assertEqual(r.components, v)
-        self.assertEqual(foo.GetRelations(pysage.RELATION_TYPE_RELATION), [r])
-        self.assertEqual(bar.GetRelations(pysage.RELATION_TYPE_RELATION), [r])
+        self.assertEqual(foo.GetRelationsByType(pysage.RELATION_TYPE_RELATION), [r])
+        self.assertEqual(bar.GetRelationsByType(pysage.RELATION_TYPE_RELATION), [r])
 
     def test_removal(self):
         foo = pysage.Component()
@@ -39,8 +39,8 @@ class TestRelations(unittest.TestCase):
         r.RemoveComponent(foo)
         r.RemoveComponent(bar)
         
-        self.assertEqual(len(foo.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
-        self.assertEqual(len(bar.GetRelations(pysage.RELATION_TYPE_RELATION)), 0)
+        self.assertEqual(len(foo.GetRelationsByType(pysage.RELATION_TYPE_RELATION)), 0)
+        self.assertEqual(len(bar.GetRelationsByType(pysage.RELATION_TYPE_RELATION)), 0)
 
     def test_getters_and_setters(self):
         r = pysage.Relation([])
