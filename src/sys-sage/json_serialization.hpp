@@ -16,7 +16,7 @@ namespace sys_sage {
      * @param component The component spanning the subtree.
      * @param obj The JSON object to contain the data.
      */
-    void DumpJson(const Component *component, nlohmann::ordered_json &obj);
+    void DumpJson(const Component *component, nlohmann::json &obj);
 
     /**
      * @brief Dumps the entire subtree and the corresponding relation graph
@@ -39,7 +39,7 @@ namespace sys_sage {
      * @return A pointer to the root of the component tree. May return
      *         `nullptr` on failure.
      */
-    Component *LoadJson(const nlohmann::ordered_json &obj);
+    Component *LoadJson(const nlohmann::json &obj);
 
     /**
      * @brief Loads the component tree and the relation graph from a JSON file.
@@ -75,7 +75,7 @@ namespace sys_sage {
      * @param obj The JSON object to be initialized.
      * @param component The component of interest.
      */
-    void to_json(nlohmann::ordered_json &obj, const Component *component);
+    void to_json(nlohmann::json &obj, const Component *component);
 
     /**
      * @private
@@ -87,7 +87,7 @@ namespace sys_sage {
      * @param component A pointer referencing the initialized component. Will
      *                  be set to `nullptr` on failure.
      */
-    void from_json(const nlohmann::ordered_json &obj, Component *&component);
+    void from_json(const nlohmann::json &obj, Component *&component);
 
     /**
      * @private
@@ -98,7 +98,7 @@ namespace sys_sage {
      * @param obj The JSON object to be initialized.
      * @param relation The relation of interest.
      */
-    void to_json(nlohmann::ordered_json &obj, const Relation *relation);
+    void to_json(nlohmann::json &obj, const Relation *relation);
 }
 
 #endif

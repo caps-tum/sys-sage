@@ -116,6 +116,8 @@ parseCapsNumaBenchmark = _py_sys_sage.parseCapsNumaBenchmark
 parseIQM = _py_sys_sage.parseIQM
 exportToXml = _py_sys_sage.exportToXml
 importFromXml = _py_sys_sage.importFromXml
+DumpJson = _py_sys_sage.DumpJson
+LoadJson = _py_sys_sage.LoadJson
 
 if _py_sys_sage.HAS_PAPI:
     SS_PAPI_start = _py_sys_sage.SS_PAPI_start

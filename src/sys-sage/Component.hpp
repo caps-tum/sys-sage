@@ -471,7 +471,7 @@ namespace sys_sage {
          *
          * @param obj The JSON object to be initialized.
          */
-        virtual void _ToJson(nlohmann::ordered_json &obj) const;
+        virtual void _ToJson(nlohmann::json &obj) const;
 
         /**
          * @private
@@ -483,7 +483,7 @@ namespace sys_sage {
          *
          * @return 0 on success, 1 otherwise.
          */
-        virtual int _FromJson(const nlohmann::ordered_json &obj);
+        virtual int _FromJson(const nlohmann::json &obj);
 
         /**
          * @brief Deletes all relations of this component (optionally filtered by type).
@@ -643,6 +643,17 @@ namespace sys_sage {
          * @return The respective size.
          */
         attribSizeType GetAttributesSize() const;
+
+        /**
+         * @private
+         *
+         * @brief Inserts a type-erased attribute.
+         *
+         * @param key The key associated with the attribute.
+         * @param attribute The type-erased attribute.
+         */
+        // TODO: somehow make this private and find a better name
+        void _EmplaceAttribute(const std::string &key, std::unique_ptr<IAttribute> &attribute);
 
         /**
          * @brief Returns an iterator to the beginning of the attributes.

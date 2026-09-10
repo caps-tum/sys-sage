@@ -26,6 +26,7 @@ target_sources(sys-sage PRIVATE
     sys-sage/QuantumGate.cpp
     sys-sage/CouplingMap.cpp
 
+    sys-sage/attribute.cpp
     sys-sage/xml_dump.cpp
     sys-sage/xml_load.cpp
     sys-sage/json_serialization.cpp

@@ -130,7 +130,7 @@ namespace sys_sage {
          *
          * @param obj The JSON object to be initialized.
          */
-        void _ToJson(nlohmann::ordered_json &obj) const override;
+        void _ToJson(nlohmann::json &obj) const override;
 
         /**
          * @private
@@ -142,7 +142,7 @@ namespace sys_sage {
          *
          * @return 0 on success, 1 otherwise.
          */
-        int _FromJson(const nlohmann::ordered_json &obj) override;
+        int _FromJson(const nlohmann::json &obj) override;
 
     private:
         std::string cache_type;           ///< Cache level or cache type (e.g., "L1", "texture")

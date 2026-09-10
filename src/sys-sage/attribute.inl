@@ -26,4 +26,21 @@ namespace sys_sage {
     {
         return &value;
     }
+
+    template <typename T>
+    void Attribute<T>::Serialize(nlohmann::json &obj) const
+    {
+        if constexpr (TypeTrait<T>::serializable) {
+            if constexpr (TypeTrait<T>::deserializable) {
+                obj = {
+                    { "_sys_sage_type", TypeTrait<T>::id },
+                    { "_sys_sage_value", value }
+                };
+            } else {
+                obj = value;
+            }
+        } else {
+            obj = nlohmann::json();
+        }
+    }
 }

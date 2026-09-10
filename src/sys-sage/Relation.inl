@@ -10,6 +10,10 @@ namespace sys_sage {
     template <typename T>
     T *Relation::GetAttribute(const std::string &key)
     {
+        // This is a hack to force template initialization.
+        // DO NOT REMOVE IT
+        (void)TypeTrait<T>::serializable;
+
         auto it = attributes.find(key);
         if (it == attributes.end())
             return nullptr;
@@ -24,6 +28,10 @@ namespace sys_sage {
     template <typename T>
     const T *Relation::GetAttribute(const std::string &key) const
     {
+        // This is a hack to force template initialization.
+        // DO NOT REMOVE IT
+        (void)TypeTrait<T>::serializable;
+
         auto it = attributes.find(key);
         if (it == attributes.end())
             return nullptr;
@@ -39,6 +47,10 @@ namespace sys_sage {
     template <typename T>
     T *Relation::GetAttribute(Relation::attribIterator it)
     {
+        // This is a hack to force template initialization.
+        // DO NOT REMOVE IT
+        (void)TypeTrait<T>::serializable;
+
         if (it == attributes.end())
             return nullptr;
 
@@ -52,6 +64,10 @@ namespace sys_sage {
     template <typename T>
     const T *Relation::GetAttribute(Relation::constAttribIterator it) const
     {
+        // This is a hack to force template initialization.
+        // DO NOT REMOVE IT
+        (void)TypeTrait<T>::serializable;
+
         if (it == attributes.end())
             return nullptr;
 

@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/attr.h>
+#include <pybind11_json/pybind11_json.hpp>
 #include <string>
 #include <tuple>
 
@@ -12,6 +13,8 @@
 #include <sys-sage/defines.hpp>
 
 namespace py = pybind11;
+
+SYS_SAGE_REGISTER_TYPE_TRAIT(py::object)
 
 std::vector<std::string> default_attribs = {"CATcos","CATL3mask","mig_size","Number_of_streaming_multiprocessors","Number_of_cores_in_GPU","Number_of_cores_per_SM","Bus_Width_bit","Clock_Frequency","latency","latency_min","latency_max","CUDA_compute_capability","mig_uuid","freq_history","GPU_Clock_Rate"};
 
@@ -252,7 +255,7 @@ PYBIND11_MODULE(_py_sys_sage, m) {
          * JSON serialization for attributes in Python can be supported through
          * https://github.com/pybind/pybind11_json
          * However, this uses `nlohmann::json` while we use
-         * `nlohmann::ordered_json`. -> TODO: how to fix this?
+         * `nlohmann::json`. -> TODO: how to fix this?
          *
          * All of the above also holds for the `Relation` class.
          */
@@ -551,6 +554,16 @@ PYBIND11_MODULE(_py_sys_sage, m) {
             read_complex_attributes = *search_custom_complex_attrib_key_fcn;
         return importFromXml(path,search_custom_attrib_key_fcn ? xmlloader : nullptr, search_custom_complex_attrib_key_fcn ? xmlloader_complex : nullptr );
     }, py::arg("path"), py::arg("search_custom_attrib_key_fcn") = py::none(), py::arg("search_custom_complex_attrib_key_fcn") = py::none());
+
+    m.def("DumpJson", [](const Component *comp) -> nlohmann::json {
+             nlohmann::json obj;
+             DumpJson(comp, obj);
+             return obj;
+         }, py::arg("component"));
+    m.def("DumpJson", (int (*)(const Component *, const std::filesystem::path &)) &DumpJson, py::arg("component"), py::arg("path") = "");
+    m.def("LoadJson", (Component *(*)(const nlohmann::json &)) &LoadJson, py::arg("obj"));
+    m.def("LoadJson", (Component *(*)(const std::filesystem::path &)) &LoadJson, py::arg("path"));
+    m.def("LoadJson", (Component *(*)(const char *)) &LoadJson, py::arg("path"));
 
 #ifdef SS_PAPI
     py::class_<Metric, std::unique_ptr<Metric, py::nodelete>>(m, "Metric")

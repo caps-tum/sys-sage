@@ -175,7 +175,7 @@ namespace sys_sage {
          *
          * @param obj The JSON object to be initialized.
          */
-        void _ToJson(nlohmann::ordered_json &obj) const override;
+        void _ToJson(nlohmann::json &obj) const override;
 
         /**
          * @private
@@ -188,7 +188,7 @@ namespace sys_sage {
          *
          * @return 0 on success, 1 otherwise.
          */
-        int _FromJson(const nlohmann::ordered_json &obj,
+        int _FromJson(const nlohmann::json &obj,
                       const std::unordered_map<uintptr_t, Component *> &componentMap) override;
 
     private:

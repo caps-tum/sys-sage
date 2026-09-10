@@ -152,6 +152,11 @@ int sys_sage::Relation::RemoveComponent(Component *component)
     return 0;
 }
 
+void sys_sage::Relation::_EmplaceAttribute(const std::string &key, std::unique_ptr<IAttribute> &attribute)
+{
+    attributes.emplace(key, std::move(attribute));
+}
+
 sys_sage::Relation::attribSizeType sys_sage::Relation::GetAttributesSize() const
 {
     return attributes.size();

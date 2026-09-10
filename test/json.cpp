@@ -10,7 +10,7 @@
 namespace ut = boost::ut;
 using namespace sys_sage;
 using namespace std::string_view_literals;
-using json = nlohmann::ordered_json;
+using json = nlohmann::json;
 
 static ut::suite<"json"> _ = []
 {

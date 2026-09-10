@@ -8,6 +8,16 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 add_library(sys-sage SHARED)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.1")
+        message(FATAL_ERROR "Expected GCC version to be 12.1 or higher, but was ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "16.0.0")
+        message(FATAL_ERROR "Expected Clang version to be 16.0.0 or higher, but was ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+endif()
+
 target_compile_features(sys-sage PUBLIC cxx_std_20)
 set_target_properties(sys-sage PROPERTIES CXX_EXTENSIONS OFF)
 target_compile_options(sys-sage PRIVATE -Wall)

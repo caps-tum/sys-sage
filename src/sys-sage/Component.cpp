@@ -653,6 +653,11 @@ sys_sage::Component::Component(Component * parent, int _id, const std::string &_
 sys_sage::Component::Component(int _id, const std::string &_name): Component(_id, _name, sys_sage::ComponentType::Generic) {}
 sys_sage::Component::Component(Component * parent, int _id, const std::string &_name): Component(parent, _id, _name, sys_sage::ComponentType::Generic) {}
 
+void sys_sage::Component::_EmplaceAttribute(const std::string &key, std::unique_ptr<IAttribute> &attribute)
+{
+    attributes.emplace(key, std::move(attribute));
+}
+
 sys_sage::Component::attribSizeType sys_sage::Component::GetAttributesSize() const
 {
     return attributes.size();

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <stdint.h>
 #include <string>
@@ -11,10 +12,51 @@
 #include <queue>
 
 using namespace sys_sage;
-using json = nlohmann::ordered_json;
+using json = nlohmann::json;
 
-static void DumpAttributes(const json &obj) { /* TODO */ }
-static void LoadAttributes(const json &obj) { /* TODO */ }
+template <typename T>
+static void DumpAttributes(json &obj, T *compOrRel)
+{
+    json attributes;
+
+    for (auto it = compOrRel->AttributesBegin(); it != compOrRel->AttributesEnd(); it++) {
+        auto &key = it->first;
+        auto &val = it->second;
+
+        nlohmann::json attribute;
+        val->Serialize(attribute);
+
+        if (!attribute.is_null()) // only export the attribute if JSON expored is defined for this type
+            attributes[key] = std::move(attribute);
+    }
+
+    if (attributes.size() > 0)
+        obj["attributes"] = std::move(attributes);
+}
+
+template <typename T>
+static void LoadAttributes(const json &obj, T *compOrRel)
+{
+    for (auto it = obj.begin(); it != obj.end(); it++) {
+        auto &key = it.key();
+        auto &value = it.value();
+
+        // TODO: define a constant string literal instead of using "_sys_sage_type" and "_sys_sage_value" directly
+        auto typeIt = value.find("_sys_sage_type");
+        if (typeIt == value.end())
+            continue;
+
+        std::string type = typeIt->get<std::string>();
+        auto callBack = sys_sage::TypeRegistry::Instance().GetCallBack(type);
+
+        if (!callBack)
+            continue;
+
+        auto attribute = (*callBack)(value["_sys_sage_value"]);
+        // TODO: somehow make this private
+        compOrRel->_EmplaceAttribute(key, attribute);
+    }
+}
 
 static Component *ComponentFromJson(const json &obj,
                                     std::unordered_map<uintptr_t, Component *> &componentMap)
@@ -73,7 +115,7 @@ static void CollectComponentsInSubtree(const Component *root,
             queue.push(child);
             componentsInSubtree.insert(child);
         }
-    } while (queue.empty());
+    } while (!queue.empty());
 }
 
 void sys_sage::DumpJson(const Component *component, json &obj)
@@ -90,7 +132,7 @@ void sys_sage::DumpJson(const Component *component, json &obj)
             auto &relations = comp->GetRelationsByType(relationType);
             for (auto relation : relations) {
                 // print each relation once
-                if (relation->GetComponent(0) != component)
+                if (relation->GetComponent(0) != comp)
                     continue;
 
                 bool inSubtree = true;
@@ -125,7 +167,7 @@ int sys_sage::DumpJson(const Component *component,
             std::cerr << "Failed to write to " << path << "\n";
             return 1;
         }
-        stream << obj.dump(2) << std::endl;
+        stream << obj.dump(4) << std::endl;
     }
 
     return 0;
@@ -222,7 +264,7 @@ void sys_sage::Component::_ToJson(json &obj) const
     obj["id"] = id;
     obj["address"] = reinterpret_cast<uintptr_t>(this);
 
-    DumpAttributes(obj);
+    DumpAttributes(obj, this);
 
     if (children.size() > 0) {
         std::vector<json> jsonChildren ( children.size() );
@@ -239,7 +281,8 @@ int sys_sage::Component::_FromJson(const json &obj)
 {
     obj["id"].get_to<int>(id);
 
-    LoadAttributes(obj);
+    if (auto it = obj.find("attributes"); it != obj.end())
+        LoadAttributes(*it, this);
 
     if (auto it = obj.find("children"); it != obj.end()) {
         for (auto &childJson : *it) {
@@ -270,7 +313,7 @@ void sys_sage::Relation::_ToJson(json &obj) const
 
     obj["components"] = addresses;
 
-    DumpAttributes(obj);
+    DumpAttributes(obj, this);
 }
 
 int sys_sage::Relation::_FromJson(const json &obj,
@@ -293,7 +336,8 @@ int sys_sage::Relation::_FromJson(const json &obj,
     obj["id"].get_to<int>(id);
     obj["ordered"].get_to<bool>(ordered);
 
-    LoadAttributes(obj);
+    if (auto it = obj.find("attributes"); it != obj.end())
+        LoadAttributes(*it, this);
 
     return 0;
 }
