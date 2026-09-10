@@ -1,9 +1,9 @@
 # JSON Serialization & Deserialization
 
 _sys-sage_ provides the means to dump the entire component tree and its associated relations to JSON.
-All functionality has been successfully tested on gcc (>=12.1) and clang (>=16.0.0).
 In addition, the component tree can be loaded back from JSON.
 This way, a snapshot of the dynamic state of the hardware topology can be saved, inspected and reconstructed.
+All functionality has been successfully tested on gcc (>=12.1) and clang (>=16.0.0).
 The relevant functions in the library's API are:
 
 ```cpp
@@ -35,9 +35,7 @@ int main()
     ss::Relation *datapathCore0L1Cache0 = new ss::DataPath(core0, l1cache0, ss::DataPathOrientation::Bidirectional, ss::DataPathCategory::Datatransfer, 401e9, 0.4e-9);
     ss::Relation *datapathCore1L1Cache1 = new ss::DataPath(core1, l1cache1, ss::DataPathOrientation::Bidirectional, ss::DataPathCategory::Datatransfer, 399e9, 0.6e-9);
 
-    nlohmann::json obj;
-    ss::DumpJson(l2cache0, obj);
-    std::cout << obj.dump(4) << '\n';
+    ss::DumpJson(l2cache0, "topo.json");
 
     ss::Component::DeleteSubtree(l2cache0);
 
@@ -151,6 +149,18 @@ with corresponding output
 Since a component's attribute can be of arbitrary type, _sys-sage_ maintains a type registry system to automatically dump and load arbitrary attributes.
 In order for _sys-sage_ to know how to process an attribute, its type needs to be registered and serialization/deserialization callbacks need to be provided.
 
+### Table of Contents
+
+1. [Serialization & Deserialization Callbacks](#serialization--deserialization-callbacks)
+2. [Standard Type Specialization & Registration](#standard-type-specialization--registration)
+3. [Pre-registered Types](#pre-registered-types)
+4. [Important Details about Implicit Registration and Macro Usage](#important-details-about-implicit-registration-and-macro-usage)
+5. [Meta Information](#meta-information)
+6. [False Positives & Blacklisted Types](#false-positives--blacklisted-types)
+7. [Non-typed Template Arguments](#non-typed-template-arguments)
+8. [Python Bindings](#python-bindings)
+9. [Generating Meta Data for Custom Type Specializations & Registrations](#generating-meta-data-for-custom-type-specializations--registrations)
+
 ### Serialization & Deserialization Callbacks
 
 _sys-sage_ relies on the callbacks used natively by the `nlohmann-json` library, i.e. a type must provide a `to_json` function for serialization and a `from_json` function for deserialization.
@@ -245,7 +255,7 @@ We recommend to simply call this function as part of an initialization routine a
 
 ### Pre-registered Types
 
-The _sys-sage_ library already comes with some pre-registered types out-of-the-box.
+The _sys-sage_ library already comes with some pre-registered types **out-of-the-box**.
 We hope that it covers most of the basic usage, such that users only have to register user-defined types.
 Pre-registered types include
 
@@ -563,7 +573,7 @@ class Foo:
         print(f"Foo: {self.x}, {self.y}")
 
 comp = pysage.Component()
-comp.SetAttribute("foo", Foo(x, y).__dict__)
+comp.SetAttribute("foo", Foo(1, 2).__dict__)
 
 foo = Foo(**comp.GetAttribute("foo"))
 foo.PrintFoo()
