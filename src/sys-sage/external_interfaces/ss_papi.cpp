@@ -859,6 +859,32 @@ void sys_sage::Component::FindPAPIrelationsInSubtree(std::vector<Relation *> &pa
     } while (queue.empty());
 }
 
+void sys_sage::to_json(nlohmann::json &obj, const Metric &metric)
+{
+    obj["timestamp"] = metric.timestamp;
+    obj["value"] = metric.value;
+    obj["permanent"] = metric.permanent;
+}
+
+void sys_sage::to_json(nlohmann::json &obj, const CpuMetrics &cpuMetrics)
+{
+    obj["entries"] = cpuMetrics.entries;
+    obj["cpuNum"] = cpuMetrics.cpuNum;
+}
+
+void sys_sage::from_json(const nlohmann::json &obj, Metric &metric)
+{
+    obj.at("timestamp").get_to(metric.timestamp);
+    obj.at("value").get_to(metric.value);
+    obj.at("permanent").get_to(metric.permanent);
+}
+
+void sys_sage::from_json(const nlohmann::json &obj, CpuMetrics &cpuMetrics)
+{
+    obj.at("entries").get_to(cpuMetrics.entries);
+    obj.at("cpuNum").get_to(cpuMetrics.cpuNum);
+}
+
 std::ostream &operator<<(std::ostream &stream, const Metric &metric)
 {
     return stream << "{ .timestamp = " << metric.timestamp << ", .value = " << metric.value << " }";

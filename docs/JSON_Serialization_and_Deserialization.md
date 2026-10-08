@@ -281,6 +281,7 @@ Pre-registered types include
 | std::map |
 | std::unordered_map |
 | std::tuple |
+| std::pair |
 
 Some "helper" templated types have been "specialized" using the `SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT` macro without being registered:
 
@@ -290,9 +291,6 @@ Some "helper" templated types have been "specialized" using the `SYS_SAGE_SPECIA
 | std::less |
 | std::hash |
 | std::equal_to |
-| std::pair<const T1, T2> |
-
-Note that we have only specialized `std::pair` where the first template argument is `const`.
 
 ### Important Details about Implicit Registration and Macro Usage
 

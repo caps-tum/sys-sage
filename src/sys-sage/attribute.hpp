@@ -584,33 +584,12 @@ SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(std::vector)
 SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(std::map)
 SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(std::unordered_map)
 SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(std::tuple)
+SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(std::pair)
 
 SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::allocator)
 SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::less)
 SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::hash)
 SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::equal_to)
-
-namespace sys_sage {
-    template <typename T1, typename T2>
-    struct TypeTrait<std::pair<const T1, T2>> {
-        static constexpr bool serializable = IsSerializable<std::pair<const T1, T2>>;
-        static constexpr bool deserializable = IsDeserializable<std::pair<const T1, T2>>;
-
-        static constexpr decltype(auto) id = CompStrCat<"std::pair<const ", TypeTrait<T1>::id, ", ", TypeTrait<T2>::id, ">">();
-
-        template <typename U = std::pair<const T1, T2>> requires (deserializable)
-        static std::unique_ptr<IAttribute> Deserialize(const nlohmann::json &obj)
-        {
-            return std::make_unique<Attribute<U>>(obj.get<U>());
-        }
-
-        template <typename U = std::pair<const T1, T2>> requires (!deserializable)
-        static std::unique_ptr<IAttribute> Deserialize(const nlohmann::json &)
-        {
-            return nullptr;
-        }
-    };
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////// BLACKLIST SOME TYPES //////////////////////////////

@@ -126,15 +126,15 @@ int sys_sage::Node::UpdateL3CATCoreCOS(){
         {
             Thread* thread = *it_threads;
             //std::cout << "  thread " << thread->GetComponentTypeStr() << " id " << thread->GetId() << std::endl;
-            uint64_t* cos = new uint64_t();
-            uint64_t* mask = new uint64_t();
-            *cos = getCoreCOS(socket->GetId(), thread->GetId(), p_l3cat_ids, l3cat_id_count, p_cpu);
-            if(*cos == std::numeric_limits<uint64_t>::max()){
+            uint64_t cos;
+            uint64_t mask;
+            cos = getCoreCOS(socket->GetId(), thread->GetId(), p_l3cat_ids, l3cat_id_count, p_cpu);
+            if(cos == std::numeric_limits<uint64_t>::max()){
                 cerr << "getCoreCOS failed" << endl;
                 continue;
             }
-            *mask = getCOSL3Bitmask(socket->GetId(), *cos, p_l3cat_ids, l3cat_id_count);
-            if(*mask == std::numeric_limits<uint64_t>::max()){
+            mask = getCOSL3Bitmask(socket->GetId(), cos, p_l3cat_ids, l3cat_id_count);
+            if(mask == std::numeric_limits<uint64_t>::max()){
                 cerr << "getCOSL3Bitmask failed" << endl;
                 continue;
             }
@@ -155,8 +155,8 @@ int sys_sage::Node::UpdateL3CATCoreCOS(){
 
             //add DataPath to thread and L3
             DataPath* d = new DataPath(thread, c, sys_sage::DataPathOrientation::Bidirectional, sys_sage::DataPathCategory::L3CAT);
-            d->attrib.insert({"CATcos", reinterpret_cast<void*>(cos)});
-            d->attrib.insert({"CATL3mask", reinterpret_cast<void*>(mask)});
+            d->SetAttribute("CATcos", cos);
+            d->SetAttribute("CATL3mask", mask);
         }
     }
     return 1;
@@ -168,11 +168,9 @@ long long sys_sage::Thread::GetCATAwareL3Size()
     for(auto it = std::begin(dp_outgoing); it != std::end(dp_outgoing); ++it)
     {
         DataPath* dp = *it;
-        auto search = dp->attrib.find("CATL3mask");
-        if (search == dp->attrib.end()) {
+        uint64_t* mask = dp->GetAttribute<uint64_t>("CATL3mask");
+        if (mask == nullptr)
             continue;
-        }
-        uint64_t* mask = reinterpret_cast<uint64_t*>(search->second);
 
         Cache* c = dynamic_cast<Cache*>(dp->GetTarget());
         if (!c) {
