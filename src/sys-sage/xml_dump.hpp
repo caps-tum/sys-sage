@@ -19,6 +19,7 @@ namespace sys_sage{
      * @param search_custom_complex_attrib_key_fcn Optional user-provided function for custom attribute serialization (complex attributes, e.g., XML nodes).
      * @return 0 on success, nonzero on error.
      */
+    [[ deprecated("Serialization to XML is deprecated. Please use JSON as the new medium (see sys_sage::DumpJson). This function will be removed in the future (used up until version 1.1.0).") ]]
     int exportToXml(Component *root, const std::string &path = "", std::function<int(std::string, void *, std::string *)> search_custom_attrib_key_fcn = nullptr, std::function<int(std::string, void *, xmlNodePtr)> search_custom_complex_attrib_key_fcn = nullptr);
     /**
      * @private
