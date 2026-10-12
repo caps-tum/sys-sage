@@ -13,9 +13,9 @@ static suite<"mt4g"> _ = []
 {
   "v0.1"_test = []
   {
-    Topology topo;
-    Chip gpu{&topo};
-    expect(that % (0 == ParseMt4g_v0_1(&gpu, SYS_SAGE_TEST_RESOURCE_DIR "/pascal_gpu_topo.csv")) >> fatal);
+    Topology *topo = new Topology;
+    Chip *gpu = new Chip(topo);
+    expect(that % (0 == ParseMt4g_v0_1(gpu, SYS_SAGE_TEST_RESOURCE_DIR "/pascal_gpu_topo.csv")) >> fatal);
 
     for (const auto &[type, count] : std::vector{
              std::tuple{ComponentType::Memory, 31},
@@ -25,14 +25,14 @@ static suite<"mt4g"> _ = []
          })
     {
         std::vector<Component *> components;
-        topo.FindDescendantsByType(components, type);
+        topo->FindDescendantsByType(components, type);
         expect(that % _u(count) == components.size());
     }
 
-    expect(that % "Nvidia"sv == gpu.GetVendor());
-    expect(that % "Quadro P6000"sv == gpu.GetModel());
+    expect(that % "Nvidia"sv == gpu->GetVendor());
+    expect(that % "Quadro P6000"sv == gpu->GetModel());
 
-    auto memory = dynamic_cast<Memory *>(gpu.GetChildByType(ComponentType::Memory));
+    auto memory = dynamic_cast<Memory *>(gpu->GetChildByType(ComponentType::Memory));
     expect(that % (nullptr != memory) >> fatal);
     expect(that % 25637224578 == memory->GetSize());
     expect(that % 3840_u == memory->FindDataPaths(DataPathCategory::Any, DataPathDirection::Outgoing).size());
@@ -53,7 +53,8 @@ static suite<"mt4g"> _ = []
 
     auto thread = dynamic_cast<Thread *>(cacheL1->GetChildByType(ComponentType::Thread));
     expect(that % (nullptr != thread) >> fatal);
-    //topo.Delete(true);
+
+    Component::DeleteSubtree(topo);
   };
 
   "NVIDIA"_test = []
@@ -66,13 +67,13 @@ static suite<"mt4g"> _ = []
     const std::string l1 ( "L1+Read Only+Texture" );
     const std::string sharedMem ( "Shared Memory" );
 
-    Node node;
+    Node *node = new Node;
 
-    int rval = ParseMt4g(&node, jsonPath, 0);
+    int rval = ParseMt4g(node, jsonPath, 0);
     expect(that % rval == 0);
 
-    expect(that % node.GetChildren().size() == 1U && node.GetChildren()[0]->GetComponentType() == ComponentType::Chip);
-    auto gpu = static_cast<Chip *>( node.GetChildren()[0] );
+    expect(that % node->GetChildren().size() == 1U && node->GetChildren()[0]->GetComponentType() == ComponentType::Chip);
+    auto gpu = static_cast<Chip *>( node->GetChildren()[0] );
     
     expect(that % gpu->GetVendor() == expectedVendor);
     expect(that % gpu->GetModel() == expectedModel);
@@ -91,33 +92,35 @@ static suite<"mt4g"> _ = []
     expect(that % numMPs == 68U);
 
     for (auto mp : l2Cache->GetChildren()) {
-      expect(that % mp->GetComponentType() == ComponentType::Subdivision);
+        expect(that % mp->GetComponentType() == ComponentType::Subdivision);
 
-      for (auto child : mp->GetChildren()) {
-        ComponentType::type type = child->GetComponentType();
-        expect(that % type == ComponentType::Cache || type == ComponentType::Memory);
+        for (auto child : mp->GetChildren()) {
+            ComponentType::type type = child->GetComponentType();
+            expect(that % type == ComponentType::Cache || type == ComponentType::Memory);
 
-        if (type == ComponentType::Memory) {
-          expect(that % child->GetName() == sharedMem);
-        } else {
-          Cache *cache = static_cast<Cache *>( child );
+            if (type == ComponentType::Memory) {
+                expect(that % child->GetName() == sharedMem);
+            } else {
+                Cache *cache = static_cast<Cache *>( child );
 
-          const std::string &name = cache->GetCacheName();
-          expect(that % name == cL1_5 || name == l1);
+                const std::string &name = cache->GetCacheName();
+                expect(that % name == cL1_5 || name == l1);
 
-          if (name == cL1_5) {
-            expect(that % cache->GetChildren().size() == 1U && cache->GetChildren()[0]->GetComponentType() == ComponentType::Cache);
-            Cache *cL1Cache = static_cast<Cache *>( cache->GetChildren()[0] );
-            expect(that % cL1Cache->GetCacheName() == cL1);
-          } else {
-            expect(that % cache->GetChildren().size() == 64U);
+                if (name == cL1_5) {
+                    expect(that % cache->GetChildren().size() == 1U && cache->GetChildren()[0]->GetComponentType() == ComponentType::Cache);
+                    Cache *cL1Cache = static_cast<Cache *>( cache->GetChildren()[0] );
+                    expect(that % cL1Cache->GetCacheName() == cL1);
+                } else {
+                    expect(that % cache->GetChildren().size() == 64U);
 
-            for (auto core : cache->GetChildren())
-              expect(that % core->GetComponentType() == ComponentType::Thread);
-          }
+                    for (auto core : cache->GetChildren())
+                        expect(that % core->GetComponentType() == ComponentType::Thread);
+                }
+            }
         }
-      }
     }
+
+    Component::DeleteSubtree(node);
   };
 
   "AMD"_test = []
@@ -130,13 +133,13 @@ static suite<"mt4g"> _ = []
     const std::string sharedMem ( "Shared Memory" );
     const std::string l1 ( "L1" );
 
-    Node node;
+    Node *node = new Node;
 
-    int rval = ParseMt4g(&node, jsonPath, 0);
+    int rval = ParseMt4g(node, jsonPath, 0);
     expect(that % rval == 0);
 
-    expect(that % node.GetChildren().size() == 1U && node.GetChildren()[0]->GetComponentType() == ComponentType::Chip);
-    auto gpu = static_cast<Chip *>( node.GetChildren()[0] );
+    expect(that % node->GetChildren().size() == 1U && node->GetChildren()[0]->GetComponentType() == ComponentType::Chip);
+    auto gpu = static_cast<Chip *>( node->GetChildren()[0] );
     
     expect(that % gpu->GetVendor() == expectedVendor);
     expect(that % gpu->GetModel() == expectedModel);
@@ -155,37 +158,39 @@ static suite<"mt4g"> _ = []
 
     std::vector<Component *> mps;
     for (auto sL1Cache : l2Cache->GetChildren()) {
-      expect(that % sL1Cache->GetComponentType() == ComponentType::Cache);
-      expect(that % static_cast<Cache *>(sL1Cache)->GetCacheName() == sL1);
+        expect(that % sL1Cache->GetComponentType() == ComponentType::Cache);
+        expect(that % static_cast<Cache *>(sL1Cache)->GetCacheName() == sL1);
 
-      for (auto child : sL1Cache->GetChildren())
-        expect(that % child->GetComponentType() == ComponentType::Subdivision);
-      mps.insert(mps.end(), sL1Cache->GetChildren().begin(), sL1Cache->GetChildren().end());
+        for (auto child : sL1Cache->GetChildren())
+            expect(that % child->GetComponentType() == ComponentType::Subdivision);
+        mps.insert(mps.end(), sL1Cache->GetChildren().begin(), sL1Cache->GetChildren().end());
     }
 
     expect(that % mps.size() == 120U);
 
     for (auto mp : mps) {
-      for (auto child : mp->GetChildren()) {
-        ComponentType::type type = child->GetComponentType();
-        expect(that % type == ComponentType::Cache || type == ComponentType::Memory);
+        for (auto child : mp->GetChildren()) {
+            ComponentType::type type = child->GetComponentType();
+            expect(that % type == ComponentType::Cache || type == ComponentType::Memory);
 
-        if (type == ComponentType::Memory) {
-          expect(that % child->GetName() == sharedMem);
-        } else {
-          Cache *cache = static_cast<Cache *>( child );
+            if (type == ComponentType::Memory) {
+                expect(that % child->GetName() == sharedMem);
+            } else {
+                Cache *cache = static_cast<Cache *>( child );
 
-          const std::string &name = cache->GetCacheName();
-          expect(that % name == constant || name == l1);
+                const std::string &name = cache->GetCacheName();
+                expect(that % name == constant || name == l1);
 
-          if (name == l1) {
-            expect(that % cache->GetChildren().size() == 64U);
+                if (name == l1) {
+                    expect(that % cache->GetChildren().size() == 64U);
 
-            for (auto core : cache->GetChildren())
-              expect(that % core->GetComponentType() == ComponentType::Thread);
-          }
+                    for (auto core : cache->GetChildren())
+                        expect(that % core->GetComponentType() == ComponentType::Thread);
+                }
+            }
         }
-      }
     }
+
+    Component::DeleteSubtree(node);
   };
 };

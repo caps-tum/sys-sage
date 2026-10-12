@@ -10,17 +10,17 @@ using namespace std::string_view_literals;
 
 static suite<"caps-numa-benchmark"> _ = []
 {
-    Topology topo;
-    Node node{&topo};
+    Topology *topo = new Topology;
+    Node *node = new Node(topo);
 
-    expect(that % (0 == parseHwlocOutput(&node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml")) >> fatal)
+    expect(that % (0 == parseHwlocOutput(node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml")) >> fatal)
         << "Parse hwloc XML file";
 
-    expect(that % (0 == parseCapsNumaBenchmark(&node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_caps_numa_benchmark.csv")) >> fatal)
+    expect(that % (0 == parseCapsNumaBenchmark(node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_caps_numa_benchmark.csv")) >> fatal)
         << "Parse benchmark CSV file";
 
     std::vector<Component *> numas;
-    node.FindDescendantsByType(numas, ComponentType::Numa);
+    node->FindDescendantsByType(numas, ComponentType::Numa);
     expect(that % (4 == numas.size()) >> fatal);
 
     "Number, type, and orientation of data paths"_test = [&]
@@ -100,4 +100,6 @@ static suite<"caps-numa-benchmark"> _ = []
         expect(that % 211 == dp(2, 3)->GetLatency());
         expect(that % 246 == dp(3, 3)->GetLatency());
     };
+
+    Component::DeleteSubtree(topo);
 };

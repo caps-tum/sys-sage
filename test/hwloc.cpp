@@ -9,9 +9,9 @@ using namespace std::string_view_literals;
 
 static suite<"hwloc"> _ = []
 {
-    Topology topo;
-    Node node{&topo};
-    expect(that % (0 == parseHwlocOutput(&node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml")) >> fatal);
+    Topology *topo = new Topology;
+    Node *node = new Node(topo);
+    expect(that % (0 == parseHwlocOutput(node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml")) >> fatal);
 
     for (const auto &[type, count] : std::vector{
              std::tuple{ComponentType::Chip, 2},
@@ -22,11 +22,11 @@ static suite<"hwloc"> _ = []
          })
     {
         std::vector<Component *> components;
-        topo.FindDescendantsByType(components, type);
+        topo->FindDescendantsByType(components, type);
         expect(that % _u(count) == components.size());
     }
 
-    auto chip = dynamic_cast<Chip *>(node.GetChildByType(ComponentType::Chip));
+    auto chip = dynamic_cast<Chip *>(node->GetChildByType(ComponentType::Chip));
     expect(that % (chip != nullptr) >> fatal);
     expect(that % "GenuineIntel"sv == chip->GetVendor());
     expect(that % "Intel(R) Xeon(R) Silver 4116 CPU @ 2.10GHz"sv == chip->GetModel());
@@ -60,4 +60,6 @@ static suite<"hwloc"> _ = []
 
     auto thread = dynamic_cast<Thread *>(core->GetChildByType(ComponentType::Thread));
     expect(that % (thread != nullptr) >> fatal);
+
+    Component::DeleteSubtree(topo);
 };

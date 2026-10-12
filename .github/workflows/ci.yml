@@ -15,8 +15,7 @@ jobs:
     needs: test
     uses: ./.github/workflows/test.yml
     with:
-      flags: -DTEST_ASAN=OFF
-      # TODO: Change to -DTEST_ASAN=ON when ready
+      flags: -DTEST_ASAN=ON
 
   tsan:
     name: Thread Sanitizer

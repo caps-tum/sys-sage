@@ -19,10 +19,10 @@ static ut::suite<"json"> _ = []
         constexpr long long numaSizes[4] = { 24904634368, 25365467136, 25365463040, 25364619264 };
         int numaSizeIdx = 0;
 
-        Node node;
-        parseHwlocOutput(&node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml");
+        Node *node = new Node;
+        parseHwlocOutput(node, SYS_SAGE_TEST_RESOURCE_DIR "/skylake_hwloc.xml");
 
-        const json topoJson = json(&node);
+        const json topoJson = json(node);
 
         ut::expect(ut::that % topoJson["type"].get<std::string>() == "Node"sv);
         ut::expect(ut::that % topoJson["children"].size() == 2U);
@@ -73,6 +73,8 @@ static ut::suite<"json"> _ = []
                 }
             }
         }
+
+        Component::DeleteSubtree(node);
     };
 
     ut::test("export -> import") = []
@@ -163,8 +165,8 @@ static ut::suite<"json"> _ = []
 
         std::remove("topo.json");
 
-        delete node1;
-        delete node2;
+        Component::DeleteSubtree(node2);
+        Component::DeleteSubtree(node1);
     };
 
     ut::test("relations") = []

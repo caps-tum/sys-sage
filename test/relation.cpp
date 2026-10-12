@@ -22,119 +22,123 @@ private:
 
 ut::suite<"relation"> _ = []
 {
-  ut::test("interconnection") = []
-  {
-    Component foo, bar;
-    std::vector<Component *> v {&foo, &bar};
-    Relation r (v);
-
-    ut::expect(ut::that % r.GetComponent(0) == &foo);
-    ut::expect(ut::that % r.GetComponent(1) == &bar);
+    ut::test("interconnection") = []
     {
-      stream_suppressor suppressor (std::cerr);
-      ut::expect(ut::that % r.GetComponent(2) == nullptr);
-    }
-    ut::expect(ut::that % r.GetComponents() == v);
+        Component foo, bar;
+        std::vector<Component *> v {&foo, &bar};
+        Relation r (v);
 
-    ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
-    ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
-  };
+        ut::expect(ut::that % r.GetComponent(0) == &foo);
+        ut::expect(ut::that % r.GetComponent(1) == &bar);
+        {
+            stream_suppressor suppressor (std::cerr);
+            ut::expect(ut::that % r.GetComponent(2) == nullptr);
+        }
+        ut::expect(ut::that % r.GetComponents() == v);
 
-  ut::test("deletion") = []
-  {
-    Component foo, bar;
-    std::vector<Component *> v {&foo, &bar};
-    Relation *r = new Relation (v);
-    delete r;
-
-    ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation).size() == 0U);
-    ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation).size() == 0U);
-  };
-
-  ut::test("getters & setters") = []
-  {
-    std::vector<Component *> v;
-    Relation r (v);
-
-    ut::expect(ut::that % r.GetType() == RelationType::Relation);
-
-    r.SetId(2);
-    ut::expect(ut::that % r.GetId() == 2);
-    ut::expect(ut::that % r.IsOrdered());
-  };
-
-  ut::test("adding & updating components") = []
-  {
-    std::vector<Component *> v;
-    Relation r (v);
-    ut::expect(ut::that % r.GetComponents().size() == 0U);
-
-    Component foo;
-    r.AddComponent(&foo);
-    ut::expect(ut::that % r.ContainsComponent(&foo));
-
-    Component bar;
-    {
-      stream_suppressor suppressor (std::cerr);
-      ut::expect(ut::that % r.UpdateComponent(&bar, &bar) == 1);
-    }
-
-    r.UpdateComponent(&foo, &bar);
-    ut::expect(ut::that % r.GetComponents() == std::vector<Component *> {&bar});
-
-    Component foobar;
-    {
-      stream_suppressor suppressor (std::cerr);
-      ut::expect(ut::that % r.UpdateComponent(1, &foobar) == 1);
-    }
-
-    r.UpdateComponent(0, &foobar);
-    ut::expect(ut::that % r.GetComponents() == std::vector<Component *> {&foobar});
-  };
-
-  ut::test("attributes") = []
-  {
-    std::vector<Component *> v (0);
-    Relation r (v);
-
-    r.SetAttribute("foo", 3);
-    ut::expect(ut::that % *r.GetAttribute<int>("foo") == 3);
-  };
-
-  ut::test("inheritance") = []
-  {
-    ut::test("DataPath") = []
-    {
-      Component foo, bar;
-      Relation *r = new DataPath(&foo, &bar, DataPathOrientation::Oriented, DataPathCategory::Any);
-      ut::expect(ut::that % r->GetType() == RelationType::DataPath);
-      dynamic_cast<DataPath *>(r)->SetBandwidth(1.0);
-      dynamic_cast<DataPath *>(r)->SetLatency(2.0);
-      delete r;
+        ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
+        ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation) == std::vector<Relation *> {&r});
     };
 
-    ut::test("QuantumGate") = []
+    ut::test("deletion") = []
     {
-      Qubit foo, bar;
-      std::vector<Qubit *> v {&foo, &bar};
-      Relation *r = new QuantumGate(v.size(), v);
+        Component foo, bar;
+        std::vector<Component *> v {&foo, &bar};
+        Relation *r = new Relation (v);
 
-      ut::expect(ut::that % r->GetType() == RelationType::QuantumGate);
-      dynamic_cast<QuantumGate *>(r)->SetGateProperties("cx", 1.0, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]");
-      ut::expect(ut::that % dynamic_cast<QuantumGate *>(r)->GetQuantumGateCategory() == QuantumGateCategory::Cnot);
-      ut::expect(ut::that % dynamic_cast<QuantumGate *>(r)->GetFidelity() == 1.0);
-      ut::expect(ut::that % (dynamic_cast<QuantumGate *>(r)->GetUnitary() == "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]"));
-      delete r;
+        ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation).size() == 1U);
+        ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation).size() == 1U);
+
+        delete r;
+
+        ut::expect(ut::that % foo.GetRelationsByType(RelationType::Relation).size() == 0U);
+        ut::expect(ut::that % bar.GetRelationsByType(RelationType::Relation).size() == 0U);
     };
 
-    ut::test("CouplingMap") = []
+    ut::test("getters & setters") = []
     {
-      Qubit foo, bar;
-      Relation *r = new CouplingMap(&foo, &bar);
-      ut::expect(ut::that % r->GetType() == RelationType::CouplingMap);
-      dynamic_cast<CouplingMap *>(r)->SetFidelity(1.0);
-      ut::expect(ut::that % dynamic_cast<CouplingMap *>(r)->GetFidelity() == 1.0);
-      delete r;
+        std::vector<Component *> v;
+        Relation r (v);
+
+        ut::expect(ut::that % r.GetType() == RelationType::Relation);
+
+        r.SetId(2);
+        ut::expect(ut::that % r.GetId() == 2);
+        ut::expect(ut::that % r.IsOrdered());
     };
-  };
+
+    ut::test("adding & updating components") = []
+    {
+        std::vector<Component *> v;
+        Relation r (v);
+        ut::expect(ut::that % r.GetComponents().size() == 0U);
+
+        Component foo;
+        r.AddComponent(&foo);
+        ut::expect(ut::that % r.ContainsComponent(&foo));
+
+        Component bar;
+        {
+            stream_suppressor suppressor (std::cerr);
+            ut::expect(ut::that % r.UpdateComponent(&bar, &bar) == 1);
+        }
+
+        r.UpdateComponent(&foo, &bar);
+        ut::expect(ut::that % r.GetComponents() == std::vector<Component *> {&bar});
+
+        Component foobar;
+        {
+            stream_suppressor suppressor (std::cerr);
+            ut::expect(ut::that % r.UpdateComponent(1, &foobar) == 1);
+        }
+
+        r.UpdateComponent(0, &foobar);
+        ut::expect(ut::that % r.GetComponents() == std::vector<Component *> {&foobar});
+    };
+
+    ut::test("attributes") = []
+    {
+        std::vector<Component *> v (0);
+        Relation r (v);
+
+        r.SetAttribute("foo", 3);
+        ut::expect(ut::that % *r.GetAttribute<int>("foo") == 3);
+    };
+
+    ut::test("inheritance") = []
+    {
+        ut::test("DataPath") = []
+        {
+            Component foo, bar;
+            Relation *r = new DataPath(&foo, &bar, DataPathOrientation::Oriented, DataPathCategory::Any);
+            ut::expect(ut::that % r->GetType() == RelationType::DataPath);
+            dynamic_cast<DataPath *>(r)->SetBandwidth(1.0);
+            dynamic_cast<DataPath *>(r)->SetLatency(2.0);
+            delete r;
+        };
+
+        ut::test("QuantumGate") = []
+        {
+            Qubit foo, bar;
+            std::vector<Qubit *> v {&foo, &bar};
+            Relation *r = new QuantumGate(v.size(), v);
+
+            ut::expect(ut::that % r->GetType() == RelationType::QuantumGate);
+            dynamic_cast<QuantumGate *>(r)->SetGateProperties("cx", 1.0, "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]");
+            ut::expect(ut::that % dynamic_cast<QuantumGate *>(r)->GetQuantumGateCategory() == QuantumGateCategory::Cnot);
+            ut::expect(ut::that % dynamic_cast<QuantumGate *>(r)->GetFidelity() == 1.0);
+            ut::expect(ut::that % (dynamic_cast<QuantumGate *>(r)->GetUnitary() == "[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0]"));
+            delete r;
+        };
+
+        ut::test("CouplingMap") = []
+        {
+            Qubit foo, bar;
+            Relation *r = new CouplingMap(&foo, &bar);
+            ut::expect(ut::that % r->GetType() == RelationType::CouplingMap);
+            dynamic_cast<CouplingMap *>(r)->SetFidelity(1.0);
+            ut::expect(ut::that % dynamic_cast<CouplingMap *>(r)->GetFidelity() == 1.0);
+            delete r;
+        };
+    };
 };

@@ -220,6 +220,15 @@ namespace sys_sage {
 
         /**
          * @private
+         *
+         * @brief Removes the given component from the components vector. This does not delete the component.
+         *
+         * @param The component of interest.
+         */
+        void _RemoveComponent(Component *component);
+
+        /**
+         * @private
          * @brief Serialize this relation to XML.
          * @return A libxml node representing the relation.
          *

@@ -139,6 +139,11 @@ int sys_sage::Relation::RemoveComponent(size_t index)
     return 0;
 }
 
+void sys_sage::Relation::_RemoveComponent(Component *component)
+{
+    components.erase(std::remove(components.begin(), components.end(), component), components.end());
+}
+
 int sys_sage::Relation::RemoveComponent(Component *component)
 {
     auto it = std::find(components.begin(), components.end(), component);
