@@ -12,15 +12,28 @@
 
 
 namespace sys_sage {
-    int parseCccbenchOutput(Node* , const std::string &);
+    /**
+     * @brief Parser for the cccbench data source.
+     *
+     * @param n The node in the topology.
+     * @param cccPath The path to the cccbench output file.
+     *
+     * @return 0.
+     *
+     * @pythonBinding
+     */
+    int parseCccbenchOutput(Node* n, const std::string &cccPath);
 
+    /**
+     * @private
+     */
     template <typename T>class Vec2DArray
     {
         Vec2DArray(){}
         std::vector<T> *array;
         unsigned int size, xdim, ydim;
     public:
-        Vec2DArray(unsigned xdim, unsigned ydim);
+        Vec2DArray(unsigned int _xdim, unsigned int _ydim);
         std::vector<T> *operator [](unsigned int xindex);
     };
 
@@ -37,6 +50,9 @@ namespace sys_sage {
         return &(this->array[this->xdim*xindex]);
     }
 
+    /**
+     * @private
+     */
     class CccbenchParser{
         unsigned int firstCore;
         unsigned int lastCore;

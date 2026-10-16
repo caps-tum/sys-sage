@@ -1,0 +1,78 @@
+/*
+ * Navigation sidebar toggle
+ */
+
+#titlearea {
+    position: relative;
+
+    /* Make room for the button. */
+    padding-left: 48px;
+}
+
+#sidebar-toggle {
+    position: absolute;
+
+    left: 5px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    z-index: 1000;
+
+    width: 32px;
+    height: 40px;
+
+    padding: 0;
+
+    border: 1px solid var(--nav-border-color);
+    border-radius: 4px;
+
+    background: var(--nav-background-color);
+    color: var(--nav-menu-button-color);
+
+    font-size: 24px;
+    line-height: 36px;
+    text-align: center;
+
+    cursor: pointer;
+}
+
+#sidebar-toggle:hover {
+    background: var(--nav-menu-active-bg);
+}
+
+#sidebar-toggle:focus {
+    outline: 2px solid var(--page-link-color);
+    outline-offset: 2px;
+}
+
+
+/*
+ * Hide the tree navigation.
+ */
+
+body.sidebar-collapsed #side-nav {
+    transform: translateX(-100%);
+    visibility: hidden;
+}
+
+body.sidebar-collapsed #doc-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+#nav-sync {
+    display: none !important;
+    pointer-events: none;
+    user-select: none;
+}
+
+/*
+ * Hide the automatically generated main-page branch.
+ *
+ * Keep the PROJECT_NAME root, but remove its first child,
+ * which is the title of index.md together with its sections.
+ */
+#nav-tree-contents > ul > li:first-child > ul.children_ul > li:first-child {
+    display: none !important;
+}

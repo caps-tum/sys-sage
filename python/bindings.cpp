@@ -170,7 +170,6 @@ PYBIND11_MODULE(_py_sys_sage, m) {
 
     m.attr("COMPONENT_ANY") = ComponentType::Any;
     m.attr("COMPONENT_GENERIC") = ComponentType::Generic;
-    m.attr("COMPONENT_NONE") = ComponentType::Generic;
     m.attr("COMPONENT_THREAD") = ComponentType::Thread;
     m.attr("COMPONENT_CORE") = ComponentType::Core;
     m.attr("COMPONENT_CACHE") = ComponentType::Cache;
@@ -275,7 +274,6 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("InsertBetweenParentAndChildren", &Component::InsertBetweenParentAndChildren, py::arg("parent"), py::arg("children"), py::arg("alreadyParentsChildren"), "Insert a component between parent and children")
         .def("RemoveChild", &Component::RemoveChild, py::arg("child"),"Remove a child component")
         .def_property("parent", &Component::GetParent, &Component::SetParent, "The parent of the component")
-        .def("SetParent", &Component::SetParent, py::arg("parent"), "Set the parent of the component")
         .def("PrintSubtree", &Component::PrintSubtree, "Print the subtree of the component up to level 0")
         .def("PrintRelationsInSubtree", &Component::PrintRelationsInSubtree, py::arg("relationType") = RelationType::Any, "Print the relations in the subtree")
         .def_property("name", &Component::GetName, &Component::SetName, "The name of the component")
@@ -451,13 +449,14 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def_readwrite("interactionRadius", &AtomSite::SiteProperties::interactionRadius)
         .def_readwrite("blockingFactor", &AtomSite::SiteProperties::blockingFactor);
     py::class_<AtomSite, std::unique_ptr<AtomSite, py::nodelete>, QuantumBackend>(m, "AtomSite")
-        .def(py::init<>())
+        .def(py::init<int, const std::string &>(), py::arg("id") = 0, py::arg("name") = "AtomSite")
+        .def(py::init<Component *, int, const std::string &>(), py::arg("parent"), py::arg("id") = 0, py::arg("name") = "AtomSite")
         .def_readwrite("properties", &AtomSite::properties)
         .def_readwrite("shuttlingTimes", &AtomSite::shuttlingTimes)
         .def_readwrite("shuttlingAverageFidelities", &AtomSite::shuttlingAverageFidelities);
 
     py::class_<Relation, std::unique_ptr<Relation, py::nodelete>>(m, "Relation")
-        .def(py::init<const std::vector<Component*> &, int, bool>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true)
+        .def(py::init<const std::vector<Component*> &, int, bool, RelationCategory::type>(), py::arg("components"), py::arg("id") = 0, py::arg("ordered") = true, py::arg("category") = RelationCategory::Default)
         .def_property("id", &Relation::GetId, &Relation::SetId)
         .def_property_readonly("type", &Relation::GetType)
         .def_property_readonly("category", &Relation::GetCategory)
@@ -525,8 +524,11 @@ PYBIND11_MODULE(_py_sys_sage, m) {
         .def("Print", &QuantumGate::Print, "Print basic information about the quantum gate to stdout");
 
     m.def("ParseMt4g", (int (*) (Component *, const std::string &, int)) &ParseMt4g, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g", (int (*) (Chip *, const std::string &)) &ParseMt4g, py::arg("gpu"), py::arg("path"), "Construct a complete GPU topology by parsing an mt4g output file.");
     m.def("ParseMt4g_v1_x", (int (*) (Component *, const std::string &, int)) &ParseMt4g_v1_x, py::arg("parent"), py::arg("path"), py::arg("gpuId"), "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v1_x", (int (*) (Chip *, const std::string &)) &ParseMt4g_v1_x, py::arg("gpu"), py::arg("path"), "Construct a complete GPU topology by parsing an mt4g output file.");
     m.def("ParseMt4g_v0_1", (int (*) (Component *, const std::string &, int, const std::string)) &ParseMt4g_v0_1, py::arg("parent"), py::arg("path"), py::arg("gpuId"), py::arg("delim") = ";", "Construct a complete GPU topology by parsing an mt4g output file.");
+    m.def("ParseMt4g_v0_1", (int (*) (Chip *, const std::string &, const std::string)) &ParseMt4g_v0_1, py::arg("gpu"), py::arg("path"), py::arg("delim") = ";", "Construct a complete GPU topology by parsing an mt4g output file.");
 
     m.def("parseHwlocOutput", &parseHwlocOutput, "parseHwlocOutput", py::arg("root"), py::arg("xmlPath"));
 

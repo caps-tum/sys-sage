@@ -87,6 +87,9 @@ const std::string &sys_sage::QuantumGate::GetName() const { return name; }
 
 void sys_sage::QuantumGate::Print() const
 {
+    // TODO: When using valgrind, it tells that this Print function does a conditional jump on uninitialized data.
+    //       I assume the problem is within the `ordered` member variable, which is apparantly not initialized for some reason.
+    //       Fix this.
     std::cout << GetTypeStr() << " (" << (ordered?"ordered":"unordered") << ")";
     _PrintRelationComponentInfo();
     std::cout << " --  Name: " << name << " (category " << QuantumGateCategory::ToString(gate_category) << "), GateSize: " << gate_size << ", GateLength: " << gate_length << ", Fidelity: " << fidelity;

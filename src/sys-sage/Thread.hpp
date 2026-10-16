@@ -7,16 +7,18 @@ namespace sys_sage {
 
 
     /**
-    Class Thread - represents HW thread on CPUs, or a thread on a GPU.
-    \n This class is a child of Component class, therefore inherits its attributes and methods.
-    */
+     * @brief Represents a hardware thread on CPUs, or a thread on a GPU.
+     */
     class Thread : public Component {
     public:
         /**
         Thread constructor (no automatic insertion in the Component Tree). Sets:
         @param _id = id, default 0
         @param _name = name, default "Thread"
-        @param componentType=>SYS_SAGE_COMPONENT_THREAD
+
+        Sets componentType to sys_sage::ComponentType::Thread.
+
+        @pythonBinding
         */
         Thread(int _id = 0, const std::string &_name = "Thread");
         /**
@@ -24,7 +26,10 @@ namespace sys_sage {
         @param parent = the parent 
         @param _id = id, default 0
         @param _name = name, default "Thread"
-        @param componentType=>SYS_SAGE_COMPONENT_THREAD
+
+        Sets componentType to sys_sage::ComponentType::Thread.
+
+        @pythonBinding
         */    
         Thread(Component * parent, int _id = 0, const std::string &_name = "Thread");
 
@@ -54,6 +59,8 @@ namespace sys_sage {
     public:
         /**
         * Refreshes the frequency of the thread.
+        *
+        * @pythonBinding
         */
         int RefreshFreq(bool keep_history = false);
 
@@ -70,6 +77,8 @@ namespace sys_sage {
             \n Retrieves the L3 cache size available to this thread. This size is retrieved based on the last update with UpdateL3CATCoreCOS() -- i.e. you should call that method before.
             @returns Available L3 cache size in bytes.
             @see int UpdateL3CATCoreCOS();
+
+            @pythonBinding
             */
             long long GetCATAwareL3Size();
     #endif
@@ -78,7 +87,7 @@ namespace sys_sage {
         /**
          * @brief Get the perf counter value of a specific event in an event set.
          *
-         * @param event The event of interest.
+         * @param eventCode The event of interest.
          * @param eventSet The event set to which the event belongs to.
          * @param timestamp An optional parameter used to select a perf counter
          *                  value from a specific perf counter reading. A value
@@ -91,6 +100,8 @@ namespace sys_sage {
          *                  involved in the latest reading.
          *
          * @return > 0 if a perf counter value exists for the given paramters, 0 otherwise.
+         *
+         * @pythonBinding
          */
         long long GetPAPImetric(int eventCode, int eventSet, unsigned long long timestamp = 0) const;
 
@@ -99,6 +110,8 @@ namespace sys_sage {
          *
          * @param eventSet Specifies the event set of interest. If the value is
          *        `PAPI_NULL`, then all event sets will be printed.
+         *
+         * @pythonBinding
          */
         void PrintPAPImetrics(int eventSet = -1) const;
 
@@ -108,6 +121,8 @@ namespace sys_sage {
          * @param eventSet The event set of interest.
          *
          * @return A valid pointer if such a relation exists, `nullptr` otherwise.
+         *
+         * @pythonBinding
          */
         Relation *GetPAPIrelation(int eventSet) const;
 
@@ -117,6 +132,8 @@ namespace sys_sage {
          *
          * @return A vector containing the relations. It may be empty if no
          *         such relations exist.
+         *
+         * @pythonBinding
          */
         std::vector<Relation *> FindPAPIrelations() const;
 
@@ -124,7 +141,7 @@ namespace sys_sage {
          * @brief Retrieve all relations that are associated to this component
          *        and contain PAPI metrics.
          *
-         * @param A vector used for storing the relations.
+         * @param papiRelations A vector used for storing the relations.
          */
         void FindPAPIrelations(std::vector<Relation *> &papiRelations) const;
 
@@ -133,13 +150,15 @@ namespace sys_sage {
          *
          * @return A vector containing the relations. It may be empty if no
          *         such relations exist.
+         *
+         * @pythonBinding
          */
         std::vector<int> FindPAPIeventSets() const;
 
         /**
          * @brief Retrieve all eventSets that are associated to this component.
          *
-         * @param A vector used for storing the relations.
+         * @param eventSets A vector used for storing the relations.
          */
         void FindPAPIeventSets(std::vector<int> &eventSets) const;
 

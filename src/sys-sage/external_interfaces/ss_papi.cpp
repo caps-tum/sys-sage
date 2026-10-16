@@ -18,6 +18,9 @@
 
 using namespace sys_sage;
 
+/**
+ * @private
+ */
 struct MetaData {
     std::unordered_map<int, int> cpuReferenceCounters;
     unsigned long long startTimestamp;

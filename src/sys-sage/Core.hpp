@@ -6,25 +6,31 @@
 namespace sys_sage {
 
     /**
-    Class Core - represents a CPU core, or a GPU streaming multiprocessor.
-    \n This class is a child of Component class, therefore inherits its attributes and methods.
-    */
+     * @brief Represents a CPU core.
+     */
     class Core : public Component {
     public:
         /**
-        Core constructor (no automatic insertion in the Component Tree). Sets:
-        @param _id = id, default 0
-        @param _name = name, default "Core"
-        @param componentType=>SYS_SAGE_COMPONENT_CORE
-        */
+         * @brief Core constructor (no automatic insertion in the Component Tree).
+         *        Sets componentType to sys_sage::ComponentType::Core.
+         *
+         * @param _id The ID of the core (default 0).
+         * @param _name The name of the core (default "Core").
+         *
+         * @pythonBinding
+         */
         Core(int _id = 0, const std::string &_name = "Core");
+
         /**
-        Core constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component). Sets:
-        @param parent = the parent 
-        @param _id = id, default 0
-        @param _name = name, default "Core"
-        @param componentType=>SYS_SAGE_COMPONENT_CORE
-        */
+         * @brief Core constructor with insertion into the Component Tree as the parent's child.
+         *        Sets componentType to sys_sage::ComponentType::Core.
+         *
+         * @param parent The parent of this core within the tree.
+         * @param _id The ID of the core (default 0).
+         * @param _name The name of the core (default "Core").
+         *
+         * @pythonBinding
+         */
         Core(Component * parent, int _id = 0, const std::string &_name = "Core");
 
         /**
@@ -51,8 +57,14 @@ namespace sys_sage {
 
     #ifdef PROC_CPUINFO
         /**
-        * Refreshes the frequency of the core.
-        */
+         * @brief Refreshes the frequency of the core.
+         *
+         * @param keep_history Whether the new frequency metric should be also be saved in a dedicated vector.
+         *
+         * @return 0 on success, 1 on failure.
+         *
+         * @pythonBinding
+         */
         int RefreshFreq(bool keep_history = false);
 
         /**
@@ -65,7 +77,7 @@ namespace sys_sage {
         */
         double GetFreq() const;
     private:
-        double freq;
+        double freq; ///< The currently measured frequency of the core.
     #endif
     };
 }

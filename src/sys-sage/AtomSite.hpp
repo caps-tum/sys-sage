@@ -15,11 +15,33 @@ namespace sys_sage {
      * Typically associated with a QuantumBackend and may be used to model
      * the physical location or properties of an atom or qubit site.
      *
-     * @note The full implementation is in the corresponding .cpp file.
      * @see QuantumBackend
      */
     class AtomSite : public QuantumBackend{
     public:
+
+        /**
+         * @brief AtomSite constructor (no automatic insertion in the Component Tree).
+         *        Sets componentType to sys_sage::ComponentType::AtomSite.
+         *
+         * @param _id The ID of the atom site (default 0).
+         * @param _name The name of the atom site (default "AtomSite").
+         *
+         * @pythonBinding
+         */
+        AtomSite(int _id = 0, const std::string &_name = "AtomSite");
+
+        /**
+         * @brief AtomSite constructor with insertion into the Component Tree as the parent 's child.
+         *        Sets componentType to sys_sage::ComponentType::AtomSite.
+         *
+         * @param parent The parent of this atom site in the tree.
+         * @param _id The ID of the atom site (default 0).
+         * @param _name The name of the atom site (default "AtomSite").
+         *
+         * @pythonBinding
+         */
+        AtomSite(Component *parent, int _id = 0, const std::string &_name = "AtomSite");
 
         /**
          * @private
@@ -69,7 +91,7 @@ namespace sys_sage {
             double interQubitDistance;   ///< Distance between qubits
             double interactionRadius;    ///< Radius of interaction
             double blockingFactor;       ///< Blocking factor for site operations
-        } properties;
+        } properties; ///< Atom site properties.
 
         /**
          * @brief Shuttling times for various operations, indexed by operation name.

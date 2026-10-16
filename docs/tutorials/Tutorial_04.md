@@ -1,12 +1,10 @@
-# Using attributes in sys-sage
+# Tutorial 04: Custom Attributes for Components and Relations
 
-To enable flexible extensions and customizations of components and relations,
-the _sys-sage_ library allows users to insert and manipulate arbitrary
-key-value attributes. These attributes can be used to make the _sys-sage_
-library fit each user's unique requirements.
+This tutorial will explain how to use attributes to make _sys-sage_ fit each user's unique requirements.
 
 An overview of the API is given below.
 
+<center>
 | API |
 | --- |
 | sys_sage::Component::SetAttribute |
@@ -17,8 +15,9 @@ An overview of the API is given below.
 | sys_sage::Component::AttributesEnd |
 | sys_sage::Component::EraseAttribute |
 | sys_sage::Component::ClearAttributes |
+</center>
 
-The `Relation` class has an analogous API.
+The sys_sage::Relation class has an analogous API.
 
 ## Inserting & Retrieving Attributes
 
@@ -37,8 +36,8 @@ comp.SetAttribute("bar", "hello world");
 if (int *i = comp.GetAttribute<int>("foo"))
     std::cout << *i << '\n';
 
-// retrieve the string
-const char *str = comp.GetAttribute<const char *>("bar");
+// retrieve a pointer to the string
+const char **str = comp.GetAttribute<const char *>("bar");
 ```
 
 Attributes of arbitrary type can be inserted by using the `SetAttribute` method
@@ -47,7 +46,7 @@ types. The type of the value will automatically be inferred by the compiler.
 Furthermore, the `GetAttribute` method returns a pointer to the value, which
 may be `nullptr` if no attribute is currently associated with the given key or
 when there is a type mismatch between the requested type and the actual type of
-the stored value. Note that the user must specify the exact type when using
+the stored value. Note that you must specify the exact type when using
 `GetAttribute`. This is shown in the example with the string. The compiler
 infers the type of the string to be `const char [12]`. Internally, we
 explicitely decay the inferred type using `std::decay_t<T>`. So _sys-sage_ will
@@ -82,7 +81,7 @@ over the attributes:
 
 ```cpp
 for (auto it = comp.AttributesBegin(); it != comp.AttributesEnd(); it++) {
-    std::string &key = it->first;
+    const std::string &key = it->first;
     if (int *value = comp.GetAttribute<int>(it))
         std::cout << key << " -> " << *value << '\n'; // print all integers
 }
@@ -98,7 +97,7 @@ all attributes at once, one can use the `ClearAttributes` method. Apart from
 that, the destructor of the `Component` and `Relation` class will implicitly
 clean up all remaining attributes.
 
-However, **the user is responsible for freeing attributes that do not own their
+However, **you is responsible for freeing attributes that do not own their
 underlying resources, such as raw pointers**. The following example illustrates
 such a case in which memory will be leaked:
 

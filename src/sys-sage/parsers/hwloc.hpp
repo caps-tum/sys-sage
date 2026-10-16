@@ -18,14 +18,14 @@
 #include <sys-sage/Storage.hpp>
 #include <sys-sage/Node.hpp>
 
-/*! \file */
-
 namespace sys_sage {
     /**
     Parser function for importing hwloc XML output to sys-sage.
     \n The parser looks for the XML object names defined in xmlRelevantNames, and considers (i.e. parses) the XML object types as defined in xmlRelevantObjectTypes.
     @param n - Pointer to an already existing Node where the hwloc topology will get parsed.
     @param xmlPath - Path to the XML output of hwloc that should be parsed and uploaded to sys-sage.
+
+    @pythonBinding
     */
     int parseHwlocOutput(Node* n, const std::string &xmlPath);
     /// @private
@@ -36,14 +36,21 @@ namespace sys_sage {
     std::string xmlGetPropStr(xmlNode* node, std::string key);
 
     //SVDOCTODO private?
+    /**
+     * @private
+     */
     int removeUnknownCompoents(Component* c);
     /**
-    Defines parsed XML object names: "topology", "object"
-    */
+     * @private
+     *
+     * Defines parsed XML object names: "topology", "object"
+     */
     extern std::vector<std::string> xmlRelevantNames;
     /**
-    Defines parsed XML object types: "Machine", "Package", "Cache", "L3Cache", "L2Cache", "L1Cache", "NUMANode", "Core", "PU"
-    */
+     * @private
+     *
+     * Defines parsed XML object types: "Machine", "Package", "Cache", "L3Cache", "L2Cache", "L1Cache", "NUMANode", "Core", "PU"
+     */
     extern std::vector<std::string> xmlRelevantObjectTypes;
 
 } //namespace sys_sage

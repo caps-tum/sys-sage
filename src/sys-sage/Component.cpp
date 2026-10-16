@@ -348,7 +348,7 @@ sys_sage::DataPath* sys_sage::Component::GetDataPathByCategory(DataPathCategory:
     return NULL;
 }
 
-std::vector<sys_sage::Relation*>& sys_sage::Component::_GetRelationsByType(RelationType::type relationType) const
+std::vector<sys_sage::Relation*>& sys_sage::Component::_GetRelationsByType(RelationType::type relationType)
 {
     if (relations &&
         relationType >= 0 && 
@@ -642,16 +642,16 @@ sys_sage::Component::Component(int _id, const std::string &_name, ComponentType:
     count = -1;
     SetParent(NULL);
 }
-sys_sage::Component::Component(Component * parent, int _id, const std::string &_name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
+sys_sage::Component::Component(Component *_parent, int _id, const std::string &_name, ComponentType::type _componentType) : id(_id), name(_name), componentType(_componentType)
 {
     count = -1;
-    SetParent(parent);
-    if (parent) {
-        parent->InsertChild(this);
+    SetParent(_parent);
+    if (_parent) {
+        _parent->InsertChild(this);
     }
 }
 sys_sage::Component::Component(int _id, const std::string &_name): Component(_id, _name, sys_sage::ComponentType::Generic) {}
-sys_sage::Component::Component(Component * parent, int _id, const std::string &_name): Component(parent, _id, _name, sys_sage::ComponentType::Generic) {}
+sys_sage::Component::Component(Component *_parent, int _id, const std::string &_name): Component(_parent, _id, _name, sys_sage::ComponentType::Generic) {}
 
 void sys_sage::Component::_EmplaceAttribute(const std::string &key, std::unique_ptr<IAttribute> &attribute)
 {

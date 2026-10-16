@@ -6,26 +6,29 @@
 namespace sys_sage {
 
     /**
-    Class Numa - represents a NUMA region on a chip.
-    \n This class is a child of Subdivision (which is a child of Component) class, therefore inherits its attributes and methods.
-    */
+     * @brief Represents a NUMA region on a chip.
+     */
     class Numa : public Subdivision {
     public:
         /**
         Numa constructor (no automatic insertion in the Component Tree). Sets:
         @param _id = id, default 0
-        @param _name = name, default "Numa"
         @param _size = size or capacity of the NUMA region, default -1, i.e. no value.
-        @param componentType=>SYS_SAGE_COMPONENT_NUMA
+
+        Sets componentType to sys_sage::ComponentType::Numa.
+
+        @pythonBinding
         */
         Numa(int _id = 0, long long _size = -1);
         /**
         Numa constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component). Sets:
         @param parent = the parent 
         @param _id = id, default 0
-        @param _name = name, default "Numa"
         @param _size = size or capacity of the NUMA region, default -1, i.e. no value.
-        @param componentType=>SYS_SAGE_COMPONENT_NUMA
+
+        Sets componentType to sys_sage::ComponentType::Numa.
+
+        @pythonBinding
         */
         Numa(Component * parent, int _id = 0, long long _size = -1);
 

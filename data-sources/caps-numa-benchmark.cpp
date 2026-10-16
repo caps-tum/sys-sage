@@ -26,6 +26,9 @@ using namespace std::chrono;
 
 #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE);} while (0)
 
+/**
+ * @private
+ */
 struct numa_region
 {
     long long numa_mem_sz;

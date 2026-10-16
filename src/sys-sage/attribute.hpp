@@ -1,3 +1,7 @@
+/**
+ * @file attribute.hpp
+ */
+
 #ifndef SYS_SAGE_SRC_ATTRIBUTE_HPP
 #define SYS_SAGE_SRC_ATTRIBUTE_HPP
 
@@ -14,33 +18,148 @@
 #include <unordered_map>
 #include <vector>
 
+/**
+ * @private
+ *
+ * @brief Expands to "()".
+ */
 #define SYS_SAGE_PARENTHESES ()
+
+/**
+ * @private
+ *
+ * @brief Returns string representation of the macro arguments.
+ */
 #define SYS_SAGE_STRINGIFY(...) #__VA_ARGS__
 
-// recursively expands a macro 128 times
+/**
+ * @private
+ *
+ * @brief recursively expands a macro 128 times
+ */
 #define SYS_SAGE_EXPAND_128(...) SYS_SAGE_EXPAND_64(SYS_SAGE_EXPAND_64(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 64 times.
+ */
 #define SYS_SAGE_EXPAND_64(...) SYS_SAGE_EXPAND_32(SYS_SAGE_EXPAND_32(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 32 times.
+ */
 #define SYS_SAGE_EXPAND_32(...) SYS_SAGE_EXPAND_16(SYS_SAGE_EXPAND_16(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 16 times.
+ */
 #define SYS_SAGE_EXPAND_16(...) SYS_SAGE_EXPAND_8(SYS_SAGE_EXPAND_8(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 8 times.
+ */
 #define SYS_SAGE_EXPAND_8(...) SYS_SAGE_EXPAND_4(SYS_SAGE_EXPAND_4(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 4 times.
+ */
 #define SYS_SAGE_EXPAND_4(...) SYS_SAGE_EXPAND_2(SYS_SAGE_EXPAND_2(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Recursively expands a macro 2 times.
+ */
 #define SYS_SAGE_EXPAND_2(...) SYS_SAGE_EXPAND_1(SYS_SAGE_EXPAND_1(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Expands the macro arguments.
+ */
 #define SYS_SAGE_EXPAND_1(...) __VA_ARGS__
 
-// applies the map `(x, y) -> x y` to every argument pair of the macro
-// the maximum number of supported macro arguments is 128
+/**
+ * @private
+ *
+ * @brief Applies the map `(x, y) -> x y` to every argument pair of the macro.
+ *        The maximum number of supported arguments pairs is 128 (see SYS_SAGE_EXPAND_128).
+ */
 #define SYS_SAGE_MAP_UNPACK(...) SYS_SAGE_EXPAND_128(SYS_SAGE_MAP_UNPACK_INTERNAL(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Internal implementation of SYS_SAGE_MAP_UNPACK.
+ *        For a given list of pairs `(a, b), (c, d), ...` returns `a b, c d, ...`.
+ */
 #define SYS_SAGE_MAP_UNPACK_INTERNAL(arg, ...) SYS_SAGE_UNPACK(arg)__VA_OPT__(, SYS_SAGE_MAP_UNPACK_INTERNAL_AGAIN SYS_SAGE_PARENTHESES (__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief A trick to recursively call SYS_SAGE_MAP_UNPACK_INTERNAL.
+ */
 #define SYS_SAGE_MAP_UNPACK_INTERNAL_AGAIN() SYS_SAGE_MAP_UNPACK_INTERNAL
+
+/**
+ * @private
+ *
+ * @brief Removes the parantheses of the pair to call SYS_SAGE_UNPACK_INTERNAL, i.e. `SYS_SAGE_UNPACK((x, y))` becomes `SYS_SAGE_UNPACK_INTERNAL(x, y)`.
+ */
 #define SYS_SAGE_UNPACK(pair) SYS_SAGE_UNPACK_INTERNAL pair
+
+/**
+ * @private
+ *
+ * @brief Applies the map `(x, y) -> x y`.
+ */
 #define SYS_SAGE_UNPACK_INTERNAL(x, y) x y
 
-// applies the map `(x, y) -> y` to every argument pair of the macro
-// the maximum number of supported macro arguments is 128
+/**
+ * @private
+ *
+ * @brief Applies the map `(x, y) -> y` to every argument pair of the macro.
+ *        The maximum number of supported arguments pairs is 128 (see SYS_SAGE_EXPAND_128).
+ */
 #define SYS_SAGE_MAP_UNPACK_SECOND(...) SYS_SAGE_EXPAND_128(SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL(__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief Internal implementation of SYS_SAGE_MAP_UNPACK_SECOND.
+ *        For a given list of pairs `(a, b), (c, d), ...` returns `b, d, ...`.
+ */
 #define SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL(arg, ...) SYS_SAGE_UNPACK_SECOND(arg)__VA_OPT__(, SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL_AGAIN SYS_SAGE_PARENTHESES (__VA_ARGS__))
+
+/**
+ * @private
+ *
+ * @brief A trick to recursively call SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL.
+ */
 #define SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL_AGAIN() SYS_SAGE_MAP_UNPACK_SECOND_INTERNAL
+
+/**
+ * @private
+ *
+ * @brief Removes the parantheses of the pair to call SYS_SAGE_UNPACK_SECOND_INTERNAL, i.e. `SYS_SAGE_UNPACK_SECOND((x, y))` becomes `SYS_SAGE_UNPACK_SECOND_INTERNAL(x, y)`.
+ */
 #define SYS_SAGE_UNPACK_SECOND(pair) SYS_SAGE_UNPACK_SECOND_INTERNAL pair
+
+/**
+ * @private
+ *
+ * @brief Applies the map `(x, y) -> y`.
+ */
 #define SYS_SAGE_UNPACK_SECOND_INTERNAL(x, y) y
 
 // DEVELOPER NOTE:
@@ -68,8 +187,12 @@
 //     This is useful in cases such as the multimap, where only a subset of multimaps is eligible for deserialization (see blacklist at the bottom).
 //     If a multimap is not eligible, we want the user to still be able to insert a non-eligible multimap into the attributes map while simultaneously registering other eligible multimaps.
 
-// Generates meta information for the specified type
-// DOES NOT REGISTER THE TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates meta information for the specified type.
+ *        DOES NOT REGISTER THE TYPE.
+ */
 #define SYS_SAGE_SPECIALIZE_TYPE_TRAIT(...)                                       \
 namespace sys_sage {                                                              \
     template <>                                                                   \
@@ -93,8 +216,12 @@ namespace sys_sage {                                                            
     };                                                                            \
 }
 
-// Generates meta information for the specified type
-// REGISTERS THE TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates meta information for the specified type.
+ *        REGISTERS THE TYPE.
+ */
 #define SYS_SAGE_REGISTER_TYPE_TRAIT(...)                                             \
 namespace sys_sage {                                                                  \
     template <>                                                                       \
@@ -131,8 +258,12 @@ namespace sys_sage {                                                            
     };                                                                                \
 }
 
-// Generates meta information for the specified templated type
-// DOES NOT REGISTER THE TEMPLATED TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates meta information for the specified templated type.
+ *        DOES NOT REGISTER THE TEMPLATED TYPE.
+ */
 #define SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(type)                                                                              \
 namespace sys_sage {                                                                                                                \
     template <typename... Ts>                                                                                                       \
@@ -156,8 +287,12 @@ namespace sys_sage {                                                            
     };                                                                                                                              \
 }
 
-// Generates meta information for the specified templated type
-// ONLY REGISTERS A FULLY INSTANTIATED TEMPLATED TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates meta information for the specified templated type.
+ *        ONLY REGISTERS A FULLY INSTANTIATED TEMPLATED TYPE.
+ */
 #define SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT(type)                                                                                \
 namespace sys_sage {                                                                                                                \
     template <typename... Ts>                                                                                                       \
@@ -194,8 +329,12 @@ namespace sys_sage {                                                            
     };                                                                                                                              \
 }
 
-// Generates COMPILER-SPECIFIC meta information for the specified type
-// DOES NOT REGISTER THE TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates COMPILER-SPECIFIC meta information for the specified type.
+ *        DOES NOT REGISTER THE TYPE.
+ */
 #define SYS_SAGE_SPECIALIZE_TYPE_TRAIT_NON_PORTABLE(...)                          \
 namespace sys_sage {                                                              \
     template <>                                                                   \
@@ -219,8 +358,12 @@ namespace sys_sage {                                                            
     };                                                                            \
 }
 
-// Generates COMPILER-SPECIFIC meta information for the specified type
-// REGISTERS THE TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates COMPILER-SPECIFIC meta information for the specified type.
+ *        REGISTERS THE TYPE.
+ */
 #define SYS_SAGE_REGISTER_TYPE_TRAIT_NON_PORTABLE(...)                                \
 namespace sys_sage {                                                                  \
     template <>                                                                       \
@@ -257,8 +400,12 @@ namespace sys_sage {                                                            
     };                                                                                \
 }
 
-// Generates COMPILER-SPECIFIC meta information for the specified templated type
-// DOES NOT REGISTER THE TEMPLATED TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates COMPILER-SPECIFIC meta information for the specified templated type.
+ *        DOES NOT REGISTER THE TEMPLATED TYPE.
+ */
 #define SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT_NON_PORTABLE(type, ...)                                        \
 namespace sys_sage {                                                                                            \
     template <SYS_SAGE_MAP_UNPACK(__VA_ARGS__)>                                                                 \
@@ -282,8 +429,12 @@ namespace sys_sage {                                                            
     };                                                                                                          \
 }
 
-// Generates COMPILER-SPECIFIC meta information for the specified templated type
-// ONLY REGISTERS A FULLY INSTANTIATED TEMPLATED TYPE
+/**
+ * @ingroup Macros
+ *
+ * @brief Generates COMPILER-SPECIFIC meta information for the specified templated type.
+ *        ONLY REGISTERS A FULLY INSTANTIATED TEMPLATED TYPE.
+ */
 #define SYS_SAGE_REGISTER_TEMPLATED_TYPE_TRAIT_NON_PORTABLE(type, ...)                                          \
 namespace sys_sage {                                                                                            \
     template <SYS_SAGE_MAP_UNPACK(__VA_ARGS__)>                                                                 \
@@ -321,28 +472,44 @@ namespace sys_sage {                                                            
     };                                                                                                          \
 }
 
-// blacklists the specified type from JSON serialization
+/**
+ * @ingroup Macros
+ *
+ * @brief Blacklists the specified type from JSON serialization.
+ */
 #define SYS_SAGE_BLACKLIST_TYPE_FROM_SERIALIZATION(...)                     \
 namespace sys_sage {                                                        \
     template <>                                                             \
     struct IsBlacklistedFromSerialization<__VA_ARGS__> : std::true_type {}; \
 }
 
-// blacklists the specified templated type from JSON serialization
+/**
+ * @ingroup Macros
+ *
+ * @brief Blacklists the specified templated type from JSON serialization.
+ */
 #define SYS_SAGE_BLACKLIST_TEMPLATED_TYPE_FROM_SERIALIZATION(type)          \
 namespace sys_sage {                                                        \
     template <typename... Ts>                                               \
     struct IsBlacklistedFromSerialization<type<Ts...>> : std::true_type {}; \
 }
 
-// blacklists the specified type from JSON deserialization
+/**
+ * @ingroup Macros
+ *
+ * @brief Blacklists the specified type from JSON deserialization.
+ */
 #define SYS_SAGE_BLACKLIST_TYPE_FROM_DESERIALIZATION(...)                     \
 namespace sys_sage {                                                          \
     template <>                                                               \
     struct IsBlacklistedFromDeserialization<__VA_ARGS__> : std::true_type {}; \
 }
 
-// blacklists the specified templated type from JSON deserialization
+/**
+ * @ingroup Macros
+ *
+ * @brief Blacklists the specified templated type from JSON deserialization.
+ */
 #define SYS_SAGE_BLACKLIST_TEMPLATED_TYPE_FROM_DESERIALIZATION(type)          \
 namespace sys_sage {                                                          \
     template <typename... Ts>                                                 \
@@ -424,7 +591,7 @@ namespace sys_sage {
         /**
          * @brief Generic constructor using perfect forwarding.
          *
-         * @param value Initializes this attribute using the given value.
+         * @param _value Initializes this attribute using the given value.
          */
         template <typename U>
         Attribute(U &&_value);
@@ -478,7 +645,7 @@ namespace sys_sage {
     /**
      * @class TypeRegistry
      *
-     * @brief Manages type registration and stores deserialization callbacks functions.
+     * @brief Manages type registration and stores deserialization callback functions.
      */
     class TypeRegistry {
     public:
@@ -506,52 +673,91 @@ namespace sys_sage {
         /**
          * @brief Returns the deserialization callback associated to this type.
          *
-         * @param id A unique identifier for the `TypeDescriptor`.
+         * @param id A unique identifier of the requested type.
          */
         std::optional<std::unique_ptr<IAttribute>(*)(const nlohmann::json&)> GetCallBack(std::string_view id) const;
     
     private:
         /**
+         * @private
+         *
          * @brief Initializes the registry with some pre-defined types.
          */
         TypeRegistry();
         /**
+         * @private
+         *
          * @brief Maps the unique identifier of a `TypeDescriptor` to its deserialization callback routine.
          */
         std::unordered_map<std::string_view, std::unique_ptr<IAttribute>(*)(const nlohmann::json&)> callbacks;
     };
 
     /**
-     * @class TypeTraits
+     * @class TypeTrait
      *
      * @brief Provides compile time meta data for a type.
      */
     template <typename T>
     struct TypeTrait {
+        /**
+         * @brief A bool that indicates whether T is eligible for serialization.
+         */
         static constexpr bool serializable = IsSerializable<T>;
+
+        /**
+         * @brief A bool that indicates whether T is eligible for deserialization.
+         */
         static constexpr bool deserializable = IsDeserializable<T>;
 
+        /**
+         * @brief A unique string literal representing T.
+         *        It is used for distinguishing types during deserialization.
+         */
         static constexpr decltype(auto) id = CompStrExtract<T>();
     };
 
+    /**
+     * @private
+     *
+     * @brief Base case of the recursive CompStrCatVariadicTemplate call.
+     *
+     * @return The given string literal.
+     */
     template <CompStr compStr>
     consteval decltype(auto) CompStrCatVariadicTemplate()
     {
         return CompStrToLiteral<compStr>();
     }
 
+    /**
+     * @private
+     *
+     * @brief Recursively appends the string representation of the given types to the string literal `compStr` at compile time.
+     */
     template <CompStr compStr, typename T, typename... Ts>
     consteval decltype(auto) CompStrCatVariadicTemplate()
     {
         return CompStrCatVariadicTemplate<CompStrCat<compStr, ", ", TypeTrait<T>::id>(), Ts...>();
     }
 
+    /**
+     * @private
+     *
+     * @brief Recursively concatenates the string representation of types at compile time, e.g. `CompStrCatVariadicTemplate<int, float, std::string>()` becomes `"int, float, std::string"`.
+     *
+     * @return The comma concatenation of the string representations of the given types.
+     */
     template <typename T, typename... Ts>
     consteval decltype(auto) CompStrCatVariadicTemplate()
     {
         return CompStrCatVariadicTemplate<TypeTrait<T>::id, Ts...>();
     }
 
+    /**
+     * @private
+     *
+     * @brief Returns the empty string in case the list of types is empty.
+     */
     template <typename... Ts> requires (sizeof...(Ts) == 0)
     consteval decltype(auto) CompStrCatVariadicTemplate()
     {
@@ -591,6 +797,9 @@ SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::hash)
 SYS_SAGE_SPECIALIZE_TEMPLATED_TYPE_TRAIT(std::equal_to)
 
 namespace sys_sage {
+    /**
+     * @private
+     */
     template <typename T1, typename T2>
     struct TypeTrait<std::pair<const T1, T2>> {
         static constexpr bool serializable = IsSerializable<std::pair<const T1, T2>>;
@@ -598,12 +807,18 @@ namespace sys_sage {
 
         static constexpr decltype(auto) id = CompStrCat<"std::pair<const ", TypeTrait<T1>::id, ", ", TypeTrait<T2>::id, ">">();
 
+        /**
+         * @private
+         */
         template <typename U = std::pair<const T1, T2>> requires (deserializable)
         static std::unique_ptr<IAttribute> Deserialize(const nlohmann::json &obj)
         {
             return std::make_unique<Attribute<U>>(obj.get<U>());
         }
 
+        /**
+         * @private
+         */
         template <typename U = std::pair<const T1, T2>> requires (!deserializable)
         static std::unique_ptr<IAttribute> Deserialize(const nlohmann::json &)
         {
@@ -617,11 +832,17 @@ namespace sys_sage {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace sys_sage {
+    /**
+     * @private
+     */
     template <typename Key, typename T, typename Compare, typename Allocator>
     struct IsBlacklistedFromDeserialization<std::multimap<Key, T, Compare, Allocator>> : std::bool_constant<!std::same_as<Key, std::string>> {};
 }
 
 namespace sys_sage {
+    /**
+     * @private
+     */
     template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
     struct IsBlacklistedFromDeserialization<std::unordered_multimap<Key, T, Hash, KeyEqual, Allocator>> : std::bool_constant<!std::same_as<Key, std::string>> {};
 }

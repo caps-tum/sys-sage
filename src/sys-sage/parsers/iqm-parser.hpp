@@ -18,9 +18,34 @@
 
 namespace sys_sage {
     //user calls only these functions
+    /**
+     * @brief Parser for the IQM data source.
+     *
+     * @param parent
+     * @param dataSourcePath
+     * @param qcId
+     * @param tsForHistory
+     *
+     * @pythonBinding
+     */
     int parseIQM(Component* parent, const std::string &dataSourcePath, int qcId, int tsForHistory = -1);
+
+    /**
+     * @brief Parser for the IQM data source.
+     *
+     * @param parent
+     * @param dataSourcePath
+     * @param qcId
+     * @param tsForHistory
+     * @param createTopo
+     *
+     * @pythonBinding
+     */
     int parseIQM(QuantumBackend* parent, const std::string &dataSourcePath, int qcId, int tsForHistory = -1, bool createTopo = true);
 
+    /**
+     * @private
+     */
     class IQMParser
     {
     public: 

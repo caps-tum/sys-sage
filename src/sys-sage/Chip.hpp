@@ -21,11 +21,12 @@ namespace sys_sage {
          * @param _id ID of the chip (default 0)
          * @param _name Name of the chip (default "Chip")
          * @param _category Chip category (default sys_sage::ChipCategory::None). Defines which chip we are describing.
-         *        Options: sys_sage::ChipCategory::None (default/generic), sys_sage::ChipCategory::Cpu, sys_sage::ChipCategory::CpuSocket, sys_sage::ChipCategory::Gpu.
          * @param _vendor Name of the vendor (default "")
          * @param _model Model name (default "")
          *
          * Sets componentType to sys_sage::ComponentType::Chip.
+         *
+         * @pythonBinding
          */
         Chip(int _id = 0, const std::string &_name = "Chip", ChipCategory::type _category = ChipCategory::None, const std::string &_vendor = "", const std::string &_model = "");
         /**
@@ -34,11 +35,12 @@ namespace sys_sage {
          * @param _id ID of the chip (default 0)
          * @param _name Name of the chip (default "Chip")
          * @param _category Chip category (default sys_sage::ChipCategory::None). Defines which chip we are describing.
-         *        Options: sys_sage::ChipCategory::None (default/generic), sys_sage::ChipCategory::Cpu, sys_sage::ChipCategory::CpuSocket, sys_sage::ChipCategory::Gpu.
          * @param _vendor Name of the vendor (default "")
          * @param _model Model name (default "")
          *
          * Sets componentType to sys_sage::ComponentType::Chip.
+         *
+         * @pythonBinding
          */
         Chip(Component * parent, int _id = 0, const std::string &_name = "Chip", ChipCategory::type _category = ChipCategory::None, const std::string &_vendor = "", const std::string &_model = "");
 
@@ -122,6 +124,8 @@ namespace sys_sage {
          * @brief Updates the MIG settings for the chip (NVIDIA-specific).
          * @param uuid The UUID of the chip, default is an empty string.
          * @return Status of the update operation.
+         *
+         * @pythonBinding
          */
         int UpdateMIGSettings(std::string uuid = "");
 
@@ -129,6 +133,8 @@ namespace sys_sage {
          * @brief Gets the number of SMs for the MIG.
          * @param uuid The UUID of the chip, default is an empty string.
          * @return The number of SMs.
+         *
+         * @pythonBinding
          */
         int GetMIGNumSMs(std::string uuid = "");
 
@@ -136,6 +142,8 @@ namespace sys_sage {
          * @brief Gets the number of cores for the MIG.
          * @param uuid The UUID of the chip, default is an empty string.
          * @return The number of cores.
+         *
+         * @pythonBinding
          */
         int GetMIGNumCores(std::string uuid = "");
     #endif

@@ -10,6 +10,7 @@
 //SVTODO check the import and export functionalities and adapt them to Relations
 namespace sys_sage {
     /**
+     * @private
      * @brief Imports the sys-sage internal representation from an XML file.
      *
      * Parses the XML file at the given path and reconstructs both the Component tree and the Relations graph,

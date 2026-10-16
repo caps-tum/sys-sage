@@ -27,6 +27,8 @@ namespace sys_sage {
      *             the JSON data will be dumped into stdout.
      *
      * @return 0 on success, 1 on failure to write to the file.
+     *
+     * @pythonBinding
      */
     int DumpJson(const Component *component, const std::filesystem::path &path = "");
 
@@ -38,6 +40,8 @@ namespace sys_sage {
      *
      * @return A pointer to the root of the component tree. May return
      *         `nullptr` on failure.
+     *
+     * @pythonBinding
      */
     Component *LoadJson(const nlohmann::json &obj);
 
@@ -48,6 +52,8 @@ namespace sys_sage {
      *
      * @return A pointer to the root of the component tree. May return
      *         `nullptr` on failure.
+     *
+     * @pythonBinding
      */
     Component *LoadJson(const std::filesystem::path &path);
 
@@ -60,6 +66,8 @@ namespace sys_sage {
      *
      * @return A pointer to the root of the component tree. May return
      *         `nullptr` on failure.
+     *
+     * @pythonBinding
      */
     inline Component *LoadJson(const char *path)
     {

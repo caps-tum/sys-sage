@@ -191,7 +191,7 @@ class TestComponents(unittest.TestCase):
         
         self.assertEqual(0, a.CheckSubtreeConsistency())
         
-        c.SetParent(a)
+        c.parent = a
         self.assertEqual(1, a.CheckSubtreeConsistency())
         
     def test_get_deeper_components(self):

@@ -23,6 +23,10 @@ namespace sys_sage {
          * @param _name The name of the quantum gate.
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
+         *
+         * Sets type to sys_sage::RelationType::QuantumGate.
+         *
+         * @pythonBinding
          */
         QuantumGate(size_t _gate_size = 0, const std::string &_name = "", double _fidelity = 0.0, const std::string &_unitary = "");
 
@@ -30,6 +34,10 @@ namespace sys_sage {
          * @brief Constructor that initializes a quantum gate with a list of qubits.
          * @param _gate_size The number of qubits this gate operates on.
          * @param _qubits A vector of pointers to Qubit objects that the gate operates on.
+         *
+         * Sets type to sys_sage::RelationType::QuantumGate.
+         *
+         * @pythonBinding
          */
         QuantumGate(size_t _gate_size, const std::vector<Qubit *> & _qubits);
 
@@ -40,6 +48,10 @@ namespace sys_sage {
          * @param _name The name of the quantum gate.
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
+         *
+         * Sets type to sys_sage::RelationType::QuantumGate.
+         *
+         * @pythonBinding
          */
         QuantumGate(size_t _gate_size, const std::vector<Qubit *> & _qubits, const std::string &_name, double _fidelity, const std::string &_unitary);
 
@@ -54,6 +66,10 @@ namespace sys_sage {
          * @param _gate_category The category of the quantum gate (see QuantumGateCategory::type).
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
+         *
+         * Sets type to sys_sage::RelationType::QuantumGate.
+         *
+         * @pythonBinding
          */
         QuantumGate(const std::vector<Component*>& components, int _id = 0, bool _ordered = true, size_t _gate_size = 0, const std::string &_name = "", int _gate_length = 0, QuantumGateCategory::type _gate_category = QuantumGateCategory::Unknown, double _fidelity = 0, const std::string &_unitary = "");
         /**
@@ -61,6 +77,8 @@ namespace sys_sage {
          * @param _name The name of the quantum gate.
          * @param _fidelity The fidelity of the quantum gate.
          * @param _unitary The unitary matrix representing the quantum gate operation.
+         *
+         * @pythonBinding
          */
         void SetGateProperties(const std::string &_name, double _fidelity, const std::string &_unitary);
 
@@ -100,7 +118,7 @@ namespace sys_sage {
 
         /**
          * @brief Sets the fidelity of the quantum gate.
-         * @param The fidelity of the quantum gate.
+         * @param gateFidelity The fidelity of the quantum gate.
          */
         void SetFidelity(double gateFidelity);
 
@@ -156,6 +174,8 @@ namespace sys_sage {
          * @brief Prints the details of the quantum gate.
          * 
          * This method overrides the Print function in the Relation class to provide specific printing behavior for quantum gates.
+         *
+         * @pythonBinding
          */
         void Print() const override;
         /**

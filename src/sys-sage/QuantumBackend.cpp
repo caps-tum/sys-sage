@@ -2,10 +2,11 @@
 
 #include <sys-sage/Qubit.hpp>
 
-
-
 sys_sage::QuantumBackend::QuantumBackend(int _id, const std::string &_name):Component(_id, _name, sys_sage::ComponentType::QuantumBackend){}
 sys_sage::QuantumBackend::QuantumBackend(Component * _parent, int _id, const std::string &_name):Component(_parent, _id, _name, sys_sage::ComponentType::QuantumBackend){}
+
+sys_sage::QuantumBackend::QuantumBackend(int _id, const std::string &_name, ComponentType::type _type) : Component(_id, _name, _type) {}
+sys_sage::QuantumBackend::QuantumBackend(Component *_parent, int _id, const std::string &_name, ComponentType::type _type) : Component(_parent, _id, _name, _type) {}
 
 void sys_sage::QuantumBackend::SetNumQubits(int _num_qubits) { num_qubits = _num_qubits; }
 

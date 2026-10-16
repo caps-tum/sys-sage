@@ -8,6 +8,7 @@
 
 namespace sys_sage{
     /**
+     * @private
      * @brief Exports the Component Tree to an XML file.
      *
      * Traverses the component hierarchy starting from the given root and serializes the structure,

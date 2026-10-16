@@ -26,10 +26,12 @@ namespace sys_sage {
          * @param _cache_line_size Size of a cache line in bytes (default -1)
          *
          * Sets componentType to sys_sage::ComponentType::Cache.
+         *
+         * @pythonBinding
          */
         Cache(int _id = 0, int  _cache_level = 0, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
         /**
-         * @brief Cache constructor with insertion into the Component Tree as the parent's child (as long as parent is an existing Component).
+         * @brief Cache constructor with insertion into the Component Tree as the parent's child.
          * @param parent Parent component
          * @param _id Unique cache ID (default 0)
          * @param _cache_type Name/type of the cache (e.g., "L1", "texture"). Only one of int cache_level or string cache_type should be used.
@@ -38,11 +40,13 @@ namespace sys_sage {
          * @param _cache_line_size Size of a cache line in bytes (default -1)
          *
          * Sets componentType to sys_sage::ComponentType::Cache.
+         *
+         * @pythonBinding
          */
         Cache(Component * parent, int _id, const std::string &_cache_type, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
 
         /**
-         * @brief Cache constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component).
+         * @brief Cache constructor with insertion into the Component Tree as the parent 's child.
          * @param parent Parent component
          * @param _id Unique cache ID (default 0)
          * @param _cache_level Cache level (1=L1, 2=L2, ...), default 0. This value is represented as cache_type.
@@ -51,6 +55,8 @@ namespace sys_sage {
          * @param _cache_line_size Size of a cache line in bytes (default -1)
          *
          * Sets componentType to sys_sage::ComponentType::Cache.
+         *
+         * @pythonBinding
          */
         Cache(Component * parent, int _id = 0, int _cache_level = 0, long long _cache_size = -1, int _associativity = -1, int _cache_line_size = -1);
 
@@ -156,6 +162,8 @@ namespace sys_sage {
          * @brief Gets the MIG size of the cache element (NVIDIA-specific).
          * @param uuid Optional UUID string for the MIG instance.
          * @return MIG size in bytes.
+         *
+         * @pythonBinding
          */
         long long GetMIGSize(std::string uuid = "") const;
     #endif

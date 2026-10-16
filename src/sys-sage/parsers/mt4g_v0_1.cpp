@@ -15,6 +15,9 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+/**
+ * @private
+ */
 class Mt4gParser
 {
 public:

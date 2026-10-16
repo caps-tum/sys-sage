@@ -26,7 +26,7 @@ vector<string> sys_sage::xmlRelevantObjectTypes
     "Group"
 };
 
-string sys_sage::xmlGetPropStr(xmlNode* node, string key)
+std::string sys_sage::xmlGetPropStr(xmlNode* node, std::string key)
 {
     string val;
     xmlChar* valX = xmlGetProp(node, BAD_CAST key.c_str());
@@ -38,7 +38,7 @@ string sys_sage::xmlGetPropStr(xmlNode* node, string key)
     return val;
 }
 
-sys_sage::Component* sys_sage::createChildC(string type, xmlNode* node)
+sys_sage::Component* sys_sage::createChildC(std::string type, xmlNode* node)
 {
     Component* c = NULL;
     string s;
@@ -218,7 +218,7 @@ int sys_sage::removeUnknownCompoents(Component* c){
 }
 
 //parses a hwloc output and adds it to topology
-int sys_sage::parseHwlocOutput(Node* n, const string &xmlPath)
+int sys_sage::parseHwlocOutput(Node* n, const std::string &xmlPath)
 {
     xmlDoc *document = xmlReadFile(xmlPath.c_str(), NULL, 0);
     if (document == NULL) {

@@ -10,14 +10,10 @@ namespace sys_sage { //forward declaration
 namespace sys_sage {
     /**
      * @class DataPath
-     * @brief Represents a data path (arbitrary relation or data movement) between two Components in the topology.
-     *
-     * DataPaths form a data-path graph, which is orthogonal to the Component Tree. Each Component contains references
-     * to all DataPaths going to or from it, in addition to its parent and children in the Component Tree. This enables
-     * navigation between Components and access to data stored in Components or DataPaths.
+     * @brief Represents a data path relation between two components in the topology.
      *
      * DataPaths can be oriented (directed) or bidirectional, and can carry additional information such as bandwidth,
-     * latency, and user-defined categories. They are essential for modeling memory hierarchies, interconnects, and other
+     * latency, and user-defined attributes. They are essential for modeling memory hierarchies, interconnects, and other
      * logical or physical data flows in heterogeneous systems.
      */
     class DataPath : public Relation {
@@ -30,6 +26,8 @@ namespace sys_sage {
          * @param _dp_category Type of the DataPath.
          * @param _bw Bandwidth from the source (provides the data) to the target (requests the data)
          * @param _latency Data load latency from the source (provides the data) to the target (requests the data)
+         *
+         * Sets type to sys_sage::RelationType::DataPath.
          */
         DataPath(DataPathCategory::type _dp_category = DataPathCategory::None, double _bw = -1, double _latency = -1);
 
@@ -39,9 +37,11 @@ namespace sys_sage {
          * @param _target Pointer to the target Component.
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
          * @param _dp_category (optional) Category of the Data Path (user-defined, default: DataPathCategory::None).
-         *        Predefined categories: DataPathCategory::None, DataPathCategory::Logical, DataPathCategory::Physical, DataPathCategory::Datatransfer, DataPathCategory::L3CAT, DataPathCategory::MIG, DataPathCategory::C2C .
-         *        Each user can define an arbitrary category in the DataPathCategory namespace.
-        */
+         *
+         * Sets type to sys_sage::RelationType::DataPath.
+         *
+         * @pythonBinding
+         */
         DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category = sys_sage::DataPathCategory::None);
         /**
          * @brief DataPath constructor. DataPath category is set to DataPathCategory::None.
@@ -50,6 +50,10 @@ namespace sys_sage {
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
          * @param _bw Bandwidth from the source (provides the data) to the target (requests the data)
          * @param _latency Data load latency from the source (provides the data) to the target (requests the data)
+         *
+         * Sets type to sys_sage::RelationType::DataPath.
+         *
+         * @pythonBinding
          */
         DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, double _bw, double _latency);
 
@@ -59,10 +63,12 @@ namespace sys_sage {
          * @param _target Pointer to the target Component.
          * @param _oriented Is the Data Path oriented? (DataPathOrientation::Oriented = oriented DP; DataPathOrientation::Bidirectional = NOT oriented DP)
          * @param _dp_category (optional) Category of the Data Path (user-defined, default: DataPathCategory::None).
-         *        Predefined categories: DataPathCategory::None, DataPathCategory::Logical, DataPathCategory::Physical, DataPathCategory::Datatransfer, DataPathCategory::L3CAT, DataPathCategory::MIG, DataPathCategory::C2C .
-         *        Each user can define an arbitrary category in the DataPathCategory namespace.
          * @param _bw Bandwidth from the source (provides the data) to the target (requests the data)
          * @param _latency Data load latency from the source (provides the data) to the target (requests the data)
+         *
+         * Sets type to sys_sage::RelationType::DataPath.
+         *
+         * @pythonBinding
          */
         DataPath(Component* _source, Component* _target, sys_sage::DataPathOrientation::type _oriented, sys_sage::DataPathCategory::type _dp_category, double _bw, double _latency);
 
@@ -113,7 +119,7 @@ namespace sys_sage {
         int UpdateTarget(Component * _new_target);
         
         /**
-         * @returns Category of the Data Path (DataPathCategory). Do not mix with RelationType!
+         * @returns Category of the Data Path (DataPathCategory). Do not confuse with sys_sage::RelationType!
          * @see category
          */
         DataPathCategory::type GetDataPathCategory() const;
@@ -129,6 +135,8 @@ namespace sys_sage {
          * @brief Prints basic information about the Data Path to stdout.
          * Prints componentType and Id of the source and target Components, the bandwidth, load latency, and the attributes.
          * For each attribute, the name and value are printed; the value is only retyped to uint64_t (so will print nonsensical values for other data types).
+         *
+         * @pythonBinding
          */
         void Print() const override;
         /**

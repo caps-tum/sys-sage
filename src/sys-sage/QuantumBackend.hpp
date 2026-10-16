@@ -27,7 +27,10 @@ namespace sys_sage {
         QuantumBackend constructor (no automatic insertion in the Component Tree). Sets:
         @param _id = id, default 0
         @param _name = name, default "QuantumBackend"
-        @param componentType=>SYS_SAGE_COMPONENT_QUANTUM_BACKEND
+
+        Sets componentType to sys_sage::ComponentType::QuantumBackend.
+
+        @pythonBinding
         */
         QuantumBackend(int _id = 0, const std::string &_name = "QuantumBackend");
         /**
@@ -35,7 +38,10 @@ namespace sys_sage {
         @param parent = the parent 
         @param _id = id, default 0
         @param _name = name, default "QuantumBackend"
-        @param componentType=>SYS_SAGE_COMPONENT_QUANTUM_BACKEND
+
+        Sets componentType to sys_sage::ComponentType::QuantumBackend.
+
+        @pythonBinding
         */
         QuantumBackend(Component * parent, int _id = 0, const std::string &_name = "QuantumBackend");
 
@@ -65,6 +71,8 @@ namespace sys_sage {
          * @brief Refreshes the topology of the quantum backend.
          * 
          * @param qubit_indices The indices of the qubits that need to be refreshed.
+         *
+         * @pythonBinding
          */
         void RefreshTopology(std::set<int> qubit_indices); // qubit_indices: indices of the qubits that need to be refreshed
     #endif
@@ -79,6 +87,8 @@ namespace sys_sage {
         * @brief Adds a quantum gate to the quantum backend.
         * 
         * @param gate The quantum gate to add.
+        *
+         * @pythonBinding
         */
         void addGate(QuantumGate *gate);
 
@@ -87,6 +97,8 @@ namespace sys_sage {
         * 
         * @param _gate_size The size of the gates to retrieve.
         * @return A vector of quantum gates with the specified size.
+        *
+         * @pythonBinding
         */
         std::vector<QuantumGate*> FindGatesBySize(size_t _gate_size) const;
 
@@ -95,6 +107,8 @@ namespace sys_sage {
         * 
         * @param _gate_type The type of the gates to retrieve.
         * @return A vector of quantum gates with the specified type.
+        *
+         * @pythonBinding
         */
         std::vector<QuantumGate*> FindGatesByType(QuantumGateCategory::type _gate_type) const;
 
@@ -102,6 +116,8 @@ namespace sys_sage {
         * @brief Gets all types of quantum gates in the quantum backend.
         * 
         * @return A vector of all quantum gate types.
+        *
+         * @pythonBinding
         */
         std::vector<QuantumGate*> GetAllGateTypes() const;
 
@@ -109,6 +125,8 @@ namespace sys_sage {
         * @brief Gets the number of quantum gates in the quantum backend.
         * 
         * @return The number of quantum gates.
+        *
+         * @pythonBinding
         */
         size_t GetNumberofGates() const;
 
@@ -116,6 +134,8 @@ namespace sys_sage {
         * @brief Gets all qubits in the quantum backend.
         * 
         * @return A vector of pointers to all qubits.
+        *
+         * @pythonBinding
         */
         std::vector<Qubit *> FindAllQubits();
 
@@ -147,6 +167,32 @@ namespace sys_sage {
          * @return 0 on success, 1 otherwise.
          */
         int _FromJson(const nlohmann::json &obj) override;
+
+    protected:
+        /**
+         * @private
+         *
+         * @brief Protected constructor for internal use.
+         *        Usually called by the AtomSite constructor.
+         *
+         * @param _id The id of the quantum backend.
+         * @param _name The name of the quantum backend.
+         * @param _type The specific type of the quantum backend (often set to sys_sage::ComponentType::AtomSite).
+         */
+        QuantumBackend(int _id, const std::string &_name, ComponentType::type _type);
+
+        /**
+         * @private
+         *
+         * @brief Protected constructor for internal use.
+         *        Usually called by the AtomSite constructor.
+         *
+         * @param parent The parent in the topology.
+         * @param _id The id of the quantum backend.
+         * @param _name The name of the quantum backend.
+         * @param _type The specific type of the quantum backend (often set to sys_sage::ComponentType::AtomSite).
+         */
+        QuantumBackend(Component *parent, int _id, const std::string &_name, ComponentType::type _type);
 
     private:
         int num_qubits;

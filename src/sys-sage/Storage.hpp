@@ -6,26 +6,27 @@
 namespace sys_sage {
 
     /**
-    Class Storage - represents a persistent storage device. (Of any kind.)
-    \n This class is a child of Component class, therefore inherits its attributes and methods.
-    */
+     * @brief Represents a persistent storage device (of any kind).
+     */
     class Storage : public Component {
     public:
         /**
         Storage constructor (no automatic insertion in the Component Tree). Sets:
-        @param _id = 0
-        @param _name = "Storage"
-        @param componentType=>SYS_SAGE_COMPONENT_STORAGE
         @param _size = size/capacity of the storage device, default -1
+
+        Sets componentType to sys_sage::ComponentType::Storage.
+
+        @pythonBinding
         */
         Storage(long long _size = -1);
         /**
         Storage constructor with insertion into the Component Tree as the parent 's child (as long as parent is an existing Component). Sets:
         @param parent = the parent 
-        @param _id = 0
-        @param _name = "Storage"
-        @param componentType=>SYS_SAGE_COMPONENT_STORAGE
         @param _size = size/capacity of the storage device, default -1
+
+        Sets componentType to sys_sage::ComponentType::Storage.
+
+        @pythonBinding
         */
         Storage(Component * parent, long long _size = -1);
 
