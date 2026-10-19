@@ -161,15 +161,12 @@ namespace sys_sage {
          * 
          * Derived classes may implement this function to provide specific
          * printing behavior.
+         *
+         * This function excludes attributes.
+         * To print the relation with it's attributes, dump it to JSON and print the JSON object.
          */
         virtual void Print() const;
-        /**
-         * @private
-         * @brief Print all key-value pairs in the attribute map.
-         *
-         * Meant for debugging or verbose output. Can be overridden.
-         */
-        void _PrintRelationAttrib() const;
+
         /**
          * @private
          * @brief Print summary of the components involved.

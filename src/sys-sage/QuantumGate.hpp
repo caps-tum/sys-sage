@@ -156,6 +156,9 @@ namespace sys_sage {
          * @brief Prints the details of the quantum gate.
          * 
          * This method overrides the Print function in the Relation class to provide specific printing behavior for quantum gates.
+         *
+         * This function excludes attributes.
+         * To print the quantum gate with it's attributes, dump it to JSON and print the JSON object.
          */
         void Print() const override;
         /**

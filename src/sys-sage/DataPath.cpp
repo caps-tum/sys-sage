@@ -50,7 +50,6 @@ void sys_sage::DataPath::Print() const
     std::cout << GetTypeStr() << " (" << (ordered?"ordered":"unordered") << ")";
     _PrintRelationComponentInfo();
     cout << " -- bw: " << bw << ", latency: " << latency;
-    _PrintRelationAttrib();
     cout << endl;
 }
 

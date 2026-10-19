@@ -52,7 +52,7 @@ void sys_sage::Component::PrintRelationsInSubtree(RelationType::type relationTyp
         {
             if (relationType == rt || relationType == RelationType::Any)
             {
-                vector<Relation*> c_relations = c->GetRelationsByType(rt);
+                const std::vector<Relation*> &c_relations = c->GetRelationsByType(rt);
                 if(c_relations.size() > 0)
                 {
                     std::cout << RelationType::ToString(rt) << "s regarding Component (" << c->GetComponentTypeStr() << ") id " << c->GetId() << std::endl;

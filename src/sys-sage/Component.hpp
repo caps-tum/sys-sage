@@ -155,6 +155,9 @@ namespace sys_sage {
          * @brief Prints the whole subtree of this component (including the component itself) to stdout.
          * The tree is printed in DFS order, so that the hierarchy can be easily seen. Each child is indented by "  ".
          * For each component in the subtree, the following is printed: "<string component type> (name <name>) id <id> - children: <num children>
+         *
+         * This function is intended for pretty printing to give a rough overview of the topology.
+         * To get more detailed information about each component and relation (such as attributes), dump the component tree to JSON and print it.
          */
         void PrintSubtree() const;
 

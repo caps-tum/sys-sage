@@ -7,7 +7,7 @@ using std::cout;
 using std::endl;
 
 sys_sage::Relation::Relation(int _id, bool _ordered, RelationCategory::type _category) : ordered(_ordered), id(_id), type(RelationType::Relation), category(_category) {}
-sys_sage::Relation::Relation(RelationType::type _relation_type, RelationCategory::type _relation_category): type(_relation_type), category(_relation_category) {}
+sys_sage::Relation::Relation(RelationType::type _relation_type, RelationCategory::type _relation_category): ordered(false), id(0), type(_relation_type), category(_relation_category) {}
 sys_sage::Relation::Relation(const std::vector<Component*>& components, int _id, bool _ordered, RelationType::type _relation_type, RelationCategory::type _relation_category): ordered(_ordered), id(_id), type(_relation_type), category(_relation_category)
 {
     for (Component* c : components) {
@@ -55,25 +55,11 @@ void sys_sage::Relation::_PrintRelationComponentInfo() const
         cout << "(" << c->GetComponentTypeStr() << ") id " << c->GetId() << ", ";
     }
 }
-void sys_sage::Relation::_PrintRelationAttrib() const
-{
-    // Comment out this code for now. Printing of the attributes will be
-    // handeled through future JSON support.
-    //if(!attributes.empty())
-    //{
-    //    cout << " -- attrib: ";
-    //    for (const auto& n : attrib) {
-    //        // TODO: fix undefined behaviour caused by strict aliasing rule violation
-    //        uint64_t* val = reinterpret_cast<uint64_t*>(n.second);
-    //        std::cout << n.first << " = " << *val << "; ";
-    //    }
-    //}
-}
+
 void sys_sage::Relation::Print() const
 {
     std::cout << GetTypeStr() << " (" << (ordered?"ordered":"unordered") << ")";
     _PrintRelationComponentInfo();
-    _PrintRelationAttrib();
     cout << endl;
 }
 

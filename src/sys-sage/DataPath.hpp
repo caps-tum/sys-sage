@@ -129,6 +129,9 @@ namespace sys_sage {
          * @brief Prints basic information about the Data Path to stdout.
          * Prints componentType and Id of the source and target Components, the bandwidth, load latency, and the attributes.
          * For each attribute, the name and value are printed; the value is only retyped to uint64_t (so will print nonsensical values for other data types).
+         *
+         * This function excludes attributes.
+         * To print the data path with it's attributes, dump it to JSON and print the JSON object.
          */
         void Print() const override;
         /**
