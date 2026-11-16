@@ -42,12 +42,12 @@ int main(int argc, char *argv[])
 {
     sys_sage::Node* n = new sys_sage::Node(1);
     sys_sage::parseHwlocOutput(n, <hwloc_xml_dump_path>);
-    std::cout << "Total num HW threads: " << n->CountAllSubcomponentsByType(sys_sage::ComponentType::Thread) << std::endl;
+    std::cout << "Total num HW threads: " << n->CountDescendantsByType(sys_sage::ComponentType::Thread) << std::endl;
 
     std::cout << "---------------- Printing the whole tree ----------------" << std::endl;
     n->PrintSubtree();
 
-    n->Delete(true);
+    sys_sage::Component::DeleteSubtree(n);
     return 0;
 }
 ```

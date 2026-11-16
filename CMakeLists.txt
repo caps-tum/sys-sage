@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
-project(sys-sage VERSION 1.1.0 LANGUAGES C CXX)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+project(sys-sage VERSION 1.1.0 LANGUAGES CXX)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ######################################################
 ####################### TARGET #######################
@@ -94,6 +94,11 @@ configure_package_config_file(
 
 install(
     FILES ${PROJECT_BINARY_DIR}/sys-sage-config.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sys-sage
+)
+
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sys-sage
 )
 
