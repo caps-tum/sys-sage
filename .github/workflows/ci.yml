@@ -5,13 +5,11 @@ name: CI
 # undefined-behaviour sanitizers, with the library itself instrumented as well.
 # A separate job checks the Doxygen documentation coverage.
 
-# Runs on every push to develop/master and on every pull request (any target
-# branch, including PRs from forks). Pushes to feature branches are not built
-# separately; their PR runs cover them, so each commit is not built twice.
+# Runs on every push to any branch and on every pull request (any target branch,
+# including PRs from forks).
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, master ]
   pull_request:
 
 concurrency:
