@@ -1,138 +1,69 @@
-name: CI
-
-# Builds sys-sage, installs it, and runs the C++ unit tests (boost-ext/ut) and the
-# Python binding tests. The same tests also run under the address, thread and
-# undefined-behaviour sanitizers, with the library itself instrumented as well.
-# A separate job checks the Doxygen documentation coverage.
-
-# Runs on every push to any branch and on every pull request (any target branch,
-# including PRs from forks).
 on:
-  workflow_dispatch:
   push:
+    branches:
+      - '**'       # matches any branch
   pull_request:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-
+    branches:
+      - '**'       # matches any PR target branch
 jobs:
   test:
-    name: Test (${{ matrix.compiler }}${{ matrix.sanitizer && format(', {0} sanitizer', matrix.sanitizer) || '' }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: Unit Tests (${{ matrix.compiler }})
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { compiler: gcc,   cc: gcc,   cxx: g++ }
-          - { compiler: clang, cc: clang, cxx: clang++ }
-          - { compiler: gcc,   cc: gcc,   cxx: g++, sanitizer: address }
-          - { compiler: gcc,   cc: gcc,   cxx: g++, sanitizer: thread }
-          - { compiler: gcc,   cc: gcc,   cxx: g++, sanitizer: undefined }
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-      # Applied to both the library and the tests, so sanitizers also see the
-      # library code. -fno-sanitize-recover makes UBSan findings fail the run
-      # (by default UBSan only prints them).
-      SAN_FLAGS: ${{ matrix.sanitizer && format('-fsanitize={0} -fno-sanitize-recover=all -fno-omit-frame-pointer -g', matrix.sanitizer) || '' }}
+        compiler: [g++, clang++]
+    uses: ./.github/workflows/test.yml
+    with:
+      compiler: ${{ matrix.compiler }}
 
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -o Acquire::Retries=3 update
-          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
-            g++ clang cmake \
-            libxml2-dev nlohmann-json3.12-dev libhwloc-dev hwloc libnuma-dev libpapi-dev \
-            python3-dev python3-venv pybind11-dev pybind11-json-dev
+  asan:
+    name: Address Sanitizer
+    needs: test
+    uses: ./.github/workflows/test.yml
+    with:
+      flags: -DTEST_ASAN=ON
+      sanitizer: address
 
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
+  tsan:
+    name: Thread Sanitizer
+    needs: test
+    uses: ./.github/workflows/test.yml
+    with:
+      flags: -DTEST_TSAN=ON
+      sanitizer: thread
 
-      # Only the test framework is needed; the mt4g submodule (data source, DS_MT4G)
-      # is not built here.
-      - name: Fetch ut submodule
-        run: git submodule update --init --depth 1 test/ut
-
-      - name: Configure library
-        run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
-            -DPROC_CPUINFO=ON -DDS_HWLOC=ON -DDS_NUMA=ON -DPAPI=ON \
-            -DCMAKE_CXX_FLAGS="$SAN_FLAGS"
-
-      - name: Build library
-        run: cmake --build build --parallel
-
-      - name: Install library
-        run: sudo cmake --install build --prefix /usr
-
-      - name: Configure tests
-        run: cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="$SAN_FLAGS"
-
-      - name: Build tests
-        run: cmake --build test/build --parallel
-
-      - name: Run C++ tests
-        run: ./test/build/test
-
-      - name: Build and install Python module
-        run: |
-          python3 -m venv venv
-          ./venv/bin/python -m pip install ./python
-
-      # The Python interpreter is not instrumented, so in sanitizer builds the
-      # sanitizer runtime used by libsys-sage is preloaded (ASan and TSan require
-      # it to be loaded first). Leak detection is off: it would report the
-      # interpreter's own allocations.
-      - name: Run Python tests
-        run: |
-          case "${{ matrix.sanitizer }}" in
-            address) export LD_PRELOAD="$($CXX -print-file-name=libasan.so)" ASAN_OPTIONS=detect_leaks=0 ;;
-            thread)  export LD_PRELOAD="$($CXX -print-file-name=libtsan.so)" ;;
-          esac
-          ./venv/bin/python test/topology.py
-          ./venv/bin/python test/relation.py
-          ./venv/bin/python test/datapath.py
-
-  # Fails if public API in src/ (excluding parsers, external interfaces, examples,
-  # data sources and .cpp files) is undocumented.
+  ubsan:
+    name: Undefined Behaviour Sanitizer
+    needs: test
+    uses: ./.github/workflows/test.yml
+    with:
+      flags: -DTEST_UBSAN=ON
+      sanitizer: undefined
+  #  check documentation CI so that unnecessary files (.cpp, examples/,...) can be left out    
   doc:
     name: Documentation
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get -o Acquire::Retries=3 update
-          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends doxygen
-
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          submodules: true
+
+      - name: Sync packages
+        run: sudo apt-get update
+
+      - name: Install Doxygen
+        run: sudo apt-get install -y doxygen
 
       - name: Install coverxygen
-        run: |
-          python3 -m venv venv
-          ./venv/bin/pip install coverxygen
+        run: pip3 install coverxygen
 
       - name: Generate documentation
-        working-directory: docs
-        run: doxygen Doxyfile
+        run: cd docs && doxygen Doxyfile
 
       - name: Documentation coverage
-        working-directory: docs
-        run: |
-          ../venv/bin/python -m coverxygen --verbose --xml-dir xml --src-dir ../src/ \
-            --output doc-coverage.info --format json-v3 --scope public,protected \
-            --kind enum,enumvalue,friend,typedef,function,class,struct,union,define,file,namespace \
-            --exclude '.*\/parsers\/.*' --exclude '.*\/external_interfaces\/.*' \
-            --exclude '.*\/examples\/.*' --exclude '.*\/data-sources\/.*' --exclude '.*\.cpp$'
+        # Exclude parsers, external_interfaces, examples, data-sources and .cpp files
+        run: cd docs && python3 -m coverxygen --verbose --xml-dir xml --src-dir ../src/ --output doc-coverage.info --format json-v3 --scope public,protected --kind enum,enumvalue,friend,typedef,function,class,struct,union,define,file,namespace --exclude '.*\/parsers\/.*' --exclude '.*\/external_interfaces\/.*' --exclude '.*\/examples\/.*' --exclude '.*\/data-sources\/.*' --exclude '.*\.cpp$'
 
       - name: Check documentation completeness
-        working-directory: docs
-        run: ./check_docs.sh
+        run: cd docs && ./check_docs.sh
