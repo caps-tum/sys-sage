@@ -19,7 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [g++, clang++]
+        # g++-12 is the oldest supported GCC (see CMakeLists.txt)
+        compiler: [g++, clang++, g++-12]
     uses: ./.github/workflows/test.yml
     with:
       compiler: ${{ matrix.compiler }}
