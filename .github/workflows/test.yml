@@ -40,7 +40,7 @@ jobs:
       - name: Configure tests
         run: cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="$SAN_FLAGS" ${{ inputs.flags }}
       - name: Build library tests
-        run: cmake --build test/build
+        run: cmake --build test/build --parallel
       - name: Run library tests
         run: ./test/build/test
       - name: Create virtual environment
