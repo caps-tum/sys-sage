@@ -5,6 +5,9 @@ on:
   pull_request:
     branches:
       - '**'       # matches any PR target branch
+# the workflow only needs to read the repository
+permissions:
+  contents: read
 jobs:
   test:
     name: Unit Tests (${{ matrix.compiler }})
