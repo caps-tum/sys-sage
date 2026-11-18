@@ -10,10 +10,13 @@ on:
       sanitizer:
         type: string
         default: ''
+      runner:
+        type: string
+        default: ubuntu-latest
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     env:
       CXX: ${{ inputs.compiler }}
       # library is built with the sanitizer as well, not only the tests

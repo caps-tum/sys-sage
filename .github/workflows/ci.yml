@@ -15,15 +15,21 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    name: Unit Tests (${{ matrix.compiler }})
+    name: Unit Tests (${{ matrix.compiler }}, ${{ matrix.runner }})
     strategy:
       fail-fast: false
       matrix:
         # g++-12 is the oldest supported GCC (see CMakeLists.txt)
         compiler: [g++, clang++, g++-12]
+        runner: [ubuntu-latest]
+        # aarch64 (there is no ubuntu-latest-arm, so the version is pinned)
+        include:
+          - compiler: g++
+            runner: ubuntu-26.04-arm
     uses: ./.github/workflows/test.yml
     with:
       compiler: ${{ matrix.compiler }}
+      runner: ${{ matrix.runner }}
 
   asan:
     name: Address Sanitizer
