@@ -49,7 +49,7 @@ jobs:
       - name: Run Python module tests
         # python itself is not built with sanitizers, so asan/tsan runtime has to be preloaded
         run: |
-             if [ "${{ inputs.sanitizer }}" = "address" ]; then export LD_PRELOAD=$($CXX -print-file-name=libasan.so) ASAN_OPTIONS=detect_leaks=0; fi
+             if [ "${{ inputs.sanitizer }}" = "address" ]; then export LD_PRELOAD="$($CXX -print-file-name=libasan.so) $($CXX -print-file-name=libstdc++.so)" ASAN_OPTIONS=detect_leaks=0; fi
              if [ "${{ inputs.sanitizer }}" = "thread" ]; then export LD_PRELOAD=$($CXX -print-file-name=libtsan.so); fi
              ./venv/bin/python test/topology.py
              ./venv/bin/python test/relation.py
