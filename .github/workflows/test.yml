@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           submodules: true
+          persist-credentials: false
         
       - name: Syncing packages
         run: sudo apt-get update
