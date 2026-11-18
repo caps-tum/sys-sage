@@ -5,10 +5,31 @@ on:
   pull_request:
     branches:
       - '**'       # matches any PR target branch
+# the workflow only needs to read the repository
+permissions:
+  contents: read
+# a new push to a branch (or PR) cancels the still running CI of the older commit
+# master and develop get a group per commit, so there every commit is tested
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') && github.sha || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
-    name: Unit Tests
+    name: Unit Tests (${{ matrix.compiler }}, ${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # g++-12 is the oldest supported GCC (see CMakeLists.txt)
+        compiler: [g++, clang++, g++-12]
+        runner: [ubuntu-latest]
+        # aarch64 (there is no ubuntu-latest-arm, so the version is pinned)
+        include:
+          - compiler: g++
+            runner: ubuntu-26.04-arm
     uses: ./.github/workflows/test.yml
+    with:
+      compiler: ${{ matrix.compiler }}
+      runner: ${{ matrix.runner }}
 
   asan:
     name: Address Sanitizer
@@ -16,6 +37,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       flags: -DTEST_ASAN=ON
+      sanitizer: address
 
   tsan:
     name: Thread Sanitizer
@@ -23,6 +45,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       flags: -DTEST_TSAN=ON
+      sanitizer: thread
 
   ubsan:
     name: Undefined Behaviour Sanitizer
@@ -30,15 +53,17 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       flags: -DTEST_UBSAN=ON
+      sanitizer: undefined
   #  check documentation CI so that unnecessary files (.cpp, examples/,...) can be left out    
   doc:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           submodules: true
+          persist-credentials: false
 
       - name: Sync packages
         run: sudo apt-get update

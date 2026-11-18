@@ -4,32 +4,46 @@ on:
       flags:
         type: string
         default: ''
+      compiler:
+        type: string
+        default: g++
+      sanitizer:
+        type: string
+        default: ''
+      runner:
+        type: string
+        default: ubuntu-latest
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
+    env:
+      CXX: ${{ inputs.compiler }}
+      # library is built with the sanitizer as well, not only the tests
+      SAN_FLAGS: ${{ inputs.sanitizer && format('-fsanitize={0} -fno-sanitize-recover=all', inputs.sanitizer) || '' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           submodules: true
+          persist-credentials: false
         
       - name: Syncing packages
         run: sudo apt-get update
       - name: Get build tools
-        run: sudo apt-get install -yy g++ cmake
+        run: sudo apt-get install -yy g++ g++-12 clang cmake
       - name: Get dependecies
-        run: sudo apt-get install -yy libxml2-dev nlohmann-json3-dev python3-dev python3-venv pybind11-dev pybind11-json-dev libpapi-dev hwloc libhwloc-common libhwloc-dev
+        run: sudo apt-get install -yy libxml2-dev nlohmann-json3.12-dev python3-dev python3-venv pybind11-dev pybind11-json-dev libpapi-dev hwloc libhwloc-common libhwloc-dev
       - name: Configure library
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPROC_CPUINFO=ON -DDS_HWLOC=ON -DDS_NUMA=ON -DPAPI=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DPROC_CPUINFO=ON -DDS_HWLOC=ON -DDS_NUMA=ON -DPAPI=ON -DCMAKE_CXX_FLAGS="$SAN_FLAGS"
       - name: Build library
         run: cmake --build build --parallel
       - name: Install library
         run: sudo cmake --install build --prefix /usr
       - name: Configure tests
-        run: cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug ${{ inputs.flags }}
+        run: cmake -S test -B test/build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="$SAN_FLAGS" ${{ inputs.flags }}
       - name: Build library tests
-        run: cmake --build test/build
+        run: cmake --build test/build --parallel
       - name: Run library tests
         run: ./test/build/test
       - name: Create virtual environment
@@ -37,7 +51,10 @@ jobs:
       - name: Build & Install Python module
         run: ./venv/bin/python -m pip install ./python
       - name: Run Python module tests
+        # python itself is not built with sanitizers, so asan/tsan runtime has to be preloaded
         run: |
+             if [ "${{ inputs.sanitizer }}" = "address" ]; then export LD_PRELOAD="$($CXX -print-file-name=libasan.so) $($CXX -print-file-name=libstdc++.so)" ASAN_OPTIONS=detect_leaks=0; fi
+             if [ "${{ inputs.sanitizer }}" = "thread" ]; then export LD_PRELOAD=$($CXX -print-file-name=libtsan.so); fi
              ./venv/bin/python test/topology.py
              ./venv/bin/python test/relation.py
              ./venv/bin/python test/datapath.py

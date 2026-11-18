@@ -11,13 +11,14 @@ static suite<"topology"> _ = []
 {
     "Node"_test = []
     {
+        // root has to be declared (and constructed) before node, so that it is destroyed after node -- ~node calls root.RemoveChild()
+        Node root{0};
         Node node{42};
         expect(that % 42 == node.GetId());
         expect(that % ComponentType::Node == node.GetComponentType());
         expect(that % "Node"sv == node.GetComponentTypeStr());
         expect(that % nullptr == node.GetParent());
 
-        Node root{0};
         node.SetParent(&root);
         expect(that % &root == node.GetParent());
     };
@@ -257,6 +258,8 @@ static suite<"topology"> _ = []
             b.InsertChild(&c);
             c.SetParent(&a);
             expect(that % 1 == a.CheckSubtreeConsistency());
+            c.SetParent(&b); // make it consistent again, otherwise ~b accesses the already destroyed c
+
         }
     };
 

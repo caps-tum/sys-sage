@@ -1,6 +1,7 @@
 #include <sys-sage.hpp>
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -464,7 +465,9 @@ int sys_sage::SS_PAPI_accum(Relation *metrics, Component *root, bool permanent,
     if (rval != PAPI_OK)
         return rval;
 
-    long long counters[numEvents] = { 0 };
+    // clang does not allow initializing a variable-length array (= { 0 }), so zero it with memset
+    long long counters[numEvents];
+    memset(counters, 0, sizeof(counters));
     rval = PAPI_accum(meta->eventSet, counters);
     if (rval != PAPI_OK)
         return rval;

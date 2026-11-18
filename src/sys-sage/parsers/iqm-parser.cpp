@@ -91,38 +91,37 @@ int sys_sage::IQMParser::CreateQcTopo()
 
 int sys_sage::IQMParser::ParseDynamicData(int tsForHistory)
 {
-    double max;
     std::vector<double> T1;
     for (const auto& element : jsonData["T1"]) 
     {
         T1.push_back(std::stod(element.get<std::string>()));
     }
-    max = *(std::max_element(T1.begin(), T1.end()));
-    backend->UpdateAttribute("T1_max", max);
+    t1_max = *(std::max_element(T1.begin(), T1.end()));
+    backend->UpdateAttribute("T1_max", t1_max);
 
     std::vector<double> T2;
     for (const auto& element : jsonData["T2"]) 
     {
         T2.push_back(std::stod(element.get<std::string>()));
     }
-    max = *(std::max_element(T2.begin(), T2.end()));
-    backend->UpdateAttribute("T2_max", max);
+    t2_max = *(std::max_element(T2.begin(), T2.end()));
+    backend->UpdateAttribute("T2_max", t2_max);
 
     std::vector<double> q1_fidelity;
     for (const auto& element : jsonData["1q_fidelity"]) 
     {
         q1_fidelity.push_back(std::stod(element.get<std::string>()));
     }
-    max = *(std::max_element(q1_fidelity.begin(), q1_fidelity.end()));
-    backend->UpdateAttribute("q1_fidelity_max", max);
+    q1_fidelity_max = *(std::max_element(q1_fidelity.begin(), q1_fidelity.end()));
+    backend->UpdateAttribute("q1_fidelity_max", q1_fidelity_max);
 
     std::vector<double> readout_fidelity;
     for (const auto& element : jsonData["readout_fidelity"]) 
     {
         readout_fidelity.push_back(std::stod(element.get<std::string>()));
     }
-    max = *(std::max_element(readout_fidelity.begin(), readout_fidelity.end()));
-    backend->UpdateAttribute("readout_fidelity_max", max);
+    readout_fidelity_max = *(std::max_element(readout_fidelity.begin(), readout_fidelity.end()));
+    backend->UpdateAttribute("readout_fidelity_max", readout_fidelity_max);
 
     auto parse_pair = [](const std::string& pair_str) -> std::pair<int, int>
     {
@@ -148,7 +147,7 @@ int sys_sage::IQMParser::ParseDynamicData(int tsForHistory)
         }
     }
     std::map<std::string, std::string> two_q_fidelity = jsonData["two_q_fidelity"];
-    max = 0;
+    double max = 0;
     for(auto [cm_str,fidelity_str] : two_q_fidelity)
     {
         auto [q1_id, q2_id] = parse_pair(cm_str);
